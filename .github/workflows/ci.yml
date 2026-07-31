@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Everything runs through `pixi run <task>`, so CI and a developer's laptop
+  # execute literally the same commands (R13).
+  checks:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # setuptools-scm needs the tags
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          cache: true
+
+      - run: pixi run lint
+      - run: pixi run test-py
+      - run: pixi run test-ts
+
+  # One job, one purpose: prove the three committed generated artifacts match a
+  # fresh build. Split out so a failure here is unambiguous (PLAN §9).
+  generated:
+    name: generated artifacts are fresh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          cache: true
+
+      - run: pixi run check-generated
+
+  # R3: gufe-viz must install without a Node toolchain anywhere in sight.
+  pip-install:
+    name: pip install (no node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install .
+      - name: the bundle shipped with the wheel
+        run: python -c "import gufe_viz; print(gufe_viz.bundle_source()[:80])"
+        working-directory: ${{ runner.temp }}

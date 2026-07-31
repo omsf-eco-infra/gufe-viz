@@ -1,0 +1,69 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=77.0.3",
+  "setuptools-scm>=8",
+]
+
+[project]
+name = "gufe-viz"
+description = "Visualization tools for gufe"
+readme = "README.md"
+license = "MIT"
+license-files = [ "LICENSE" ]
+authors = [ { name = "The OpenFE developers", email = "openfe@omsf.io" } ]
+requires-python = ">=3.11,<3.15"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Topic :: Scientific/Engineering :: Chemistry",
+]
+dynamic = [ "version" ]
+dependencies = [
+  "pydantic>=2.7",
+]
+# gufe itself is *not* a hard dependency: the schema, the validator and
+# `to_html(payload_dict)` all work without it. Only `payload_for(gufe_object)`
+# needs it, and it imports gufe lazily. This is the direction of the dependency
+# edge R3 asks for — this package knows about gufe, gufe never knows about this.
+optional-dependencies.gufe = [ "gufe" ]
+optional-dependencies.test = [
+  "jsonschema>=4",
+  "pytest>=7",
+]
+urls.Homepage = "https://github.com/omsf-eco-infra/viz"
+urls.Issues = "https://github.com/omsf-eco-infra/viz/issues"
+scripts.gufe-viz = "gufe_viz.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "python" }
+packages.find.where = [ "python" ]
+packages.find.namespaces = false
+include-package-data = true
+zip-safe = false
+# The Vite bundle and the HTML template are build artifacts, committed to the
+# repo so `pip install .` needs no Node toolchain (see PLAN §2).
+package-data.gufe_viz = [ "_assets/*" ]
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+format.docstring-code-format = true
+lint.select = [
+  "F",  # Pyflakes
+  "I",  # isort
+  "UP", # pyupgrade
+]
+
+[tool.pytest.ini_options]
+testpaths = [ "python/tests" ]

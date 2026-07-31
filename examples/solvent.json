@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "name": "O, Na+, Cl-",
+  "extra": {},
+  "kind": "SolventComponent",
+  "data": {
+    "smiles": "O",
+    "positive_ion": "Na+",
+    "negative_ion": "Cl-",
+    "neutralize": true,
+    "ion_concentration": "0.15 molar"
+  }
+}

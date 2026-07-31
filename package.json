@@ -1,0 +1,27 @@
+{
+  "name": "gufe-viz",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Visualization tools for gufe — TypeScript custom elements",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --config vite.lib.config.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "types": "node scripts/gen_types.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "jsdom": "^25.0.1",
+    "json-schema-to-typescript": "^15.0.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1"
+  }
+}

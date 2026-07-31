@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "name": null,
+  "extra": {},
+  "kind": "LigandAtomMapping",
+  "data": {
+    "molA_sdf": "\n     RDKit          3D\n\n  3  2  0  0  0  0  0  0  0  0999 V2000\n   -1.2990   -0.2500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2990   -0.2500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
+    "molB_sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
+    "nameA": "",
+    "nameB": "",
+    "componentA_to_componentB": {
+      "0": 0,
+      "1": 1
+    },
+    "annotations": {
+      "score": 0.0,
+      "length": "1.0 angstrom"
+    }
+  }
+}

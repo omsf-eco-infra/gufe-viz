@@ -1,0 +1,909 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/omsf-eco-infra/viz/schema/gufe-viz.schema.json",
+  "title": "gufe-viz payload",
+  "description": "The Python-to-TypeScript contract for gufe visualizations, version 1.0. Generated from python/gufe_viz/schema.py \u2014 do not edit by hand. Kinds: SmallMoleculeComponent, ProteinComponent, SolventComponent, LigandAtomMapping, LigandNetwork, ChemicalSystem, Transformation, AlchemicalNetwork.",
+  "$defs": {
+    "AlchemicalEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The Transformation's gufe key.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "source": {
+          "description": "Node id of stateA.",
+          "type": "string"
+        },
+        "target": {
+          "description": "Node id of stateB.",
+          "type": "string"
+        },
+        "protocol": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target"
+      ],
+      "title": "AlchemicalEdge",
+      "type": "object"
+    },
+    "AlchemicalNetworkData": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/AlchemicalNode"
+          },
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/AlchemicalEdge"
+          },
+          "type": "array"
+        }
+      },
+      "title": "AlchemicalNetworkData",
+      "type": "object"
+    },
+    "AlchemicalNetworkPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "AlchemicalNetwork",
+          "default": "AlchemicalNetwork",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/AlchemicalNetworkData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "AlchemicalNetworkPayload",
+      "type": "object"
+    },
+    "AlchemicalNode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The ChemicalSystem's gufe key.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/ComponentSummary"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "AlchemicalNode",
+      "type": "object"
+    },
+    "ChemicalSystemData": {
+      "additionalProperties": false,
+      "description": "A ChemicalSystem is exactly its labelled components.",
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/ComponentDescriptor"
+          },
+          "type": "array"
+        }
+      },
+      "title": "ChemicalSystemData",
+      "type": "object"
+    },
+    "ChemicalSystemFields": {
+      "additionalProperties": false,
+      "description": "The inner object shared by the chemical-system and transformation views.",
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "$ref": "#/$defs/ComponentDescriptor"
+          },
+          "type": "array"
+        }
+      },
+      "title": "ChemicalSystemFields",
+      "type": "object"
+    },
+    "ChemicalSystemPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "ChemicalSystem",
+          "default": "ChemicalSystem",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ChemicalSystemData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "ChemicalSystemPayload",
+      "type": "object"
+    },
+    "ComponentDescriptor": {
+      "additionalProperties": false,
+      "description": "A summary plus whatever the viz needs to draw the component.\n\nExactly one of ``sdf`` / ``pdb`` / the solvent fields is populated, chosen by\nwhat the component can serialize itself as. ``error`` is set instead when a\ncomponent fails to serialize \u2014 one bad component must not take down the whole\nview.",
+      "properties": {
+        "label": {
+          "description": "The component's key in its ChemicalSystem.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The gufe class name, e.g. 'SmallMoleculeComponent'.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "sdf": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "smiles": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pdb": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "positive_ion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "negative_ion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "neutralize": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ion_concentration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Stringified openff Quantity, e.g. '0.15 molar'."
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "label",
+        "type"
+      ],
+      "title": "ComponentDescriptor",
+      "type": "object"
+    },
+    "ComponentSummary": {
+      "additionalProperties": false,
+      "description": "What a component *is*, with no structure data \u2014 topology only.",
+      "properties": {
+        "label": {
+          "description": "The component's key in its ChemicalSystem.",
+          "type": "string"
+        },
+        "type": {
+          "description": "The gufe class name, e.g. 'SmallMoleculeComponent'.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "type"
+      ],
+      "title": "ComponentSummary",
+      "type": "object"
+    },
+    "LigandAtomMappingPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "LigandAtomMapping",
+          "default": "LigandAtomMapping",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/MappingData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "LigandAtomMappingPayload",
+      "type": "object"
+    },
+    "LigandNetworkData": {
+      "additionalProperties": false,
+      "description": "A ligand network as nodes and edges, not as GraphML.\n\n``LigandNetwork.to_graphml()`` is gufe's canonical serialization and the\nobvious thing to forward, but its node payloads *are* gufe's ``to_json``\nmoldicts \u2014 atomic numbers, bond tuples and a base-1-per-char ``.npy``\nconformer blob. Forwarding it makes the browser decode all of that to draw\nanything, which is precisely the \"lot of ugly TypeScript to maintain\" R8\nrules out. So Python walks the live network instead and hands over SDF plus\nflat topology, and the GraphML does not cross the boundary at all.",
+      "properties": {
+        "nodes": {
+          "items": {
+            "$ref": "#/$defs/LigandNetworkNode"
+          },
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "#/$defs/LigandNetworkEdge"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "title": "LigandNetworkData",
+      "type": "object"
+    },
+    "LigandNetworkEdge": {
+      "additionalProperties": false,
+      "description": "One :class:`gufe.LigandAtomMapping`, as a graph edge.\n\nThe endpoints are node ``id``s rather than inlined molecules: a network with\nforty ligands and sixty edges would otherwise carry each SDF twice over. The\natom correspondence rides along so the mapping viewer can be handed a\n:class:`MappingData` assembled from the two endpoint nodes plus this edge \u2014\nwhich is how R14's \"exact same component\" is honoured without duplicating the\nstructures.",
+      "properties": {
+        "source": {
+          "description": "Node id of componentA.",
+          "type": "string"
+        },
+        "target": {
+          "description": "Node id of componentB.",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The mapping's score annotation, when it has one \u2014 usually LOMAP's 0\u20131."
+        },
+        "componentA_to_componentB": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "annotations": {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "required": [
+        "source",
+        "target"
+      ],
+      "title": "LigandNetworkEdge",
+      "type": "object"
+    },
+    "LigandNetworkNode": {
+      "additionalProperties": false,
+      "description": "One ligand in a :class:`gufe.LigandNetwork`.\n\n``id`` is the component's gufe key, which is what the edges reference. It is\nan identity, not a label: gufe's own network fixtures have unnamed molecules,\nso the view falls back to a short form of the key when ``name`` is empty.",
+      "properties": {
+        "id": {
+          "description": "The SmallMoleculeComponent's gufe key.",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "sdf": {
+          "description": "SmallMoleculeComponent.to_sdf() output, verbatim.",
+          "type": "string"
+        },
+        "smiles": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "sdf"
+      ],
+      "title": "LigandNetworkNode",
+      "type": "object"
+    },
+    "LigandNetworkPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "LigandNetwork",
+          "default": "LigandNetwork",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/LigandNetworkData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "LigandNetworkPayload",
+      "type": "object"
+    },
+    "MappingData": {
+      "additionalProperties": false,
+      "description": "A :class:`gufe.LigandAtomMapping`: both endpoints plus the index map.\n\nBoth molecules go over as SDF and the correspondence as a plain\n``{str(indexA): indexB}`` map, so the viewer can colour core and unique atoms\nand draw the lines itself. JSON object keys must be strings, which is why the\nA-side indices are stringified rather than left as integers.",
+      "properties": {
+        "molA_sdf": {
+          "type": "string"
+        },
+        "molB_sdf": {
+          "type": "string"
+        },
+        "nameA": {
+          "default": "",
+          "type": "string"
+        },
+        "nameB": {
+          "default": "",
+          "type": "string"
+        },
+        "componentA_to_componentB": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "annotations": {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      },
+      "required": [
+        "molA_sdf",
+        "molB_sdf"
+      ],
+      "title": "MappingData",
+      "type": "object"
+    },
+    "ProteinData": {
+      "additionalProperties": false,
+      "properties": {
+        "pdb": {
+          "description": "ProteinComponent.to_pdb_file() output, verbatim.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pdb"
+      ],
+      "title": "ProteinData",
+      "type": "object"
+    },
+    "ProteinPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "ProteinComponent",
+          "default": "ProteinComponent",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/ProteinData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "ProteinPayload",
+      "type": "object"
+    },
+    "SmallMoleculeData": {
+      "additionalProperties": false,
+      "properties": {
+        "sdf": {
+          "description": "SmallMoleculeComponent.to_sdf() output, verbatim.",
+          "type": "string"
+        },
+        "smiles": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "total_charge": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "sdf"
+      ],
+      "title": "SmallMoleculeData",
+      "type": "object"
+    },
+    "SmallMoleculePayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "SmallMoleculeComponent",
+          "default": "SmallMoleculeComponent",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/SmallMoleculeData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "SmallMoleculePayload",
+      "type": "object"
+    },
+    "SolventData": {
+      "additionalProperties": false,
+      "properties": {
+        "smiles": {
+          "default": "O",
+          "type": "string"
+        },
+        "positive_ion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "negative_ion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "neutralize": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ion_concentration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "SolventData",
+      "type": "object"
+    },
+    "SolventPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "SolventComponent",
+          "default": "SolventComponent",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/SolventData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "SolventPayload",
+      "type": "object"
+    },
+    "TransformationData": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "protocol": {
+          "default": "",
+          "description": "The Protocol's class name.",
+          "type": "string"
+        },
+        "stateA": {
+          "$ref": "#/$defs/ChemicalSystemFields"
+        },
+        "stateB": {
+          "$ref": "#/$defs/ChemicalSystemFields"
+        },
+        "mappings": {
+          "items": {
+            "$ref": "#/$defs/MappingData"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "stateA",
+        "stateB"
+      ],
+      "title": "TransformationData",
+      "type": "object"
+    },
+    "TransformationPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "default": "1.0",
+          "description": "Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.",
+          "pattern": "^1\\.(0|[1-9][0-9]*)$",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The object's name, for the title bar."
+        },
+        "extra": {
+          "additionalProperties": true,
+          "description": "Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.",
+          "type": "object"
+        },
+        "kind": {
+          "const": "Transformation",
+          "default": "Transformation",
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/$defs/TransformationData"
+        }
+      },
+      "required": [
+        "data",
+        "kind"
+      ],
+      "title": "TransformationPayload",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "AlchemicalNetwork": "#/$defs/AlchemicalNetworkPayload",
+      "ChemicalSystem": "#/$defs/ChemicalSystemPayload",
+      "LigandAtomMapping": "#/$defs/LigandAtomMappingPayload",
+      "LigandNetwork": "#/$defs/LigandNetworkPayload",
+      "ProteinComponent": "#/$defs/ProteinPayload",
+      "SmallMoleculeComponent": "#/$defs/SmallMoleculePayload",
+      "SolventComponent": "#/$defs/SolventPayload",
+      "Transformation": "#/$defs/TransformationPayload"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SmallMoleculePayload"
+    },
+    {
+      "$ref": "#/$defs/ProteinPayload"
+    },
+    {
+      "$ref": "#/$defs/SolventPayload"
+    },
+    {
+      "$ref": "#/$defs/LigandAtomMappingPayload"
+    },
+    {
+      "$ref": "#/$defs/LigandNetworkPayload"
+    },
+    {
+      "$ref": "#/$defs/ChemicalSystemPayload"
+    },
+    {
+      "$ref": "#/$defs/TransformationPayload"
+    },
+    {
+      "$ref": "#/$defs/AlchemicalNetworkPayload"
+    }
+  ]
+}

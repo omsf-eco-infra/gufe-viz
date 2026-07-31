@@ -1,0 +1,160 @@
+{
+  "$comment": [
+    "The mutation matrix (R10, David's explicit ask: 'maybe some mutation testing that if you break",
+    "the schema, it does raise an error, it does fail').",
+    "",
+    "Declared here once, in data, and applied by BOTH test suites — pytest against the Pydantic models",
+    "and the generated JSON Schema, vitest against Ajv. That is what makes the cross-language claim",
+    "real: if the two sides ever disagree about a mutation, one suite goes red.",
+    "",
+    "Each entry takes a valid payload from examples/, applies one JSON-Pointer operation, and states",
+    "what must happen. `kinds` restricts an entry to payloads of those kinds; absent means all of them.",
+    "`expect` is 'invalid' (both validators must reject it) or 'valid' (both must accept it — the",
+    "forward-compatibility rows, which are just as important to pin down).",
+    "`pointerContains` is asserted against the reported error location, so a rejection for the wrong",
+    "reason does not pass as a rejection."
+  ],
+  "mutations": [
+    {
+      "id": "drop-the-discriminator",
+      "why": "Without `kind` there is nothing to say what the payload is.",
+      "op": "remove",
+      "path": "/kind",
+      "expect": "invalid"
+    },
+    {
+      "id": "unknown-kind",
+      "why": "A kind nobody declared must be refused, not guessed at.",
+      "op": "replace",
+      "path": "/kind",
+      "value": "TotallyMadeUpComponent",
+      "expect": "invalid"
+    },
+    {
+      "id": "drop-the-data-block",
+      "why": "Every kind needs its data; an envelope alone draws nothing.",
+      "op": "remove",
+      "path": "/data",
+      "expect": "invalid",
+      "pointerContains": ""
+    },
+    {
+      "id": "drop-a-required-field-sdf",
+      "why": "The error must name the missing field, not just say 'invalid'.",
+      "kinds": ["SmallMoleculeComponent"],
+      "op": "remove",
+      "path": "/data/sdf",
+      "expect": "invalid",
+      "pointerContains": "/data"
+    },
+    {
+      "id": "drop-a-required-field-pdb",
+      "why": "The error must name the missing field, not just say 'invalid'.",
+      "kinds": ["ProteinComponent"],
+      "op": "remove",
+      "path": "/data/pdb",
+      "expect": "invalid",
+      "pointerContains": "/data"
+    },
+    {
+      "id": "drop-a-required-field-network-nodes",
+      "why": "The error must name the missing field, not just say 'invalid'.",
+      "kinds": ["LigandNetwork"],
+      "op": "remove",
+      "path": "/data/nodes",
+      "expect": "invalid",
+      "pointerContains": "/data"
+    },
+    {
+      "id": "wrong-type-network-edges",
+      "why": "A network's edges are a list; an object there is the shape a hand-written payload gets wrong.",
+      "kinds": ["LigandNetwork"],
+      "op": "replace",
+      "path": "/data/edges",
+      "value": { "a": "b" },
+      "expect": "invalid",
+      "pointerContains": "/data/edges"
+    },
+    {
+      "id": "dangling-edge-endpoint",
+      "why": "Schema-valid but render-degraded: JSON Schema cannot express 'source names a node that exists', so the view has to drop the edge and say so rather than crash.",
+      "kinds": ["LigandNetwork"],
+      "op": "replace",
+      "path": "/data/edges",
+      "value": [{ "source": "no-such-node", "target": "also-missing", "score": 0.5 }],
+      "expect": "valid"
+    },
+    {
+      "id": "wrong-type-total-charge",
+      "why": "A string where a number belongs is the classic payload-builder typo.",
+      "kinds": ["SmallMoleculeComponent"],
+      "op": "replace",
+      "path": "/data/total_charge",
+      "value": "zero",
+      "expect": "invalid",
+      "pointerContains": "/data/total_charge"
+    },
+    {
+      "id": "wrong-type-sdf",
+      "why": "Same, for a required string field.",
+      "kinds": ["SmallMoleculeComponent"],
+      "op": "replace",
+      "path": "/data/sdf",
+      "value": 42,
+      "expect": "invalid",
+      "pointerContains": "/data/sdf"
+    },
+    {
+      "id": "extra-key-at-envelope-level",
+      "why": "additionalProperties:false — a misspelled key must fail loudly, not render blank.",
+      "op": "add",
+      "path": "/sdf",
+      "value": "this belongs under /data",
+      "expect": "invalid",
+      "pointerContains": ""
+    },
+    {
+      "id": "extra-key-inside-data",
+      "why": "Same rule one level down.",
+      "op": "add",
+      "path": "/data/surprise",
+      "value": true,
+      "expect": "invalid",
+      "pointerContains": "/data"
+    },
+    {
+      "id": "schema-version-major-bumped",
+      "why": "A payload from a newer major must be refused by name, not rendered wrongly.",
+      "op": "replace",
+      "path": "/schema_version",
+      "value": "2.0",
+      "expect": "invalid",
+      "pointerContains": "/schema_version"
+    },
+    {
+      "id": "schema-version-minor-bumped",
+      "why": "Minors are additive: an older reader must still accept a newer minor.",
+      "op": "replace",
+      "path": "/schema_version",
+      "value": "1.99",
+      "expect": "valid"
+    },
+    {
+      "id": "extra-key-under-extra",
+      "why": "The forward-compatibility slot must actually work — this is what lets gufe JSON, per-atom annotations and anything else be added later without a schema break.",
+      "op": "add",
+      "path": "/extra/gufe_json",
+      "value": { "anything": ["at", "all"], "nested": { "deeply": 1 } },
+      "expect": "valid"
+    },
+    {
+      "id": "garbage-structure-string",
+      "why": "Schema-valid but render-degraded: the contract does not parse chemistry, so this must pass validation and be caught by the view instead (an error panel, not a crash).",
+      "kinds": ["SmallMoleculeComponent"],
+      "op": "replace",
+      "path": "/data/sdf",
+      "value": "not an SDF at all\ntruncated",
+      "expect": "valid"
+    }
+  ]
+}
