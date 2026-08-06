@@ -1,0 +1,191 @@
+"""Components and chemical systems: live gufe objects to visualization payloads.
+
+This is the Python half of the contract. It reads **live gufe objects** and asks
+them to serialize themselves the way they already know how - ``to_sdf()``,
+``to_pdb_file()`` - rather than touching gufe's own JSON representation. That
+rule is the single most important one in the design: it confines every hard
+question about gufe serialization (deduplicated key-chains, ``:custom:`` codecs,
+``to_dict`` vs ``to_json``, ``QuickRun`` still writing ``to_dict``) to Python,
+where the people who know the history can answer it.
+
+When the input is a saved gufe ``.json`` file, Python deserializes it into live
+gufe objects *first* and then builds the payload from those. TypeScript never
+sees gufe JSON.
+
+Builders return **plain dicts**. ``schema/gufe-viz.schema.json`` is the source of
+truth for their shape, and it is hand-written rather than generated from
+anything here: a schema derived from Python carries across only what the
+derivation step happens to translate, so a rule can be enforced in the code and
+missing from the schema the browser reads. Correctness is enforced by tests
+instead - every builder's output is validated against the schema, and
+``schema/mutations.json`` proves the schema rejects what it claims to reject.
+"""
+
+from __future__ import annotations
+
+import io
+import json
+from typing import Any
+
+import gufe
+
+
+def display_name(obj: Any) -> str:
+    """The object's name, as a string that is never ``None``.
+
+    Every ``name`` in the schema is a required, non-nullable string. gufe's own
+    fixtures are full of unnamed molecules, so "" is the normal case rather than
+    an error, and a view that wants to show something else falls back on its own
+    terms rather than having to distinguish "" from ``None``.
+    """
+    return getattr(obj, "name", "") or ""
+
+
+def pdb_string(component: Any) -> str:
+    """Render a PDB-capable component to a string, without a sidecar file."""
+    buffer = io.StringIO()
+    component.to_pdb_file(buffer)
+    return buffer.getvalue()
+
+
+def json_safe(value: Any) -> Any:
+    """Coerce ``value`` into something ``json.dumps`` can handle.
+
+    Free-form gufe metadata - ``LigandAtomMapping.annotations`` most of all - can
+    hold ``openff.units.Quantity`` and other rich objects. A visualization only
+    ever *displays* these, so rendering the leftovers with ``str()``
+    ("1.2 nanometer") is both lossless enough and far more readable than gufe's
+    ``:custom:`` JSON codec.
+    """
+    return json.loads(json.dumps(value, default=str))
+
+
+# --------------------------------------------------------------------------- #
+# One builder per component type                                                #
+# --------------------------------------------------------------------------- #
+
+
+def small_molecule_payload(component: Any) -> dict[str, Any]:
+    return {
+        "type": "SmallMoleculeComponentViz",
+        "name": display_name(component),
+        "sdf": component.to_sdf(),
+        "smiles": component.smiles,
+        "total_charge": component.total_charge,
+    }
+
+
+def protein_payload(component: Any) -> dict[str, Any]:
+    return {
+        "type": "ProteinComponentViz",
+        "name": display_name(component),
+        "pdb": pdb_string(component),
+    }
+
+
+def solvated_pdb_payload(component: Any) -> dict[str, Any]:
+    return {
+        "type": "SolvatedPDBComponentViz",
+        "name": display_name(component),
+        "pdb": pdb_string(component),
+    }
+
+
+def protein_membrane_payload(component: Any) -> dict[str, Any]:
+    return {
+        "type": "ProteinMembraneComponentViz",
+        "name": display_name(component),
+        "pdb": pdb_string(component),
+    }
+
+
+def solvent_payload(component: Any) -> dict[str, Any]:
+    return {
+        "type": "SolventComponentViz",
+        "name": display_name(component),
+        "smiles": component.smiles,
+        "positive_ion": component.positive_ion,
+        "negative_ion": component.negative_ion,
+        "neutralize": component.neutralize,
+        # An openff Quantity carries its unit, and the view only ever prints it.
+        "ion_concentration": str(component.ion_concentration),
+    }
+
+
+def unknown_component_payload(component: Any) -> dict[str, Any]:
+    """The graceful fallback: enough to name the thing, nothing to draw it."""
+    return {
+        "type": "UnknownComponentViz",
+        "name": display_name(component),
+        "gufe_type": type(component).__name__,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Dispatch                                                                      #
+# --------------------------------------------------------------------------- #
+#
+# Ordered most-derived first, because a subclass must be recognized before its
+# parent. The PDB-carrying types form a three-deep chain in gufe:
+#
+#     ProteinMembraneComponent -> SolvatedPDBComponent -> ProteinComponent
+#
+# so listing them in any other order would serialize a membrane system as a
+# plain protein and throw away the distinction the discriminator exists to
+# carry. `test_dispatch_order_matches_the_gufe_class_hierarchy` derives that
+# chain from gufe itself and fails if this list stops agreeing with it, so the
+# ordering is checked rather than merely commented.
+#
+# `SolventComponent` is last but not subordinate: it descends from
+# `BaseSolventComponent` alongside the solvated types rather than from
+# `ProteinComponent`, so it can never be shadowed by them.
+
+COMPONENT_BUILDERS: tuple[tuple[type, Any], ...] = (
+    (gufe.ProteinMembraneComponent, protein_membrane_payload),
+    (gufe.SolvatedPDBComponent, solvated_pdb_payload),
+    (gufe.ProteinComponent, protein_payload),
+    (gufe.SmallMoleculeComponent, small_molecule_payload),
+    (gufe.SolventComponent, solvent_payload),
+)
+
+
+def component_payload(component: Any) -> dict[str, Any]:
+    """Build the visualization payload for one gufe component.
+
+    The failure rule is three-way, and the middle case is the one worth stating.
+    Handed something that is not a gufe Component, this raises ``TypeError``,
+    because that is programmer error. Handed an **unrecognized** Component
+    subclass, it returns an ``UnknownComponentViz`` and does not raise: gufe
+    plans for custom components, and raising would stop the process - in a
+    notebook widget that leaves the frontend disconnected from the backend.
+
+    But a **recognized** component whose serializer then fails is left to raise.
+    A ``SmallMoleculeComponent`` whose ``to_sdf()`` blows up is a real bug, and
+    catching it here would file it under "sorry, I cannot draw this" where
+    nobody would ever find it.
+    """
+    if not isinstance(component, gufe.Component):
+        raise TypeError(f"expected a gufe.Component, got {type(component).__name__}")
+
+    for klass, builder in COMPONENT_BUILDERS:
+        if isinstance(component, klass):
+            return builder(component)
+
+    return unknown_component_payload(component)
+
+
+def chemical_system_payload(system: Any) -> dict[str, Any]:
+    """A chemical system, as its labelled components.
+
+    Components are sorted by label so a committed fixture is byte-stable across
+    runs: gufe holds them in a dict built from a mapping whose order is not
+    guaranteed to be the same twice.
+    """
+    if not isinstance(system, gufe.ChemicalSystem):
+        raise TypeError(f"expected a gufe.ChemicalSystem, got {type(system).__name__}")
+
+    return {
+        "type": "ChemicalSystemViz",
+        "name": display_name(system),
+        "components": {label: component_payload(component) for label, component in sorted(system.components.items())},
+    }

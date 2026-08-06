@@ -1,5 +1,5 @@
 /**
- * The create / update / destroy cycle (R16, PLAN §6 "Rendering").
+ * The create / update / destroy cycle.
  *
  * These are the tests that make the notebook widget possible later: if an
  * element reliably releases its viewers, observers and timers when it is

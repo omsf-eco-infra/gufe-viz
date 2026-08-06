@@ -1,67 +1,63 @@
 {
-  "schema_version": "1.0",
+  "type": "LigandNetworkViz",
   "name": "",
-  "extra": {},
-  "kind": "LigandNetwork",
-  "data": {
-    "nodes": [
-      {
-        "id": "SmallMoleculeComponent-389104dc87576d18679bc38aa59dd89b",
-        "name": "",
-        "sdf": "\n     RDKit          3D\n\n  3  2  0  0  0  0  0  0  0  0999 V2000\n   -1.2990   -0.2500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2990   -0.2500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
-        "smiles": "CCO"
+  "nodes": [
+    {
+      "id": "SmallMoleculeComponent-389104dc87576d18679bc38aa59dd89b",
+      "name": "",
+      "sdf": "\n     RDKit          3D\n\n  3  2  0  0  0  0  0  0  0  0999 V2000\n   -1.2990   -0.2500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2990   -0.2500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
+      "smiles": "CCO"
+    },
+    {
+      "id": "SmallMoleculeComponent-b86eb5de8ebf578bea11c4adc03d10eb",
+      "name": "",
+      "sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
+      "smiles": "CC"
+    },
+    {
+      "id": "SmallMoleculeComponent-de49aeaae560eace5d83266c27b8738e",
+      "name": "",
+      "sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
+      "smiles": "CO"
+    }
+  ],
+  "edges": [
+    {
+      "source": "SmallMoleculeComponent-389104dc87576d18679bc38aa59dd89b",
+      "target": "SmallMoleculeComponent-b86eb5de8ebf578bea11c4adc03d10eb",
+      "score": 0.0,
+      "componentA_to_componentB": {
+        "0": 0,
+        "1": 1
       },
-      {
-        "id": "SmallMoleculeComponent-b86eb5de8ebf578bea11c4adc03d10eb",
-        "name": "",
-        "sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
-        "smiles": "CC"
-      },
-      {
-        "id": "SmallMoleculeComponent-de49aeaae560eace5d83266c27b8738e",
-        "name": "",
-        "sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\n\n\n$$$$\n",
-        "smiles": "CO"
-      }
-    ],
-    "edges": [
-      {
-        "source": "SmallMoleculeComponent-389104dc87576d18679bc38aa59dd89b",
-        "target": "SmallMoleculeComponent-b86eb5de8ebf578bea11c4adc03d10eb",
+      "annotations": {
         "score": 0.0,
-        "componentA_to_componentB": {
-          "0": 0,
-          "1": 1
-        },
-        "annotations": {
-          "score": 0.0,
-          "length": "1.0 angstrom"
-        }
-      },
-      {
-        "source": "SmallMoleculeComponent-389104dc87576d18679bc38aa59dd89b",
-        "target": "SmallMoleculeComponent-de49aeaae560eace5d83266c27b8738e",
-        "score": 0.5,
-        "componentA_to_componentB": {
-          "0": 0,
-          "2": 1
-        },
-        "annotations": {
-          "score": 0.5,
-          "time": "2.0 second"
-        }
-      },
-      {
-        "source": "SmallMoleculeComponent-b86eb5de8ebf578bea11c4adc03d10eb",
-        "target": "SmallMoleculeComponent-de49aeaae560eace5d83266c27b8738e",
-        "score": 1.0,
-        "componentA_to_componentB": {
-          "0": 0
-        },
-        "annotations": {
-          "score": 1.0
-        }
+        "length": "1.0 angstrom"
       }
-    ]
-  }
+    },
+    {
+      "source": "SmallMoleculeComponent-389104dc87576d18679bc38aa59dd89b",
+      "target": "SmallMoleculeComponent-de49aeaae560eace5d83266c27b8738e",
+      "score": 0.5,
+      "componentA_to_componentB": {
+        "0": 0,
+        "2": 1
+      },
+      "annotations": {
+        "score": 0.5,
+        "time": "2.0 second"
+      }
+    },
+    {
+      "source": "SmallMoleculeComponent-b86eb5de8ebf578bea11c4adc03d10eb",
+      "target": "SmallMoleculeComponent-de49aeaae560eace5d83266c27b8738e",
+      "score": 1.0,
+      "componentA_to_componentB": {
+        "0": 0
+      },
+      "annotations": {
+        "score": 1.0
+      }
+    }
+  ]
 }

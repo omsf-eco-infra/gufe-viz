@@ -1,9 +1,8 @@
 /**
- * `<gufe-protein>` — a toolbar and a full-pane 3Dmol viewer.
+ * `<gufe-protein>` - a toolbar and a full-pane 3Dmol viewer.
  *
- * Ported from `code.js` lines 1384–1511; the PDB statistics and styling live in
- * `shared/pdb.ts` (1031–1166) because the chemical-system view will want them
- * too in Phase 4.
+ * The PDB statistics and styling live in `shared/pdb.ts` rather than here,
+ * because the chemical-system view will want them too.
  */
 
 import { BTN_CSS, buttonGroup, el, errText, SELECT_CSS, viewerHost } from "../shared/dom.js";
@@ -20,7 +19,7 @@ import {
   type StatusFn,
 } from "../shared/pdb.js";
 import { T } from "../shared/theme.js";
-import type { ProteinPayload } from "../schema/types.js";
+import type { ProteinComponentViz } from "../schema/types.js";
 
 const PROTEIN_REPS = [
   { id: "cartoon", label: "Cartoon", title: "Ribbon / cartoon backbone" },
@@ -36,20 +35,20 @@ const PROTEIN_COLOR_SCHEMES = [
   { id: "element", label: "Element" },
 ] as const;
 
-export class GufeProtein extends GufeElement<ProteinPayload> {
+export class GufeProtein extends GufeElement<ProteinComponentViz> {
   protected override placeholder(): string {
-    return "Waiting for a ProteinComponent payload…";
+    return "Waiting for a ProteinComponent payload...";
   }
 
-  protected renderView(host: HTMLDivElement, payload: ProteinPayload): ViewHandle {
-    const pdb = payload.data.pdb;
+  protected renderView(host: HTMLDivElement, payload: ProteinComponentViz): ViewHandle {
+    const pdb = payload.pdb;
     const name = payload.name ?? "";
 
     const opts: ProteinOptions = { rep: "cartoon", color: "chain", waters: false, hetero: true };
     let viewer: ThreeDmolViewer | null = null;
     let stats: PdbStats | null = null;
 
-    // ─── toolbar ───
+    // --- toolbar ---
     const toolbar = el(
       "div",
       "display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;font-size:12px;" +
@@ -107,7 +106,7 @@ export class GufeProtein extends GufeElement<ProteinPayload> {
     const statsEl = el("span", `margin-left:auto;font-size:11px;white-space:nowrap;color:${T.textMuted2};`);
     toolbar.appendChild(statsEl);
 
-    // ─── viewer + status overlay ───
+    // --- viewer + status overlay ---
     const pane = viewerHost();
     host.appendChild(pane.wrap);
 
@@ -136,7 +135,7 @@ export class GufeProtein extends GufeElement<ProteinPayload> {
     }
 
     if (!pdb || !pdb.trim()) {
-      showStatus("No protein data — waiting for a PDB payload.");
+      showStatus("No protein data - waiting for a PDB payload.");
       return {};
     }
 
@@ -147,12 +146,12 @@ export class GufeProtein extends GufeElement<ProteinPayload> {
       showStatus(`⚠ PDB parse error: ${errText(e)}`, "error");
     }
 
-    showStatus("Loading 3D viewer…");
+    showStatus("Loading 3D viewer...");
     load3Dmol()
       .then(() => {
         viewer = ThreeDmol!.createViewer(pane.container, { backgroundColor: T.viewerBg });
         viewer.addModel(pdb, "pdb");
-        // applyProteinStyles clears the "Loading…" status (or replaces it with
+        // applyProteinStyles clears the "Loading..." status (or replaces it with
         // the surface-computing message), so there is nothing to hide here.
         applyProteinStyles(viewer, opts, stats, showStatus);
         viewer.zoomTo();

@@ -1,15 +1,13 @@
 /**
- * `<gufe-ligand-network>` — the network graph, and a detail pane driven by it.
+ * `<gufe-ligand-network>` - the network graph, and a detail pane driven by it.
  *
- * Descended from `code.js` lines 2076–2520, but the half of that code that
- * decoded gufe's GraphML — atomic-number tables, a base-1-per-char `.npy`
- * conformer reader, a Jacobi eigensolver to find the flattest projection — is
- * gone. Python now hands over SDF per ligand and flat topology per mapping
- * (R8), so this file is drawing code and nothing else.
+ * This file is drawing code and nothing else. Python hands over SDF per ligand
+ * and flat topology per mapping, so nothing here decodes a structure format:
+ * no atomic-number tables, no conformer blobs, no GraphML.
  *
  * d3 is used for one thing: the force layout. Zoom, pan, drag, the colour ramp
  * and the SVG itself are plain DOM, so a network still draws when d3 cannot be
- * fetched — it falls back to the circular layout and says why (R19).
+ * fetched - it falls back to the circular layout and says why.
  */
 
 import {
@@ -26,9 +24,14 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG, parseCounts } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
-import type { LigandNetworkEdge, LigandNetworkNode, LigandNetworkPayload, MappingData } from "../schema/types.js";
+import type {
+  LigandAtomMappingViz,
+  LigandNetworkEdgeViz,
+  LigandNetworkNodeViz,
+  LigandNetworkViz,
+} from "../schema/types.js";
 
-// ─── just enough of d3-force to configure it ───────────────────────────────
+// --- just enough of d3-force to configure it -------------------------------
 //
 // d3 ships no types we can rely on here (it arrives as a runtime import, or
 // pre-seeded), and every force setter returns the force, so one interface with
@@ -61,10 +64,10 @@ interface D3ForceModule {
   forceY(y: number): D3Force;
 }
 
-// ─── layout state ──────────────────────────────────────────────────────────
+// --- layout state ----------------------------------------------------------
 
 /** A payload node with the coordinates the layout gives it. d3 mutates these. */
-interface NetNode extends LigandNetworkNode {
+interface NetNode extends LigandNetworkNodeViz {
   x: number;
   y: number;
   /** Pinned position: set by the non-force layouts and by dragging. */
@@ -73,7 +76,7 @@ interface NetNode extends LigandNetworkNode {
 }
 
 /** A payload edge with its endpoints resolved. d3-force replaces the ids. */
-interface NetEdge extends LigandNetworkEdge {
+interface NetEdge extends LigandNetworkEdgeViz {
   index: number;
   from: NetNode;
   to: NetNode;
@@ -113,7 +116,7 @@ function svg<K extends keyof SVGElementTagNameMap>(
   return node;
 }
 
-/** A native SVG tooltip — cheaper and more accessible than a floating div. */
+/** A native SVG tooltip - cheaper and more accessible than a floating div. */
 function titled<E extends SVGElement>(node: E, text: string): E {
   const title = document.createElementNS(SVG_NS, "title");
   title.textContent = text;
@@ -121,7 +124,7 @@ function titled<E extends SVGElement>(node: E, text: string): E {
   return node;
 }
 
-// ─── the score ramp ────────────────────────────────────────────────────────
+// --- the score ramp --------------------------------------------------------
 //
 // `T.netEdgeRamp` is two colours, so this is a lerp rather than a reason to
 // pull in d3-scale and d3-interpolate.
@@ -140,45 +143,53 @@ function scoreColor(score: number | null | undefined): string {
 
 /**
  * A node's label. gufe's own network fixtures have unnamed molecules, and a row
- * of blank circles is not a visualization — so fall back to the distinctive
+ * of blank circles is not a visualization - so fall back to the distinctive
  * tail of the gufe key rather than to nothing.
  */
-function label(node: LigandNetworkNode): string {
+function label(node: LigandNetworkNodeViz): string {
   if (node.name) return node.name;
   const tail = node.id.split("-").pop() ?? node.id;
   return tail.slice(0, 6);
 }
 
-const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}...` : text);
 
 /**
  * The edge as the atom-mapping viewer wants it.
  *
- * This is the R14 seam. The payload keeps molecules in `nodes` and the
- * correspondence in `edges` so a forty-ligand network carries each SDF once;
- * this puts the two back together into exactly the `MappingData` a
- * `LigandAtomMapping` payload carries, which is what Phase 4's
- * `<gufe-atom-mapping>` will be handed here — the same component, standalone or
- * embedded, with no second code path.
+ * This is the component-reuse seam. The payload keeps molecules in `nodes` and
+ * the correspondence in `edges` so a forty-ligand network carries each SDF
+ * once; this puts the two back together.
+ *
+ * What comes out is a **complete, schema-valid `LigandAtomMappingViz`** - the
+ * `type` and `name` are here rather than being filled in by the caller, because
+ * that is the whole claim: what the network view hands to `<gufe-atom-mapping>`
+ * is byte-for-byte the kind of payload that element receives standalone. Same
+ * component, standalone or embedded, with no second code path and no
+ * translation step.
  */
-export function mappingDataFor(edge: NetEdge): MappingData {
+export function mappingDataFor(edge: NetEdge): LigandAtomMappingViz {
+  const nameA = label(edge.from);
+  const nameB = label(edge.to);
   return {
+    type: "LigandAtomMappingViz",
+    name: nameA || nameB ? `${nameA} -> ${nameB}` : "",
     molA_sdf: edge.from.sdf,
     molB_sdf: edge.to.sdf,
-    nameA: label(edge.from),
-    nameB: label(edge.to),
+    nameA,
+    nameB,
     componentA_to_componentB: edge.componentA_to_componentB ?? {},
     annotations: edge.annotations ?? {},
   };
 }
 
-export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
+export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   protected override placeholder(): string {
-    return "Waiting for a LigandNetwork payload…";
+    return "Waiting for a LigandNetwork payload...";
   }
 
-  protected renderView(host: HTMLDivElement, payload: LigandNetworkPayload): ViewHandle {
-    const nodes: NetNode[] = (payload.data.nodes ?? []).map((n) => ({ ...n, x: 0, y: 0 }));
+  protected renderView(host: HTMLDivElement, payload: LigandNetworkViz): ViewHandle {
+    const nodes: NetNode[] = (payload.nodes ?? []).map((n) => ({ ...n, x: 0, y: 0 }));
     const byId = new Map(nodes.map((n) => [n.id, n]));
 
     // An edge whose endpoints are not both in `nodes` cannot be drawn. JSON
@@ -187,7 +198,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
     // many were dropped rather than silently showing a smaller network.
     const edges: NetEdge[] = [];
     let dangling = 0;
-    for (const edge of payload.data.edges ?? []) {
+    for (const edge of payload.edges ?? []) {
       const from = byId.get(edge.source);
       const to = byId.get(edge.target);
       if (!from || !to) {
@@ -228,7 +239,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
     }
 
     // Depictions are RDKit's job alone, so start the fetch now rather than
-    // after the layout — the graph draws with initials and they fill in.
+    // after the layout - the graph draws with initials and they fill in.
     const rdkitReady = loadRDKit().catch((e: unknown) => {
       console.warn("[gufe-viz] RDKit failed to load:", errText(e));
       return null;
@@ -283,7 +294,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
         // No d3, so no force layout. Say so once, and show something.
         forceUnavailable = true;
         toolbar.picker.value = "Circular";
-        floatingWarning(canvas, "d3 could not be loaded — showing the circular layout instead");
+        floatingWarning(canvas, "d3 could not be loaded - showing the circular layout instead");
         draw("Circular");
       }, paint);
     };
@@ -315,7 +326,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
         `width:40px;height:4px;border-radius:2px;background:linear-gradient(to right,${T.netEdgeRamp.join(",")});`,
       ),
     );
-    legend.appendChild(el("span", "", "0 → 1"));
+    legend.appendChild(el("span", "", "0 -> 1"));
     toolbar.appendChild(legend);
 
     toolbar.appendChild(el("label", `font-size:12px;margin-left:auto;color:${T.textMuted};`, "Layout"));
@@ -356,7 +367,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
         "div",
         `padding:10px 14px;font-size:13px;font-weight:600;color:${T.textPrimary};` +
           `border-bottom:1px solid ${T.toolbarBorder};`,
-        `${mapping.nameA} → ${mapping.nameB}`,
+        `${mapping.nameA} -> ${mapping.nameB}`,
       );
       body.appendChild(heading);
 
@@ -372,7 +383,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
           "flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px;" +
             `background:${T.canvas2DBg};`,
         );
-        box.appendChild(centredMessage("…"));
+        box.appendChild(centredMessage("..."));
         pane.appendChild(box);
         pair.appendChild(pane);
         return { box, sdf };
@@ -468,7 +479,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
       });
       const hit = titled(
         svg("line", { stroke: "transparent", "stroke-width": HIT_WIDTH, style: "cursor:pointer;" }),
-        `${label(edge.from)} → ${label(edge.to)}${edge.score == null ? "" : `\nscore ${edge.score.toFixed(3)}`}`,
+        `${label(edge.from)} -> ${label(edge.to)}${edge.score == null ? "" : `\nscore ${edge.score.toFixed(3)}`}`,
       );
       hit.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -602,7 +613,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
     };
   }
 
-  /** Wheel zoom, background pan, node drag — ~40 lines instead of d3-zoom and
+  /** Wheel zoom, background pan, node drag - ~40 lines instead of d3-zoom and
    * d3-drag, and they keep working when d3 is unreachable. */
   #interact(
     root: SVGSVGElement,
@@ -632,7 +643,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
 
     // Deliberately no `setPointerCapture` here, unlike the node drag below. A
     // capture on the root retargets the subsequent `click` to the root as well,
-    // which would swallow every edge selection — the one interaction that
+    // which would swallow every edge selection - the one interaction that
     // matters most. Panning therefore ends when the pointer leaves the canvas,
     // which is a much smaller price.
     let panning: { x: number; y: number } | null = null;
@@ -687,14 +698,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkPayload> {
   }
 }
 
-// ─── layouts ───────────────────────────────────────────────────────────────
+// --- layouts ---------------------------------------------------------------
 
 /**
  * Give every node a starting position.
  *
  * Circular and Radial are the answer; for Force-directed it is the seed. Either
  * way it is deterministic, which is what makes the picture the same on every
- * reload — d3's own phyllotaxis seeding is fine but ours is one line and lets
+ * reload - d3's own phyllotaxis seeding is fine but ours is one line and lets
  * the force layout converge from something already spread out.
  */
 function seedPositions(nodes: NetNode[], width: number, height: number, layout: Layout, edges: NetEdge[]): void {
@@ -711,7 +722,7 @@ function seedPositions(nodes: NetNode[], width: number, height: number, layout: 
   };
 
   if (layout === "Radial" && nodes.length) {
-    // Breadth-first rings from the best-connected ligand — the shape a hub-and-
+    // Breadth-first rings from the best-connected ligand - the shape a hub-and-
     // spoke network actually has, which a circle hides.
     const neighbours = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
     for (const edge of edges) {

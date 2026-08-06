@@ -2,12 +2,12 @@ import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
 /**
- * The library build (R5, R6): many TypeScript sources in, one artifact out.
+ * The library build: many TypeScript sources in, one artifact out.
  *
  * The output lands directly in `python/gufe_viz/_assets/` and is **committed**,
  * so `pip install .` and install-from-git need no Node toolchain. CI's
  * `check-generated` task rebuilds it and diffs, so the committed copy cannot go
- * stale (PLAN §9).
+ * stale.
  *
  * One ES-module file, no code splitting: `to_html` inlines this verbatim into a
  * single `<script type="module">`, which is only possible if it is one file.

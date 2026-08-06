@@ -2,7 +2,7 @@
   "name": "gufe-viz",
   "version": "0.0.0",
   "private": true,
-  "description": "Visualization tools for gufe — TypeScript custom elements",
+  "description": "Visualization tools for gufe - TypeScript custom elements",
   "license": "MIT",
   "type": "module",
   "scripts": {

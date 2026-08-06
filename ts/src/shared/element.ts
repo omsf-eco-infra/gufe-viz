@@ -1,15 +1,16 @@
 /**
- * The component model (R16): every `<gufe-*>` element is a custom element with
+ * The component model: every `<gufe-*>` element is a custom element with
  * the same three-beat lifecycle.
  *
- *   create   `connectedCallback`  — build the DOM, start engines
- *   update   `payload` setter     — tear the old view down, build the new one
- *   destroy  `disconnectedCallback` — kill viewers, observers and timers
+ *   create   `connectedCallback`  - build the DOM, start engines
+ *   update   `payload` setter     - tear the old view down, build the new one
+ *   destroy  `disconnectedCallback` - kill viewers, observers and timers
  *
- * This is also what makes R14 structural rather than a convention: embedding one
- * view inside another is `host.appendChild(document.createElement('gufe-…'))`,
+ * This is also what makes component reuse structural rather than conventional:
+ * embedding one
+ * view inside another is `host.appendChild(document.createElement('gufe-...'))`,
  * and the embedded element cleans itself up when its parent removes it. And it
- * is the whole of the future notebook-widget story — an anywidget wrapper
+ * is the whole of the future notebook-widget story - an anywidget wrapper
  * creates one element and sets `.payload`.
  */
 
@@ -19,9 +20,9 @@ import { T } from "./theme.js";
 /**
  * What a view hands back so the element can drive it afterwards.
  *
- * This is deliberately the same shape as the `{ onResize, cleanup }` handle the
- * gufe framejs frame's `view*(host, inputs)` functions returned, so porting a
- * view is a matter of typing it and moving it, not restructuring it.
+ * A view owns things the DOM does not clean up on its own - 3Dmol viewers, d3
+ * simulations, observers, timers - so it hands back the two hooks the element
+ * needs to drive it: one to re-lay-out, one to release.
  */
 export interface ViewHandle {
   onResize?(): void;
@@ -40,7 +41,7 @@ export abstract class GufeElement<P> extends HTMLElement {
   #resizeTimer: ReturnType<typeof setTimeout> | null = null;
   /**
    * Bumped by every teardown. A render captures it and refuses to adopt its
-   * handle if it has moved on — which is what stops a slow view (3Dmol behind a
+   * handle if it has moved on - which is what stops a slow view (3Dmol behind a
    * CDN fetch) from installing itself into an element that has since been given
    * a different payload, or removed from the document entirely.
    */
@@ -57,7 +58,7 @@ export abstract class GufeElement<P> extends HTMLElement {
 
   /** The message shown before any payload arrives. */
   protected placeholder(): string {
-    return "Waiting for data…";
+    return "Waiting for data...";
   }
 
   set payload(payload: P | null) {
@@ -128,8 +129,8 @@ export abstract class GufeElement<P> extends HTMLElement {
   /**
    * Build the view for the current payload.
    *
-   * Deliberately *not* an `async` method. A synchronous `renderView` — which is
-   * what both Phase 1 views are — must install its handle before this returns,
+   * Deliberately *not* an `async` method. A synchronous `renderView` - which is
+   * what the current views are - must install its handle before this returns,
    * or two `payload` assignments in a row would tear down nothing the first
    * time and leak the first view's viewer. An `await` here would defer that
    * assignment by a microtask and do exactly that.
@@ -183,7 +184,7 @@ export abstract class GufeElement<P> extends HTMLElement {
     host.replaceChildren(centredMessage(`Failed to render: ${errText(e)}`, true));
   }
 
-  /** Force a resize pass — for hosts that know they resized us. */
+  /** Force a resize pass - for hosts that know they resized us. */
   resize(): void {
     this.#handle?.onResize?.();
   }
@@ -194,7 +195,7 @@ export abstract class GufeElement<P> extends HTMLElement {
  *
  * The bundle can legitimately be evaluated twice on one page (two `to_html`
  * outputs in one notebook, a dev page that also imports the library), and
- * `define()` throws on a repeat. Losing the race is fine — the winner registered
+ * `define()` throws on a repeat. Losing the race is fine - the winner registered
  * the same class.
  */
 export function defineElement(tag: string, ctor: CustomElementConstructor): void {

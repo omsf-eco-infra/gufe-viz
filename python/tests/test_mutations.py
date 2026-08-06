@@ -1,58 +1,36 @@
-"""Mutation testing (R10).
-
-David's ask, verbatim: "maybe some mutation testing that if you break the schema,
-it does raise an error, it does fail."
+"""Mutation testing.
 
 Every entry in ``schema/mutations.json`` is applied to every applicable golden
-payload, and both the Pydantic models and the *generated* JSON Schema must agree
-about the outcome. ``ts/tests/validate.test.ts`` runs the identical table against
-Ajv, so a disagreement between the two languages turns one of the suites red.
-
-Testing the models and the emitted schema separately matters: the models being
-correct does not prove the artifact generated from them is, and the artifact is
-what TypeScript actually validates against.
+payload and validated against ``schema/gufe-viz.schema.json``.
+``ts/tests/validate.test.ts`` runs the identical table against Ajv, so a
+disagreement between the two languages turns one of the suites red.
 """
 
 from __future__ import annotations
 
 import pytest
-from gufe_viz.schema import Payload
 
 from .conftest import PointerMissing, applies_to, apply_mutation, example_names, read_example
-
-
-def _pydantic_error(payload: dict):
-    """Return the ValidationError from validating ``payload``, or None."""
-    from pydantic import TypeAdapter, ValidationError
-
-    try:
-        TypeAdapter(Payload).validate_python(payload)
-    except ValidationError as e:
-        return e
-    return None
 
 
 def _jsonschema_error(payload: dict, schema: dict):
     """Return the most relevant jsonschema error for ``payload``, or None.
 
-    Validated against the single branch the payload's ``kind`` names, not
-    against the whole eight-way ``oneOf``. Two reasons, and they are the same
-    two reasons ``ts/src/schema/validate.ts`` does it:
+    Validated against the single branch the payload's ``type`` names, not
+    against the whole top-level ``oneOf``.
 
-    * the union reports "is not valid under any of the given schemas" at the
-      root, which tells nobody anything, while the branch reports
-      ``/data/total_charge: 'zero' is not of type 'integer'``;
-    * matching the TypeScript behaviour is the whole point — a cross-language
-      claim about error *locations* is only meaningful if both sides look in
-      the same place.
-
-    A payload with no recognisable ``kind`` falls back to the union, which is
-    also what TypeScript does.
+    Every ``$def`` is named exactly for the ``type`` const it declares, so the
+    branch is found by name with no lookup table to keep in step. A payload
+    whose ``type`` names no ``$def`` falls back to the union, which is also
+    what TypeScript does.
     """
     import jsonschema
 
-    branch = schema.get("discriminator", {}).get("mapping", {}).get(payload.get("kind"))
-    target = {"$schema": schema["$schema"], "$defs": schema["$defs"], "$ref": branch} if branch else schema
+    declared = payload.get("type") if isinstance(payload, dict) else None
+    if isinstance(declared, str) and declared in schema["$defs"]:
+        target = {"$schema": schema["$schema"], "$defs": schema["$defs"], "$ref": f"#/$defs/{declared}"}
+    else:
+        target = schema
 
     validator = jsonschema.Draft202012Validator(target)
     errors = sorted(validator.iter_errors(payload), key=lambda e: (-len(e.absolute_path), list(e.absolute_path)))
@@ -63,27 +41,22 @@ def _pointer(error) -> str:
     """The failing location as a JSON pointer, for the `pointerContains` check."""
     if error is None:
         return ""
-    if hasattr(error, "absolute_path"):  # jsonschema
-        return "/" + "/".join(str(p) for p in error.absolute_path)
-    # pydantic: take the deepest reported location
-    locations = [e["loc"] for e in error.errors()]
-    deepest = max(locations, key=len) if locations else ()
-    # Discriminated-union errors are prefixed with the branch name; drop it.
-    parts = [str(p) for p in deepest if not str(p).endswith("Payload")]
-    return "/" + "/".join(parts)
+    return "/" + "/".join(str(p) for p in error.absolute_path)
+
+
+def _matrix() -> list[dict]:
+    import json
+
+    from .conftest import MUTATIONS_PATH
+
+    return json.loads(MUTATIONS_PATH.read_text(encoding="utf-8"))["mutations"]
 
 
 def _cases():
-    """Every (example, mutation) pair the matrix actually applies to."""
-    import json
-    import pathlib
-
-    matrix = json.loads(
-        (pathlib.Path(__file__).resolve().parent.parent.parent / "schema" / "mutations.json").read_text()
-    )["mutations"]
+    """Every (example, mutation) pair the matrix selects by ``type``."""
     for filename in example_names():
         payload = read_example(filename)
-        for mutation in matrix:
+        for mutation in _matrix():
             if applies_to(mutation, payload):
                 yield pytest.param(filename, mutation, id=f"{filename[:-5]}-{mutation['id']}")
 
@@ -97,16 +70,13 @@ def test_mutation(filename: str, mutation: dict, schema: dict):
     except PointerMissing:
         pytest.skip(f"{mutation['path']} is absent from {filename}")
 
-    pydantic_error = _pydantic_error(mutated)
     schema_error = _jsonschema_error(mutated, schema)
 
     if mutation["expect"] == "valid":
-        assert pydantic_error is None, f"Pydantic rejected a payload it should accept:\n{pydantic_error}"
         assert schema_error is None, f"the schema rejected a payload it should accept:\n{schema_error}"
         return
 
-    assert pydantic_error is not None, f"Pydantic accepted {mutation['id']!r} — {mutation['why']}"
-    assert schema_error is not None, f"the schema accepted {mutation['id']!r} — {mutation['why']}"
+    assert schema_error is not None, f"the schema accepted {mutation['id']!r} - {mutation['why']}"
 
     wanted = mutation.get("pointerContains")
     if wanted:
@@ -116,22 +86,32 @@ def test_mutation(filename: str, mutation: dict, schema: dict):
         )
 
 
-def test_the_matrix_actually_ran(schema):
-    """A matrix entry that matches nothing is a silent hole in the coverage."""
-    import json
-    import pathlib
+def test_every_mutation_applies_cleanly_to_at_least_one_payload():
+    """A matrix entry that never actually runs is a silent hole in the coverage.
 
-    matrix = json.loads(
-        (pathlib.Path(__file__).resolve().parent.parent.parent / "schema" / "mutations.json").read_text()
-    )["mutations"]
+    Selection is not enough to check. A mutation can match a payload by ``type``
+    and then be skipped for every one of them because its path does not exist -
+    a typo in ``"path"`` does exactly that - and the row would look covered
+    while asserting nothing. So this applies each mutation for real and requires
+    at least one success, rather than counting the cases that were collected.
+    """
+    applied: dict[str, int] = {}
+    for filename, mutation in ((c.values[0], c.values[1]) for c in _cases()):
+        applied.setdefault(mutation["id"], 0)
+        try:
+            apply_mutation(read_example(filename), mutation)
+        except PointerMissing:
+            continue
+        applied[mutation["id"]] += 1
 
-    exercised = {m["id"] for _, m in ((f, m) for f, m in ((c.values[0], c.values[1]) for c in _cases()))}
-    declared = {m["id"] for m in matrix}
-    assert declared == exercised, f"mutations that match no example payload: {declared - exercised}"
+    never_ran = sorted(mid for mid, count in applied.items() if count == 0)
+    assert not never_ran, f"mutations selected but never applied - check their `path`: {never_ran}"
+
+    declared = {m["id"] for m in _matrix()}
+    assert declared == set(applied), f"mutations that match no example payload: {declared - set(applied)}"
 
 
 def test_every_example_is_valid_before_mutation(example, schema):
-    """The premise of every row above: the unmutated fixtures pass both sides."""
+    """The premise of every row above: the unmutated fixtures are valid."""
     name, payload = example
-    assert _pydantic_error(payload) is None, name
     assert _jsonschema_error(payload, schema) is None, name

@@ -1,24 +1,16 @@
-# The one development environment for gufe-viz: Python and Node in the same
-# place, so a contributor runs `pixi install` and has both toolchains (R13 —
-# pixi, and nothing else).
-#
-# Every task below is the canonical way to run that step; CI calls exactly these,
-# so "works locally" and "works in CI" cannot drift.
-
 [workspace]
 name = "gufe-viz"
 description = "Visualization tools for gufe"
 authors = ["The OpenFE developers <openfe@omsf.io>"]
 channels = ["conda-forge"]
-# linux-aarch64 covers ARM CI runners and ARM Linux workstations. It costs one
-# more solve in the lock and nothing at install time.
 platforms = ["osx-arm64", "osx-64", "linux-64", "linux-aarch64", "win-64"]
 
 [dependencies]
 python = ">=3.11,<3.15"
 nodejs = ">=20"
-pydantic = ">=2.7"
-gufe = "*"
+# Pinned to a floor rather than left open: 1.12 is where SolvatedPDBComponent
+# and ProteinMembraneComponent appear, and the schema declares both.
+gufe = ">=1.12"
 rdkit = "*"
 pytest = "*"
 jsonschema = "*"
@@ -48,18 +40,10 @@ description = "Bundle the TypeScript into python/gufe_viz/_assets/gufe-viz.js."
 cmd = "npm run build"
 depends-on = ["npm-install"]
 
-# --------------------------------------------------------------------------- #
-# The contract                                                                  #
-# --------------------------------------------------------------------------- #
-
-[tasks.schema]
-description = "Regenerate schema/gufe-viz.schema.json from the Pydantic models."
-cmd = "python scripts/gen_schema.py"
-
 [tasks.types]
 description = "Regenerate ts/src/schema/types.ts from the JSON Schema."
 cmd = "npm run types"
-depends-on = ["npm-install", "schema"]
+depends-on = ["npm-install"]
 
 [tasks.examples]
 description = "Rebuild examples/*.json from real gufe objects."
@@ -70,11 +54,11 @@ cmd = "python scripts/make_examples.py"
 # --------------------------------------------------------------------------- #
 
 [tasks.test-py]
-description = "pytest — payload builders, schema validity, mutation matrix."
+description = "pytest - payload builders, schema validity, mutation matrix."
 cmd = "pytest python/tests -q"
 
 [tasks.test-ts]
-description = "vitest — Ajv validation, mutation matrix, element lifecycle."
+description = "vitest - Ajv validation, mutation matrix, element lifecycle."
 cmd = "npm run test"
 depends-on = ["npm-install"]
 
@@ -83,7 +67,7 @@ description = "The whole suite, both languages."
 depends-on = ["test-py", "test-ts"]
 
 [tasks.lint]
-description = "ruff (check + format) and tsc --noEmit."
+description = "ruff (check + format), tsc --noEmit"
 cmd = "ruff check python scripts && ruff format --check python scripts && npm run typecheck"
 depends-on = ["npm-install"]
 
@@ -92,7 +76,7 @@ description = "Apply ruff's fixes and formatting."
 cmd = "ruff check --fix python scripts && ruff format python scripts"
 
 [tasks.check-generated]
-description = "Fail if the committed schema, TS types or JS bundle are stale."
+description = "Fail if the committed TS types or JS bundle are stale."
 cmd = "bash scripts/check_generated.sh"
 depends-on = ["npm-install"]
 

@@ -1,5 +1,5 @@
 # Mirrors gufe's own .pre-commit-config.yaml so contributors moving between the
-# two repos meet the same rules (PLAN Phase 0, PR 0.1).
+# two repos meet the same rules.
 ci:
   autoupdate_schedule: "quarterly"
   autofix_prs: false

@@ -2,10 +2,9 @@
  * Shared test helpers: fake engines, and a place to read the golden payloads
  * from.
  *
- * The engines are pre-seeded through the same `globalThis.__gufeEngines` hook
- * the zero-network HTML export uses (R1, Phase 5), so the tests exercise the
- * real loader path rather than a mock of it — and nothing in the suite ever
- * reaches for a CDN.
+ * The engines are pre-seeded through the same `globalThis.__gufeEngines` hook a
+ * bundled-engines export would use, so the tests exercise the real loader path
+ * rather than a mock of it - and nothing in the suite ever reaches for a CDN.
  */
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -65,8 +64,8 @@ export function makeFakeViewer(): FakeViewer {
  * The layout maths is d3's, not ours, so the stub does not simulate anything:
  * every force setter returns itself and `tick()` is a no-op, which leaves the
  * nodes on the deterministic circle the view seeds them on. What it does prove
- * is that the view configures the simulation it says it does, and — because the
- * force path is what runs by default — that the view draws at all.
+ * is that the view configures the simulation it says it does, and - because the
+ * force path is what runs by default - that the view draws at all.
  */
 function makeFakeD3(result: SeededEnginesResult): unknown {
   const force = (): unknown => {
@@ -107,7 +106,7 @@ export interface SeededEnginesResult {
 }
 
 export interface SeedOptions {
-  /** Seed d3 as something unusable, to exercise the offline fallback (R19). */
+  /** Seed d3 as something unusable, to exercise the offline fallback. */
   brokenD3?: boolean;
 }
 
@@ -140,7 +139,7 @@ export function seedFakeEngines(options: SeedOptions = {}): SeededEnginesResult 
   };
 
   _resetEnginesForTests();
-  // `brokenD3` seeds an object with no `forceSimulation` on it — which is what
+  // `brokenD3` seeds an object with no `forceSimulation` on it - which is what
   // the view sees when the CDN is unreachable, and never a real fetch.
   globalThis.__gufeEngines = { threeDmol, rdkit, d3: options.brokenD3 ? {} : makeFakeD3(result) };
   return result;
@@ -154,7 +153,7 @@ export function clearFakeEngines(): void {
 /** Let queued microtasks (the engine promises) settle. */
 export const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
-// ─── the mutation matrix ───────────────────────────────────────────────────
+// --- the mutation matrix ---------------------------------------------------
 //
 // Declared once in `schema/mutations.json` and applied identically here and in
 // `python/tests/test_mutations.py`. Keeping the *table* shared rather than the
@@ -166,7 +165,7 @@ export interface Mutation {
   op: "remove" | "replace" | "add";
   path: string;
   value?: unknown;
-  kinds?: string[];
+  types?: string[];
   expect: "valid" | "invalid";
   pointerContains?: string;
 }
@@ -177,10 +176,10 @@ export function mutations(): Mutation[] {
 }
 
 export function appliesTo(mutation: Mutation, payload: Record<string, unknown>): boolean {
-  return !mutation.kinds || mutation.kinds.includes(payload.kind as string);
+  return !mutation.types || mutation.types.includes(payload.type as string);
 }
 
-/** Thrown when a mutation's path is absent — a silent no-op would pass as a test. */
+/** Thrown when a mutation's path is absent - a silent no-op would pass as a test. */
 export class PointerMissing extends Error {}
 
 function splitPointer(pointer: string): string[] {
@@ -199,12 +198,31 @@ export function applyMutation(payload: Record<string, unknown>, mutation: Mutati
 
   let node: Record<string, unknown> = result;
   for (const part of parts.slice(0, -1)) {
+    // Array steps let a mutation reach into `nodes` and `edges`; components are
+    // reached by label instead, because a chemical system keys them the way
+    // gufe does. `python/tests/conftest.py` walks pointers the same way,
+    // deliberately: the two suites must apply identical edits.
+    if (Array.isArray(node)) {
+      const index = Number(part);
+      if (!Number.isInteger(index) || index < 0 || index >= node.length) throw new PointerMissing(mutation.path);
+      node = node[index] as Record<string, unknown>;
+      continue;
+    }
     const next = node[part];
     if (next == null || typeof next !== "object") throw new PointerMissing(mutation.path);
     node = next as Record<string, unknown>;
   }
 
   const leaf = parts[parts.length - 1];
+  if (Array.isArray(node)) {
+    const index = Number(leaf);
+    if (!Number.isInteger(index) || index < 0 || index >= node.length) throw new PointerMissing(mutation.path);
+    if (mutation.op === "remove") node.splice(index, 1);
+    else if (mutation.op === "replace") node[index] = mutation.value;
+    else throw new Error(`op ${mutation.op} is not supported on an array element`);
+    return result;
+  }
+
   switch (mutation.op) {
     case "remove":
       if (!(leaf in node)) throw new PointerMissing(mutation.path);

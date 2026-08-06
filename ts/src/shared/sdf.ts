@@ -1,13 +1,12 @@
 /**
- * SDF in, internal shape out, MOL block back out — ported from `code.js` lines
- * 425–544.
+ * SDF in, internal shape out, MOL block back out.
  *
  * Internal molecule shape:
- *   { name, symbols: ['C', …], bonds: [[i, j, order], …], coords: [[x,y,z], …] }
+ *   { name, symbols: ['C', ...], bonds: [[i, j, order], ...], coords: [[x,y,z], ...] }
  *
  * Note what is *not* here: nothing in this file reconstructs an SDF from gufe's
  * JSON. Python hands over `to_sdf()` output verbatim and TypeScript only reads
- * it (R8).
+ * it.
  */
 
 import { errText } from "./dom.js";
@@ -67,7 +66,7 @@ export function parseSDF(sdfText: string, fallbackName?: string): Molecule {
   return { name: title || fallbackName || "molecule", symbols, bonds, coords };
 }
 
-/** MOL block (V2000) rebuilt from the internal shape — what RDKit is fed. */
+/** MOL block (V2000) rebuilt from the internal shape - what RDKit is fed. */
 export function buildMolBlock(mol: Molecule): string {
   const nAtoms = mol.symbols.length;
   const nBonds = mol.bonds.length;
@@ -106,7 +105,7 @@ export const buildSDF = (mol: Molecule): string => `${buildMolBlock(mol)}${NL}${
 export const ensureSDFTerminator = (sdf: string): string =>
   sdf.indexOf(SDF_TERMINATOR) >= 0 ? sdf : `${sdf}${NL}${SDF_TERMINATOR}`;
 
-/** The V2000 counts line is the 4th: `aaabbb…` (3 chars each). */
+/** The V2000 counts line is the 4th: `aaabbb...` (3 chars each). */
 export function parseCounts(sdf: string): { atoms: number; bonds: number } | null {
   const lines = String(sdf).split(/\r?\n/);
   if (lines.length < 4) return null;

@@ -1,159 +1,263 @@
 {
   "$comment": [
-    "The mutation matrix (R10, David's explicit ask: 'maybe some mutation testing that if you break",
-    "the schema, it does raise an error, it does fail').",
+    "The mutation matrix: break a valid payload in a known way and prove that validation fails.",
     "",
-    "Declared here once, in data, and applied by BOTH test suites — pytest against the Pydantic models",
-    "and the generated JSON Schema, vitest against Ajv. That is what makes the cross-language claim",
-    "real: if the two sides ever disagree about a mutation, one suite goes red.",
+    "Declared here once, in data, and applied by BOTH test suites - pytest with jsonschema, vitest",
+    "with Ajv, against the same hand-written schema/gufe-viz.schema.json.",
+    "",
+    "This matrix is the load-bearing half of schema-first. Correctness comes from testing.",
     "",
     "Each entry takes a valid payload from examples/, applies one JSON-Pointer operation, and states",
-    "what must happen. `kinds` restricts an entry to payloads of those kinds; absent means all of them.",
-    "`expect` is 'invalid' (both validators must reject it) or 'valid' (both must accept it — the",
-    "forward-compatibility rows, which are just as important to pin down).",
+    "what must happen. `types` restricts an entry to payloads of those types; absent means all of them.",
+    "`expect` is 'invalid' (both validators must reject it) or 'valid' (both must accept it - the",
+    "render-degraded rows, which are just as important to pin down: schema validity is not chemical",
+    "validity, and the views are what handle the difference).",
     "`pointerContains` is asserted against the reported error location, so a rejection for the wrong",
-    "reason does not pass as a rejection."
+    "reason does not pass as a rejection. An empty string means the error is reported at the root,",
+    "which is where both validators report a missing required property."
   ],
   "mutations": [
     {
       "id": "drop-the-discriminator",
-      "why": "Without `kind` there is nothing to say what the payload is.",
+      "why": "Without `type` there is nothing to say what the payload is.",
       "op": "remove",
-      "path": "/kind",
+      "path": "/type",
       "expect": "invalid"
     },
     {
-      "id": "unknown-kind",
-      "why": "A kind nobody declared must be refused, not guessed at.",
+      "id": "unknown-type",
+      "why": "A type nobody declared must be refused, not guessed at. The union is closed.",
       "op": "replace",
-      "path": "/kind",
-      "value": "TotallyMadeUpComponent",
+      "path": "/type",
+      "value": "TotallyMadeUpViz",
       "expect": "invalid"
     },
     {
-      "id": "drop-the-data-block",
-      "why": "Every kind needs its data; an envelope alone draws nothing.",
+      "id": "extra-key-at-the-top-level",
+      "why": "additionalProperties:false - a misspelled key must fail loudly rather than render blank.",
+      "op": "add",
+      "path": "/surprise",
+      "value": "this key belongs nowhere",
+      "expect": "invalid"
+    },
+    {
+      "id": "drop-a-required-field-sdf",
+      "why": "sdf is required on a small molecule: there is nothing to draw without it.",
+      "types": ["SmallMoleculeComponentViz"],
       "op": "remove",
-      "path": "/data",
+      "path": "/sdf",
       "expect": "invalid",
       "pointerContains": ""
     },
     {
-      "id": "drop-a-required-field-sdf",
-      "why": "The error must name the missing field, not just say 'invalid'.",
-      "kinds": ["SmallMoleculeComponent"],
-      "op": "remove",
-      "path": "/data/sdf",
-      "expect": "invalid",
-      "pointerContains": "/data"
-    },
-    {
       "id": "drop-a-required-field-pdb",
-      "why": "The error must name the missing field, not just say 'invalid'.",
-      "kinds": ["ProteinComponent"],
+      "why": "Same, for each of the three types that carry a PDB.",
+      "types": ["ProteinComponentViz", "SolvatedPDBComponentViz", "ProteinMembraneComponentViz"],
       "op": "remove",
-      "path": "/data/pdb",
+      "path": "/pdb",
       "expect": "invalid",
-      "pointerContains": "/data"
+      "pointerContains": ""
     },
     {
       "id": "drop-a-required-field-network-nodes",
-      "why": "The error must name the missing field, not just say 'invalid'.",
-      "kinds": ["LigandNetwork"],
+      "why": "Same, for a network's ligands.",
+      "types": ["LigandNetworkViz"],
       "op": "remove",
-      "path": "/data/nodes",
+      "path": "/nodes",
       "expect": "invalid",
-      "pointerContains": "/data"
-    },
-    {
-      "id": "wrong-type-network-edges",
-      "why": "A network's edges are a list; an object there is the shape a hand-written payload gets wrong.",
-      "kinds": ["LigandNetwork"],
-      "op": "replace",
-      "path": "/data/edges",
-      "value": { "a": "b" },
-      "expect": "invalid",
-      "pointerContains": "/data/edges"
-    },
-    {
-      "id": "dangling-edge-endpoint",
-      "why": "Schema-valid but render-degraded: JSON Schema cannot express 'source names a node that exists', so the view has to drop the edge and say so rather than crash.",
-      "kinds": ["LigandNetwork"],
-      "op": "replace",
-      "path": "/data/edges",
-      "value": [{ "source": "no-such-node", "target": "also-missing", "score": 0.5 }],
-      "expect": "valid"
+      "pointerContains": ""
     },
     {
       "id": "wrong-type-total-charge",
-      "why": "A string where a number belongs is the classic payload-builder typo.",
-      "kinds": ["SmallMoleculeComponent"],
+      "why": "A string where a number belongs is the classic payload-builder typo, and the error must name the field.",
+      "types": ["SmallMoleculeComponentViz"],
       "op": "replace",
-      "path": "/data/total_charge",
+      "path": "/total_charge",
       "value": "zero",
       "expect": "invalid",
-      "pointerContains": "/data/total_charge"
+      "pointerContains": "/total_charge"
     },
     {
       "id": "wrong-type-sdf",
       "why": "Same, for a required string field.",
-      "kinds": ["SmallMoleculeComponent"],
+      "types": ["SmallMoleculeComponentViz"],
       "op": "replace",
-      "path": "/data/sdf",
+      "path": "/sdf",
       "value": 42,
       "expect": "invalid",
-      "pointerContains": "/data/sdf"
+      "pointerContains": "/sdf"
     },
     {
-      "id": "extra-key-at-envelope-level",
-      "why": "additionalProperties:false — a misspelled key must fail loudly, not render blank.",
+      "id": "empty-structure-string",
+      "why": "minLength:1 - an empty sdf is a builder that produced nothing, and is worth catching at the contract rather than as a blank picture.",
+      "types": ["SmallMoleculeComponentViz"],
+      "op": "replace",
+      "path": "/sdf",
+      "value": "",
+      "expect": "invalid",
+      "pointerContains": "/sdf"
+    },
+    {
+      "id": "wrong-type-network-edges",
+      "why": "A network's edges are a list; an object there is the shape a hand-written payload gets wrong.",
+      "types": ["LigandNetworkViz"],
+      "op": "replace",
+      "path": "/edges",
+      "value": { "a": "b" },
+      "expect": "invalid",
+      "pointerContains": "/edges"
+    },
+    {
+      "id": "atom-mapping-key-is-not-an-index",
+      "why": "propertyNames - the A-side keys are stringified atom indices, so a non-numeric key means someone put a label where an index belongs.",
+      "types": ["LigandAtomMappingViz"],
+      "op": "replace",
+      "path": "/componentA_to_componentB",
+      "value": { "carbon-3": 4 },
+      "expect": "invalid",
+      "pointerContains": "/componentA_to_componentB"
+    },
+    {
+      "id": "atom-mapping-value-is-not-an-index",
+      "why": "The B-side values are atom indices too, so a negative number cannot be one.",
+      "types": ["LigandAtomMappingViz"],
+      "op": "replace",
+      "path": "/componentA_to_componentB",
+      "value": { "0": -1 },
+      "expect": "invalid",
+      "pointerContains": "/componentA_to_componentB"
+    },
+
+    {
+      "$comment": "The per-type exclusivity rows. Each is stated twice, once against a standalone component and once against the same component nested in a chemical system, because the single ComponentViz union claims those are the same object.",
+      "id": "standalone-small-molecule-carrying-a-pdb",
+      "why": "A small molecule carries an sdf and cannot also carry a pdb. Each component type declares only its own structure field, so the other one is an unknown key.",
+      "types": ["SmallMoleculeComponentViz"],
+      "op": "add",
+      "path": "/pdb",
+      "value": "ATOM      1  N   ALA A   1\nEND\n",
+      "expect": "invalid"
+    },
+    {
+      "id": "standalone-solvent-carrying-an-sdf",
+      "why": "A solvent is a specification, not a structure: there is no sdf field to fill.",
+      "types": ["SolventComponentViz"],
       "op": "add",
       "path": "/sdf",
-      "value": "this belongs under /data",
-      "expect": "invalid",
-      "pointerContains": ""
+      "value": "solvent\n  0  0\nEND\n",
+      "expect": "invalid"
     },
     {
-      "id": "extra-key-inside-data",
-      "why": "Same rule one level down.",
+      "id": "standalone-protein-carrying-an-sdf",
+      "why": "The same rule from the other side, for all three PDB-carrying types: each carries a pdb and only a pdb. Applying it to the two subclasses matters because they are the types most likely to acquire an extra field by being confused with their parent.",
+      "types": ["ProteinComponentViz", "SolvatedPDBComponentViz", "ProteinMembraneComponentViz"],
       "op": "add",
-      "path": "/data/surprise",
+      "path": "/sdf",
+      "value": "mol\n  0  0\nEND\n",
+      "expect": "invalid"
+    },
+    {
+      "id": "pdb-subclass-claiming-its-parents-type",
+      "why": "The discriminator is what a view dispatches on, and the three PDB types are a subclass chain in gufe. A payload built from a ProteinMembraneComponent that says it is a plain ProteinComponentViz is still schema-valid - the shapes are identical - so this row pins that the schema cannot catch it and a builder-ordering test must.",
+      "types": ["ProteinMembraneComponentViz"],
+      "op": "replace",
+      "path": "/type",
+      "value": "ProteinComponentViz",
+      "expect": "valid"
+    },
+    {
+      "id": "nested-component-carrying-two-structure-formats",
+      "why": "The same exclusivity, one level down: a component nested in a chemical system is validated as itself, so the rule holds there identically.",
+      "types": ["ChemicalSystemViz"],
+      "op": "add",
+      "path": "/components/ligand/pdb",
+      "value": "ATOM      1  N   ALA A   1\nEND\n",
+      "expect": "invalid",
+      "pointerContains": "/components/ligand"
+    },
+    {
+      "id": "nested-solvent-carrying-an-sdf",
+      "why": "Same, for the solvent slot of a chemical system.",
+      "types": ["ChemicalSystemViz"],
+      "op": "add",
+      "path": "/components/solvent/sdf",
+      "value": "solvent\n  0  0\nEND\n",
+      "expect": "invalid",
+      "pointerContains": "/components/solvent"
+    },
+    {
+      "id": "nested-small-molecule-carrying-solvent-fields",
+      "why": "Each component subschema declares only its own fields, so a solvent setting on a small molecule is an unknown key rather than a permitted null.",
+      "types": ["ChemicalSystemViz"],
+      "op": "add",
+      "path": "/components/ligand/neutralize",
       "value": true,
       "expect": "invalid",
-      "pointerContains": "/data"
+      "pointerContains": "/components/ligand"
     },
     {
-      "id": "schema-version-major-bumped",
-      "why": "A payload from a newer major must be refused by name, not rendered wrongly.",
-      "op": "replace",
-      "path": "/schema_version",
-      "value": "2.0",
+      "id": "nested-component-dropping-its-structure",
+      "why": "sdf is required on a nested small molecule exactly as it is on a standalone one.",
+      "types": ["ChemicalSystemViz"],
+      "op": "remove",
+      "path": "/components/ligand/sdf",
       "expect": "invalid",
-      "pointerContains": "/schema_version"
+      "pointerContains": "/components/ligand"
     },
     {
-      "id": "schema-version-minor-bumped",
-      "why": "Minors are additive: an older reader must still accept a newer minor.",
+      "id": "nested-component-with-an-undeclared-type",
+      "why": "The component union is closed. An unrecognized gufe class is carried as an UnknownComponentViz by the builder, not smuggled through under its own name.",
+      "types": ["ChemicalSystemViz"],
       "op": "replace",
-      "path": "/schema_version",
-      "value": "1.99",
-      "expect": "valid"
+      "path": "/components/ligand/type",
+      "value": "TotallyMadeUpComponentViz",
+      "expect": "invalid",
+      "pointerContains": "/components/ligand"
     },
+
     {
-      "id": "extra-key-under-extra",
-      "why": "The forward-compatibility slot must actually work — this is what lets gufe JSON, per-atom annotations and anything else be added later without a schema break.",
-      "op": "add",
-      "path": "/extra/gufe_json",
-      "value": { "anything": ["at", "all"], "nested": { "deeply": 1 } },
-      "expect": "valid"
-    },
-    {
+      "$comment": "Rows that must still be ACCEPTED. Schema validity is not chemical validity, and pinning down what the contract deliberately does not check matters as much as pinning down what it does.",
       "id": "garbage-structure-string",
-      "why": "Schema-valid but render-degraded: the contract does not parse chemistry, so this must pass validation and be caught by the view instead (an error panel, not a crash).",
-      "kinds": ["SmallMoleculeComponent"],
+      "why": "The contract does not parse chemistry, so this passes validation and is caught by the view instead - an error panel, not a crash.",
+      "types": ["SmallMoleculeComponentViz"],
       "op": "replace",
-      "path": "/data/sdf",
+      "path": "/sdf",
       "value": "not an SDF at all\ntruncated",
+      "expect": "valid"
+    },
+    {
+      "id": "dangling-edge-endpoint",
+      "why": "JSON Schema cannot express 'source names a node that exists', so this validates and the view drops the edge with a banner. A Python test covers the referential integrity that the schema cannot.",
+      "types": ["LigandNetworkViz"],
+      "op": "replace",
+      "path": "/edges",
+      "value": [
+        {
+          "source": "no-such-node",
+          "target": "also-missing",
+          "score": 0.5,
+          "componentA_to_componentB": { "0": 0 },
+          "annotations": {}
+        }
+      ],
+      "expect": "valid"
+    },
+    {
+      "id": "unknown-annotation-keys",
+      "why": "Annotations are deliberately open: every mapper picks its own keys, and a new one must not break an older reader.",
+      "types": ["LigandAtomMappingViz"],
+      "op": "replace",
+      "path": "/annotations",
+      "value": { "score": 0.42, "some_new_mapper_metric": { "nested": [1, 2, 3] } },
+      "expect": "valid"
+    },
+    {
+      "id": "empty-component-set",
+      "why": "A chemical system with no components is odd but not malformed, and the view says so rather than the validator.",
+      "types": ["ChemicalSystemViz"],
+      "op": "replace",
+      "path": "/components",
+      "value": {},
       "expect": "valid"
     }
   ]

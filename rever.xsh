@@ -1,5 +1,5 @@
-# OpenFE's release conventions, adopted now rather than at transfer (PLAN Q3).
-# The GitHub org changes to OpenFreeEnergy at Phase 8.
+# OpenFE's release conventions, adopted now rather than when the repo moves to
+# the OpenFE org. $GITHUB_ORG changes to OpenFreeEnergy at that point.
 $PROJECT = $GITHUB_REPO = 'viz'
 $GITHUB_ORG = 'omsf-eco-infra'
 

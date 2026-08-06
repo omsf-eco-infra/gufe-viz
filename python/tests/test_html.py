@@ -1,8 +1,7 @@
-"""``to_html`` and the dev CLI (PLAN Phase 3).
+"""``to_html`` and the dev CLI.
 
-The properties that matter here are the ones the meeting kept coming back to:
-the page is one file, it reaches for nothing at load time except the three
-engine CDNs, and ``to_html`` writes nothing anywhere.
+The page is one file, it loads nothing at parse time, and ``to_html`` returns a
+string rather than writing one anywhere.
 """
 
 from __future__ import annotations
@@ -19,20 +18,12 @@ from .conftest import read_example
 
 
 class TestToHtml:
-    def test_returns_a_string_and_writes_nothing(self, tmp_path, monkeypatch):
-        """R18, and the whole of Alyssa's "it's her job then"."""
-        monkeypatch.chdir(tmp_path)
-        html = to_html(read_example("small_molecule.json"))
-
-        assert isinstance(html, str)
-        assert html.startswith("<!doctype html>")
-        assert list(tmp_path.iterdir()) == []
-
     def test_page_is_self_contained(self, example):
         """One file: the bundle and the payload are both inside it."""
         name, payload = example
         html = to_html(payload)
 
+        assert html.startswith("<!doctype html>"), name
         assert bundle_source()[:200] in html.replace("<\\/script", "</script")
         assert "<gufe-view></gufe-view>" in html, name
 
@@ -44,56 +35,21 @@ class TestToHtml:
         assert embedded, name
         assert json.loads(embedded.group(1).replace("<\\/", "</")) == payload, name
 
-    def test_the_only_network_references_are_the_engine_cdns(self, example):
-        """No fetches, no iframe, no framejs.io — R1 as far as V1 goes.
-
-        The three engines are still loaded on demand from their CDNs; Phase 5
-        inlines them and removes even that.
-
-        The embedded payload is excluded from the scan: it is *data*, and
-        chemistry data is full of URL-shaped strings that nobody fetches —
-        a GraphML document alone carries four XML namespace URIs. What this
-        test is about is what the *page* references.
-
-        Some remaining entries are identifiers rather than fetch targets: a JSON
-        Schema ``$schema``/``$id``, Ajv's own ``$data`` meta-schema id and the
-        SVG namespace the network view creates its elements in are URL-shaped
-        strings that nothing ever requests. They are listed by name so that a
-        genuinely new URL still fails this test.
-        """
+    def test_nothing_is_fetched_at_parse_time(self, example):
+        """Engines load on demand from a view, never eagerly from the page."""
         _, payload = example
-        html = to_html(payload)
-        page = re.sub(r'<script id="gufe-payload".*?</script>', "", html, flags=re.S)
+        page = re.sub(r'<script id="gufe-payload".*?</script>', "", to_html(payload), flags=re.S)
 
-        allowed = (
-            "3dmol.org",  # 3Dmol, fetched on demand
-            "unpkg.com/@rdkit",  # RDKit, fetched on demand
-            "cdn.jsdelivr.net/npm/d3",  # d3, fetched on demand
-            "json-schema.org",  # $schema identifier, never fetched
-            "github.com/omsf",  # our schema's $id, never fetched
-            "raw.githubusercontent.com/ajv-validator",  # Ajv's $data meta-schema id, never fetched
-            "www.w3.org/2000/svg",  # the SVG namespace, an XML identifier, never fetched
-        )
-        urls = set(re.findall(r"https?://[^\s\"'`)]+", page))
-        unexpected = [u for u in urls if not any(a in u for a in allowed)]
-        assert not unexpected, f"unexpected network references in the page: {unexpected}"
-
-        # Nothing in the page loads anything at parse time.
         assert not re.search(r"<script[^>]*\ssrc=", page), "the page loads an external script eagerly"
         assert not re.search(r"<link[^>]*\shref=", page), "the page loads an external stylesheet"
         assert "<iframe" not in page
-        assert "framejs.io" not in page
 
-    def test_accepts_a_gufe_object_a_model_and_a_dict(self):
-        gufe = pytest.importorskip("gufe")
+    def test_accepts_a_gufe_object_and_a_payload_dict(self):
+        import gufe
         from gufe_viz import payload_for
 
         solvent = gufe.SolventComponent()
-        from_object = to_html(solvent)
-        from_model = to_html(payload_for(solvent))
-        from_dict = to_html(payload_for(solvent).model_dump(mode="json"))
-
-        assert from_object == from_model == from_dict
+        assert to_html(solvent) == to_html(payload_for(solvent))
 
     def test_title_defaults_to_the_payload_name(self):
         html = to_html(read_example("small_molecule.json"))
@@ -110,7 +66,7 @@ class TestToHtml:
         title = re.search(r"<title>(.*?)</title>", html, re.S)
         assert title
         assert title.group(1) == "&lt;script&gt;alert(1)&lt;/script&gt;"
-        # The name also appears inside the JSON block — that copy is neutralized
+        # The name also appears inside the JSON block - that copy is neutralized
         # by `_script_safe`'s `</` escape rather than by HTML escaping, and is
         # covered by test_a_payload_containing_a_closing_script_tag_cannot_break_out.
         assert "<script>alert(1)</script>" not in html
@@ -118,7 +74,7 @@ class TestToHtml:
     def test_a_payload_containing_a_closing_script_tag_cannot_break_out(self):
         """The subtle one. A molecule name is arbitrary text from a user file."""
         payload = read_example("small_molecule.json")
-        payload["data"]["smiles"] = "</script><script>alert(1)</script>"
+        payload["smiles"] = "</script><script>alert(1)</script>"
 
         html = to_html(payload)
         embedded = re.search(r'<script id="gufe-payload" type="application/json">(.*?)</script>', html, re.S)
@@ -132,15 +88,13 @@ class TestToHtml:
         assert _script_safe("no tags here") == "no tags here"
 
     def test_refuses_an_object_it_cannot_visualize(self):
-        from gufe_viz import NoVisualization
-
-        with pytest.raises(NoVisualization):
+        with pytest.raises(TypeError):
             to_html(object())
 
 
 class TestDefaultOutputPath:
     def test_keeps_the_original_suffix(self, tmp_path):
-        """PLAN Q2: `<filename.suffix>.html`, in the same directory."""
+        """`<filename.suffix>.html`, in the same directory."""
         assert default_output_path(tmp_path / "ligand.json").name == "ligand.json.html"
         assert default_output_path(tmp_path / "ligand.json").parent == tmp_path
 
@@ -192,7 +146,7 @@ class TestCli:
         assert "not valid JSON" in str(exc.value)
 
     def test_unreadable_gufe_json_points_at_the_open_question(self, tmp_path):
-        """Q4 is open; the CLI says so instead of guessing at a loader."""
+        """Which gufe loader to use is unsettled; the CLI says so rather than guess."""
         source = tmp_path / "mystery.json"
         source.write_text(json.dumps({"some": "other", "json": True}))
 

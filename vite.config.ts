@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 /**
- * The dev app (R17, R15). Two pages, both served from `ts/`:
+ * The dev app. Two pages, both served from `ts/`:
  *
  *   index.html    drop a payload JSON anywhere on the page and it renders
  *   gallery.html  every component, every example payload, one scrolling page

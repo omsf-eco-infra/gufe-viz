@@ -1,5 +1,5 @@
 /**
- * Lazy engine loaders — ported from `code.js` lines 197–259.
+ * Lazy engine loaders.
  *
  * Nothing heavy is imported statically, because everything statically imported
  * blocks first paint. Each engine is fetched the first time a view actually
@@ -8,11 +8,11 @@
  *
  * A host may instead **pre-seed** an engine through `globalThis.__gufeEngines`,
  * in which case nothing is fetched at all. That is the hook the zero-network
- * HTML export (R1, Phase 5) uses: it inlines the engines into the page and hands
+ * HTML export uses: it inlines the engines into the page and hands
  * them over here. A seeded value may be the module itself or a promise for it.
  */
 
-// ─── minimal structural types for the three engines ────────────────────────
+// --- minimal structural types for the three engines ------------------------
 //
 // None of these ship type declarations we can rely on, and vendoring a full
 // @types package for three call sites would be worse than describing exactly
@@ -61,10 +61,10 @@ declare global {
   }
 }
 
-// ─── where the engines come from when they are not pre-seeded ──────────────
+// --- where the engines come from when they are not pre-seeded --------------
 //
 // Kept as plain string constants rather than literals at the import site so the
-// bundler leaves the URLs alone, and so Phase 5 has one obvious place to look
+// bundler leaves the URLs alone, so inlining them has one obvious place to look
 // when it vendors these instead.
 
 export const ENGINE_URLS = {
@@ -89,7 +89,7 @@ function loadScript(src: string, what: string): Promise<void> {
   });
 }
 
-// ─── 3Dmol ─────────────────────────────────────────────────────────────────
+// --- 3Dmol -----------------------------------------------------------------
 
 /**
  * The resolved 3Dmol module, once `load3Dmol()` has settled.
@@ -120,7 +120,7 @@ export function load3Dmol(): Promise<ThreeDmolModule> {
   return threeDmolPromise;
 }
 
-// ─── RDKit ─────────────────────────────────────────────────────────────────
+// --- RDKit -----------------------------------------------------------------
 
 let rdkitPromise: Promise<RDKitModule> | null = null;
 
@@ -144,7 +144,7 @@ export function loadRDKit(): Promise<RDKitModule> {
   return rdkitPromise;
 }
 
-// ─── d3 (Phase 4/5 graph views) ────────────────────────────────────────────
+// --- d3 (graph views) ------------------------------------------------------
 
 let d3Promise: Promise<unknown> | null = null;
 

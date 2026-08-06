@@ -1,7 +1,7 @@
 /**
- * The two colour tables, ported from the gufe framejs frame's `code.js` (lines
- * 20–182). Every view reads colours from `T` and nothing hard-codes a hex value,
- * which is what makes a theme change one edit rather than thirty.
+ * The two colour tables. Every view reads colours from `T` and nothing
+ * hard-codes a hex value, which is what makes a theme change one edit rather
+ * than thirty.
  *
  * 3Dmol wants `0x`-prefixed colour strings and CSS wants `#`-prefixed ones, so
  * both forms are carried deliberately rather than converted at each call site.
@@ -70,13 +70,13 @@ export interface Theme {
   chipUniqueA: string;
   chipUniqueB: string;
 
-  // diff palette (transformation view, Phase 4)
+  // diff palette (transformation view)
   diffUnchanged: string;
   diffChanged: string;
   diffAdded: string;
   diffRemoved: string;
 
-  // graphs (network views, Phase 4/5)
+  // graphs (network views)
   netCanvasBg: string;
   netNodeFill: string;
   netNodeStroke: string;
@@ -88,7 +88,7 @@ export interface Theme {
   netLabelBg: string;
   netHaloColor: string;
 
-  // solvent schematic (Phase 4)
+  // solvent schematic
   boxFill: string;
   boxStroke: string;
 }
@@ -247,11 +247,10 @@ export const THEMES: { dark: Theme; light: Theme } = {
 };
 
 /**
- * `code.js` had a hand-flipped `DARK_MODE` constant. Here the choice is made
- * once at load from the host's colour-scheme preference, falling back to light
- * where `matchMedia` is unavailable (jsdom, older embedders). Views read `T`
- * when they build their DOM, so this is fixed for the lifetime of the page —
- * a live theme switch is a Phase 4+ concern, not something V1 needs.
+ * The choice is made once at load from the host's colour-scheme preference,
+ * falling back to light where `matchMedia` is unavailable (jsdom, older
+ * embedders). Views read `T` when they build their DOM, so this is fixed for
+ * the lifetime of the page; a live theme switch is a later concern.
  */
 function prefersDark(): boolean {
   try {

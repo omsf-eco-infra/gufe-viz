@@ -1,364 +1,236 @@
 /* eslint-disable */
 /**
- * GENERATED — do not edit by hand.
+ * GENERATED - do not edit by hand.
  *
- * Source:  schema/gufe-viz.schema.json
- *          (itself generated from python/gufe_viz/schema.py)
+ * Source:  schema/gufe-viz.schema.json  (the source of truth)
  * Command: pixi run types
  *
  * CI rebuilds this file and fails if it differs from what is committed, so an
- * edit here is caught rather than quietly winning over the Pydantic models.
+ * edit here is caught rather than quietly winning over the schema.
  */
 
 /**
- * The Python-to-TypeScript contract for gufe visualizations, version 1.0. Generated from python/gufe_viz/schema.py — do not edit by hand. Kinds: SmallMoleculeComponent, ProteinComponent, SolventComponent, LigandAtomMapping, LigandNetwork, ChemicalSystem, Transformation, AlchemicalNetwork.
+ * The Python-to-TypeScript contract for gufe visualizations. Nothing generates this file, and both languages are downstream of it. A payload is its 'type' plus its own fields, flat, and it is the same object whether it stands alone or is nested inside another. The version lives in $id, not in the payload.
  */
 export type GufeVizPayload =
-  | SmallMoleculePayload
-  | ProteinPayload
-  | SolventPayload
-  | LigandAtomMappingPayload
-  | LigandNetworkPayload
-  | ChemicalSystemPayload
-  | TransformationPayload
-  | AlchemicalNetworkPayload;
+  | SmallMoleculeComponentViz
+  | ProteinComponentViz
+  | SolvatedPDBComponentViz
+  | ProteinMembraneComponentViz
+  | SolventComponentViz
+  | UnknownComponentViz
+  | LigandAtomMappingViz
+  | LigandNetworkViz
+  | ChemicalSystemViz
+  | TransformationViz
+  | AlchemicalNetworkViz;
+/**
+ * Any single chemical-system component
+ */
+export type ComponentViz =
+  | SmallMoleculeComponentViz
+  | ProteinComponentViz
+  | SolvatedPDBComponentViz
+  | ProteinMembraneComponentViz
+  | SolventComponentViz
+  | UnknownComponentViz;
 
-export interface SmallMoleculePayload {
+/**
+ * A small molecule, carried as a complete SDF record. The SDF holds the conformer, so nothing downstream reconstructs coordinates.
+ */
+export interface SmallMoleculeComponentViz {
+  type: "SmallMoleculeComponentViz";
+  name: string;
   /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "SmallMoleculeComponent";
-  data: SmallMoleculeData;
-}
-export interface SmallMoleculeData {
-  /**
-   * SmallMoleculeComponent.to_sdf() output, verbatim.
+   * Complete inline SDF record, including the conformer.
    */
   sdf: string;
-  smiles?: string | null;
-  total_charge?: number | null;
+  smiles: string;
+  /**
+   * Net formal charge. Displayed, never recomputed from the SDF.
+   */
+  total_charge: number;
 }
-export interface ProteinPayload {
+/**
+ * A protein, carried as a complete PDB record.
+ */
+export interface ProteinComponentViz {
+  type: "ProteinComponentViz";
+  name: string;
   /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "ProteinComponent";
-  data: ProteinData;
-}
-export interface ProteinData {
-  /**
-   * ProteinComponent.to_pdb_file() output, verbatim.
+   * Complete inline PDB representation.
    */
   pdb: string;
 }
-export interface SolventPayload {
+/**
+ * A protein with explicit solvent. A distinct type rather than a flag on ProteinComponentViz, because the discriminator is what a view dispatches on and the presence of waters changes what a sensible default representation is.
+ */
+export interface SolvatedPDBComponentViz {
+  type: "SolvatedPDBComponentViz";
+  name: string;
   /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
+   * Complete inline PDB representation, including explicit solvent.
    */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "SolventComponent";
-  data: SolventData;
-}
-export interface SolventData {
-  smiles?: string;
-  positive_ion?: string | null;
-  negative_ion?: string | null;
-  neutralize?: boolean | null;
-  ion_concentration?: string | null;
-}
-export interface LigandAtomMappingPayload {
-  /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "LigandAtomMapping";
-  data: MappingData;
+  pdb: string;
 }
 /**
- * A :class:`gufe.LigandAtomMapping`: both endpoints plus the index map.
- *
- * Both molecules go over as SDF and the correspondence as a plain
- * ``{str(indexA): indexB}`` map, so the viewer can colour core and unique atoms
- * and draw the lines itself. JSON object keys must be strings, which is why the
- * A-side indices are stringified rather than left as integers.
+ * A protein embedded in a membrane.
  */
-export interface MappingData {
+export interface ProteinMembraneComponentViz {
+  type: "ProteinMembraneComponentViz";
+  name: string;
+  /**
+   * Complete inline PDB representation of the protein and membrane system.
+   */
+  pdb: string;
+}
+/**
+ * Bulk solvent settings. There is no structure to draw, so these are flat fields suitable for rendering as a settings card.
+ */
+export interface SolventComponentViz {
+  type: "SolventComponentViz";
+  name: string;
+  smiles: string;
+  positive_ion: string;
+  negative_ion: string;
+  neutralize: boolean;
+  /**
+   * Display-form concentration with units, for example '0.15 molar'. A string rather than a number because the unit is part of the value and the view only ever prints it.
+   */
+  ion_concentration: string;
+}
+/**
+ * The graceful fallback for a component type this build does not recognize. gufe supports custom Component subclasses, so meeting one is an expected outcome rather than an error, and the browser answers it with 'sorry, there is no visualization for this'. This covers an unrecognized type only: a recognized component whose serializer fails is a bug, and raises in Python rather than arriving here wearing a disguise.
+ */
+export interface UnknownComponentViz {
+  type: "UnknownComponentViz";
+  name: string;
+  /**
+   * The gufe class name, so the panel can say which type it could not draw.
+   */
+  gufe_type: string;
+}
+/**
+ * One atom mapping between two small molecules, standalone. The same object is what the ligand-network view hands to the embedded mapping viewer when an edge is clicked, so there is one mapping shape rather than a standalone one and an in-graph one.
+ */
+export interface LigandAtomMappingViz {
+  type: "LigandAtomMappingViz";
+  name: string;
   molA_sdf: string;
   molB_sdf: string;
-  nameA?: string;
-  nameB?: string;
-  componentA_to_componentB?: {
-    [k: string]: number;
-  };
-  annotations?: {
-    [k: string]: unknown;
-  };
-}
-export interface LigandNetworkPayload {
-  /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "LigandNetwork";
-  data: LigandNetworkData;
+  nameA: string;
+  nameB: string;
+  componentA_to_componentB: AtomMapping;
+  annotations: Annotations;
 }
 /**
- * A ligand network as nodes and edges, not as GraphML.
- *
- * ``LigandNetwork.to_graphml()`` is gufe's canonical serialization and the
- * obvious thing to forward, but its node payloads *are* gufe's ``to_json``
- * moldicts — atomic numbers, bond tuples and a base-1-per-char ``.npy``
- * conformer blob. Forwarding it makes the browser decode all of that to draw
- * anything, which is precisely the "lot of ugly TypeScript to maintain" R8
- * rules out. So Python walks the live network instead and hands over SDF plus
- * flat topology, and the GraphML does not cross the boundary at all.
+ * Atom index correspondence from molecule A to molecule B. Keys are A's atom indices as decimal strings, because JSON object keys are always strings; values are B's indices as integers.
  */
-export interface LigandNetworkData {
-  nodes: LigandNetworkNode[];
-  edges: LigandNetworkEdge[];
+export interface AtomMapping {
+  [k: string]: number;
 }
 /**
- * One ligand in a :class:`gufe.LigandNetwork`.
- *
- * ``id`` is the component's gufe key, which is what the edges reference. It is
- * an identity, not a label: gufe's own network fixtures have unnamed molecules,
- * so the view falls back to a short form of the key when ``name`` is empty.
+ * Free-form mapping metadata. gufe puts nothing here by design and every mapper picks its own keys, so this is deliberately open. Values are whatever survived being made JSON-safe. Displayed but never interpreted, with the single exception of 'score'.
  */
-export interface LigandNetworkNode {
+export interface Annotations {}
+/**
+ * A ligand network as ligands plus topology. Deliberately not gufe's GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.
+ */
+export interface LigandNetworkViz {
+  type: "LigandNetworkViz";
+  name: string;
+  nodes: LigandNetworkNodeViz[];
+  edges: LigandNetworkEdgeViz[];
+}
+/**
+ * One ligand in a network. Molecules live here rather than inlined per edge, because a forty-ligand network would otherwise carry each SDF several times over.
+ */
+export interface LigandNetworkNodeViz {
   /**
-   * The SmallMoleculeComponent's gufe key.
+   * The gufe key. An identity, not a label: gufe's own network fixtures have unnamed molecules, so the view falls back to a short form of this when name is empty.
    */
   id: string;
-  name?: string;
-  /**
-   * SmallMoleculeComponent.to_sdf() output, verbatim.
-   */
+  name: string;
   sdf: string;
-  smiles?: string | null;
+  smiles: string;
 }
 /**
- * One :class:`gufe.LigandAtomMapping`, as a graph edge.
- *
- * The endpoints are node ``id``s rather than inlined molecules: a network with
- * forty ligands and sixty edges would otherwise carry each SDF twice over. The
- * atom correspondence rides along so the mapping viewer can be handed a
- * :class:`MappingData` assembled from the two endpoint nodes plus this edge —
- * which is how R14's "exact same component" is honoured without duplicating the
- * structures.
+ * One mapping in a network, as topology only. Not a standalone payload: source and target name nodes in the same LigandNetworkViz, and the view reassembles a LigandAtomMappingViz from an edge plus its two endpoint nodes. JSON Schema cannot express that referential constraint, so a Python test covers it, and the view drops a dangling edge with a banner rather than failing.
  */
-export interface LigandNetworkEdge {
-  /**
-   * Node id of componentA.
-   */
+export interface LigandNetworkEdgeViz {
   source: string;
-  /**
-   * Node id of componentB.
-   */
   target: string;
   /**
-   * The mapping's score annotation, when it has one — usually LOMAP's 0–1.
+   * The 'score' annotation when it is a plain number, otherwise null. This is the one annotation key that is interpreted rather than displayed: it drives the edge colouring.
    */
-  score?: number | null;
-  componentA_to_componentB?: {
-    [k: string]: number;
-  };
-  annotations?: {
-    [k: string]: unknown;
-  };
-}
-export interface ChemicalSystemPayload {
-  /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "ChemicalSystem";
-  data: ChemicalSystemData;
+  score: number | null;
+  componentA_to_componentB: AtomMapping;
+  annotations: Annotations;
 }
 /**
- * A ChemicalSystem is exactly its labelled components.
+ * Visualization-only representation of a GUFE 1.12 ChemicalSystem.
  */
-export interface ChemicalSystemData {
-  name?: string;
-  components?: ComponentDescriptor[];
+export interface ChemicalSystemViz {
+  type: "ChemicalSystemViz";
+  name: string;
+  /**
+   * ChemicalSystem labels mapped to component payloads.
+   */
+  components: {
+    [k: string]: ComponentViz;
+  };
 }
 /**
- * A summary plus whatever the viz needs to draw the component.
- *
- * Exactly one of ``sdf`` / ``pdb`` / the solvent fields is populated, chosen by
- * what the component can serialize itself as. ``error`` is set instead when a
- * component fails to serialize — one bad component must not take down the whole
- * view.
+ * A transformation between two chemical systems. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.
  */
-export interface ComponentDescriptor {
+export interface TransformationViz {
+  type: "TransformationViz";
+  name: string;
   /**
-   * The component's key in its ChemicalSystem.
+   * The protocol class name. Named only, never inspected.
    */
-  label: string;
-  /**
-   * The gufe class name, e.g. 'SmallMoleculeComponent'.
-   */
-  type: string;
-  name?: string;
-  sdf?: string | null;
-  smiles?: string | null;
-  pdb?: string | null;
-  positive_ion?: string | null;
-  negative_ion?: string | null;
-  neutralize?: boolean | null;
-  /**
-   * Stringified openff Quantity, e.g. '0.15 molar'.
-   */
-  ion_concentration?: string | null;
-  error?: string | null;
-}
-export interface TransformationPayload {
-  /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "Transformation";
-  data: TransformationData;
-}
-export interface TransformationData {
-  name?: string;
-  /**
-   * The Protocol's class name.
-   */
-  protocol?: string;
-  stateA: ChemicalSystemFields;
-  stateB: ChemicalSystemFields;
-  mappings?: MappingData[];
+  protocol: string;
+  stateA: ChemicalSystemViz;
+  stateB: ChemicalSystemViz;
+  mappings: LigandAtomMappingViz[];
 }
 /**
- * The inner object shared by the chemical-system and transformation views.
+ * A graph of chemical systems joined by transformations.
  */
-export interface ChemicalSystemFields {
-  name?: string;
-  components?: ComponentDescriptor[];
+export interface AlchemicalNetworkViz {
+  type: "AlchemicalNetworkViz";
+  name: string;
+  nodes: AlchemicalNetworkNodeViz[];
+  edges: AlchemicalNetworkEdgeViz[];
 }
-export interface AlchemicalNetworkPayload {
+/**
+ * One ChemicalSystem in an alchemical network, summarized.
+ */
+export interface AlchemicalNetworkNodeViz {
   /**
-   * Schema version. A reader that does not know this major must refuse the payload rather than render it wrongly.
-   */
-  schema_version?: string;
-  /**
-   * The object's name, for the title bar.
-   */
-  name?: string | null;
-  /**
-   * Reserved forward-compatibility slot. The only place additional properties are permitted; V1 views ignore its contents entirely.
-   */
-  extra?: {
-    [k: string]: unknown;
-  };
-  kind: "AlchemicalNetwork";
-  data: AlchemicalNetworkData;
-}
-export interface AlchemicalNetworkData {
-  name?: string;
-  nodes?: AlchemicalNode[];
-  edges?: AlchemicalEdge[];
-}
-export interface AlchemicalNode {
-  /**
-   * The ChemicalSystem's gufe key.
+   * The ChemicalSystem's gufe key. Edges reference it.
    */
   id: string;
-  name?: string;
-  components?: ComponentSummary[];
+  name: string;
+  components: ComponentSummaryViz[];
 }
 /**
- * What a component *is*, with no structure data — topology only.
+ * A component named but not drawn. This is deliberately not a ComponentViz and must not be mistaken for one: it carries no structure at all, because an alchemical network that inlined every system's SDF and PDB would be enormous, and this view shows composition and topology rather than chemistry.
  */
-export interface ComponentSummary {
-  /**
-   * The component's key in its ChemicalSystem.
-   */
+export interface ComponentSummaryViz {
   label: string;
-  /**
-   * The gufe class name, e.g. 'SmallMoleculeComponent'.
-   */
-  type: string;
-  name?: string;
+  gufe_type: string;
+  name: string;
 }
-export interface AlchemicalEdge {
+/**
+ * One Transformation in an alchemical network.
+ */
+export interface AlchemicalNetworkEdgeViz {
   /**
    * The Transformation's gufe key.
    */
   id: string;
-  name?: string;
+  name: string;
   /**
    * Node id of stateA.
    */
@@ -367,17 +239,17 @@ export interface AlchemicalEdge {
    * Node id of stateB.
    */
   target: string;
-  protocol?: string;
+  protocol: string;
 }
 
 /** The root union, under the name the rest of the codebase refers to it by. */
 export type Payload = GufeVizPayload;
 
 /**
- * Every declared `kind`, including those whose view has not been built yet.
+ * Every declared `type`, including those whose view has not been built yet.
  * Derived from the schema's `$defs`, so it cannot fall behind the contract.
  */
-export type PayloadKind = "AlchemicalNetwork" | "ChemicalSystem" | "LigandAtomMapping" | "LigandNetwork" | "ProteinComponent" | "SmallMoleculeComponent" | "SolventComponent" | "Transformation";
+export type PayloadType = "AlchemicalNetworkViz" | "ChemicalSystemViz" | "LigandAtomMappingViz" | "LigandNetworkViz" | "ProteinComponentViz" | "ProteinMembraneComponentViz" | "SmallMoleculeComponentViz" | "SolvatedPDBComponentViz" | "SolventComponentViz" | "TransformationViz" | "UnknownComponentViz";
 
 /** The same list at runtime, for validators and dispatch-parity tests. */
-export const PAYLOAD_KINDS: readonly PayloadKind[] = ["AlchemicalNetwork", "ChemicalSystem", "LigandAtomMapping", "LigandNetwork", "ProteinComponent", "SmallMoleculeComponent", "SolventComponent", "Transformation"];
+export const PAYLOAD_TYPES: readonly PayloadType[] = ["AlchemicalNetworkViz", "ChemicalSystemViz", "LigandAtomMappingViz", "LigandNetworkViz", "ProteinComponentViz", "ProteinMembraneComponentViz", "SmallMoleculeComponentViz", "SolvatedPDBComponentViz", "SolventComponentViz", "TransformationViz", "UnknownComponentViz"];

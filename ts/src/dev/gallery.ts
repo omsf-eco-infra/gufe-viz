@@ -1,12 +1,12 @@
 /**
- * The gallery (R15): every component, every example payload, one scrolling page.
+ * The gallery: every component, every example payload, one scrolling page.
  *
- * David's ask, verbatim: "when I change it in one place, I want to look at how
- * it looks in all of the other places." So this page renders each example
- * through `<gufe-view>` — the real dispatch path — and, from Phase 4, will also
- * render the shared components in their *embedded* contexts, so a change to the
- * atom-mapping viewer can be checked standalone, inside the ligand network and
- * inside the transformation view without three reloads.
+ * The point is that a change in one place can be checked everywhere it shows up,
+ * in one reload. Each example renders through `<gufe-view>` - the real dispatch
+ * path - and once the shared components exist this will also render them in
+ * their *embedded* contexts, so the atom-mapping viewer can be checked
+ * standalone, inside the ligand network and inside the transformation view at
+ * the same time.
  *
  * Dev-only: nothing here is part of the shipped bundle.
  */
@@ -24,7 +24,7 @@ const EXAMPLES = import.meta.glob<{ default: unknown }>("../../../examples/*.jso
 
 /**
  * The same files again, as URLs. `examples/` lives outside the Vite root, so its
- * dev URL is a `/@fs/…` path rather than anything guessable — the "open alone"
+ * dev URL is a `/@fs/...` path rather than anything guessable - the "open alone"
  * links have to come from the bundler, not from string concatenation.
  */
 const EXAMPLE_URLS = import.meta.glob<string>("../../../examples/*.json", {
@@ -50,7 +50,7 @@ export async function buildGallery(host: HTMLElement): Promise<void> {
   if (!paths.length) {
     const empty = document.createElement("div");
     empty.style.cssText = `padding:20px;color:${T.textMuted2};font:13px ui-sans-serif,system-ui,sans-serif;`;
-    empty.textContent = "No example payloads yet — run `pixi run examples`.";
+    empty.textContent = "No example payloads yet - run `pixi run examples`.";
     host.appendChild(empty);
     return;
   }
@@ -69,7 +69,7 @@ export async function buildGallery(host: HTMLElement): Promise<void> {
     const href = `./index.html?file=${encodeURIComponent(EXAMPLE_URLS[path] ?? "")}`;
     bar.innerHTML =
       `<b style="color:${T.textPrimary};font-family:ui-monospace,Menlo,monospace;">${name}</b>` +
-      `<a href="${href}" style="margin-left:auto;color:${T.titleColor};">open alone →</a>`;
+      `<a href="${href}" style="margin-left:auto;color:${T.titleColor};">open alone -></a>`;
     card.appendChild(bar);
 
     const stage = document.createElement("div");

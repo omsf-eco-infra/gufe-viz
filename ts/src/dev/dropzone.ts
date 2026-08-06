@@ -1,7 +1,7 @@
 /**
- * The zeroth thing (R17): a page you drag a payload JSON onto.
+ * A page you drag a payload JSON onto.
  *
- * No Python, no wiring, no build step in the loop — a file lands on the page and
+ * No Python, no wiring, no build step in the loop - a file lands on the page and
  * a molecule appears. `?file=<url>` loads one on startup instead, so the
  * edit-a-payload-and-reload loop needs no dragging at all.
  *
@@ -37,7 +37,7 @@ export function installDropzone(host: HTMLElement): void {
   document.body.appendChild(overlay);
 
   // `dragenter`/`dragleave` fire per child element, so count depth rather than
-  // toggling — otherwise moving over any child hides the overlay.
+  // toggling - otherwise moving over any child hides the overlay.
   let depth = 0;
   const showOverlay = (on: boolean) => {
     overlay.style.display = on ? "block" : "none";
@@ -67,15 +67,15 @@ export function installDropzone(host: HTMLElement): void {
     void readPayload(file)
       .then((payload) => {
         view.payload = payload;
-        say(`${file.name} — drop another to replace it`);
+        say(`${file.name} - drop another to replace it`);
       })
       .catch((err: unknown) => say(`${file.name}: ${errText(err)}`, true));
   });
 
-  // `?file=` — reload-friendly iteration, and how the gallery links here.
+  // `?file=` - reload-friendly iteration, and how the gallery links here.
   const wanted = new URLSearchParams(location.search).get("file");
   if (wanted) {
-    say(`Loading ${wanted}…`);
+    say(`Loading ${wanted}...`);
     void fetch(wanted)
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
@@ -83,7 +83,7 @@ export function installDropzone(host: HTMLElement): void {
       })
       .then((payload) => {
         view.payload = payload;
-        say(`${wanted} — drop a file to replace it`);
+        say(`${wanted} - drop a file to replace it`);
       })
       .catch((err: unknown) => say(`${wanted}: ${errText(err)}`, true));
   }
@@ -96,6 +96,6 @@ async function readPayload(file: File): Promise<unknown> {
   } catch (e) {
     // A JSON syntax error is the single most likely thing to go wrong here, so
     // say where it went wrong rather than "unexpected token".
-    throw new Error(`not valid JSON — ${errText(e)}`);
+    throw new Error(`not valid JSON - ${errText(e)}`);
   }
 }

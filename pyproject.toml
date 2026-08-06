@@ -26,20 +26,19 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Chemistry",
 ]
 dynamic = [ "version" ]
-dependencies = [
-  "pydantic>=2.7",
-]
+# No runtime dependencies. The schema is a data file, the payload builders
+# return plain dicts, and `to_html` is string assembly over a committed bundle.
+dependencies = []
 # gufe itself is *not* a hard dependency: the schema, the validator and
 # `to_html(payload_dict)` all work without it. Only `payload_for(gufe_object)`
-# needs it, and it imports gufe lazily. This is the direction of the dependency
-# edge R3 asks for — this package knows about gufe, gufe never knows about this.
+# needs it, and it imports gufe lazily.
 optional-dependencies.gufe = [ "gufe" ]
 optional-dependencies.test = [
   "jsonschema>=4",
   "pytest>=7",
 ]
-urls.Homepage = "https://github.com/omsf-eco-infra/viz"
-urls.Issues = "https://github.com/omsf-eco-infra/viz/issues"
+urls.Homepage = "https://github.com/omsf-eco-infra/gufe-viz"
+urls.Issues = "https://github.com/omsf-eco-infra/gufe-viz/issues"
 scripts.gufe-viz = "gufe_viz.cli:main"
 
 [tool.setuptools]
@@ -49,7 +48,7 @@ packages.find.namespaces = false
 include-package-data = true
 zip-safe = false
 # The Vite bundle and the HTML template are build artifacts, committed to the
-# repo so `pip install .` needs no Node toolchain (see PLAN §2).
+# repo so `pip install .` needs no Node toolchain.
 package-data.gufe_viz = [ "_assets/*" ]
 
 [tool.setuptools_scm]

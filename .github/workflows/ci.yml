@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   # Everything runs through `pixi run <task>`, so CI and a developer's laptop
-  # execute literally the same commands (R13).
+  # execute literally the same commands.
   checks:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -33,8 +33,9 @@ jobs:
       - run: pixi run test-py
       - run: pixi run test-ts
 
-  # One job, one purpose: prove the three committed generated artifacts match a
-  # fresh build. Split out so a failure here is unambiguous (PLAN §9).
+  # One job, one purpose: prove the two committed generated artifacts match a
+  # fresh build. Split out so a failure here is unambiguous. The schema is not
+  # among them - it is hand-written, so there is nothing to regenerate.
   generated:
     name: generated artifacts are fresh
     runs-on: ubuntu-latest
@@ -49,7 +50,7 @@ jobs:
 
       - run: pixi run check-generated
 
-  # R3: gufe-viz must install without a Node toolchain anywhere in sight.
+  # gufe-viz must install without a Node toolchain anywhere in sight.
   pip-install:
     name: pip install (no node)
     runs-on: ubuntu-latest

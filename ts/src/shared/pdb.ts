@@ -1,5 +1,5 @@
 /**
- * PDB stats, styles and colour schemes — ported from `code.js` lines 1031–1166.
+ * PDB stats, styles and colour schemes.
  *
  * The statistics are computed in one pass over the text and the styling is done
  * through 3Dmol selections rather than per-atom DOM work, so structures with
@@ -30,7 +30,7 @@ export interface PdbStats {
   atoms: number;
   hetatms: number;
   waters: number;
-  /** Non-water HETATM records — what the "hetero/ligands" toggle governs. */
+  /** Non-water HETATM records - what the "hetero/ligands" toggle governs. */
   heteroNonWater: number;
   resiMin: number;
   resiMax: number;
@@ -127,7 +127,7 @@ export function proteinColorArgs(scheme: ProteinColorScheme, stats: PdbStats | n
  * of the atoms it matches, so waters (matched last) win over the blanket hetero
  * rule they would otherwise fall under.
  *
- * `onStatus` is optional — a surface is the one genuinely expensive operation
+ * `onStatus` is optional - a surface is the one genuinely expensive operation
  * here, and is computed off a timeout so its message gets a chance to paint.
  */
 export function applyProteinStyles(
@@ -187,8 +187,8 @@ export function applyProteinStyles(
 
   status(
     stats && stats.atoms > PROTEIN_CONFIG.surfaceAtomWarn
-      ? "Computing surface (large structure, this may take a while)…"
-      : "Computing surface…",
+      ? "Computing surface (large structure, this may take a while)..."
+      : "Computing surface...",
   );
   viewer.render();
   setTimeout(() => {

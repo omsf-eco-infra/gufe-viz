@@ -1,10 +1,8 @@
 /**
- * `<gufe-small-molecule>` — 2D depiction | 3D conformer, with an info bar.
+ * `<gufe-small-molecule>` - 2D depiction | 3D conformer, with an info bar.
  *
- * Ported from `code.js` lines 1245–1379. The changes from the original are the
- * two the plan calls for and no others: the `{ onResize, cleanup }` handle is
- * now returned to the element base class rather than to a dispatcher, and
- * `inputs['molecule.sdf']`-style key reads became typed `payload.data.*` reads.
+ * RDKit draws the 2D depiction and 3Dmol the 3D conformer; both are loaded
+ * lazily, so a page with no small molecule on it never pays for RDKit's wasm.
  */
 
 import { BTN_CSS, buttonGroup, centredMessage, EM_DASH, el, errText, headerStrip, viewerHost } from "../shared/dom.js";
@@ -12,7 +10,7 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
 import { depictSVG, ensureSDFTerminator, parseCounts, placeDepiction } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
-import type { SmallMoleculePayload } from "../schema/types.js";
+import type { SmallMoleculeComponentViz } from "../schema/types.js";
 
 const SMALL_MOL_STYLES = [
   { id: "stick", label: "Stick", title: "Sticks only" },
@@ -28,16 +26,16 @@ const SMALL_MOL_SPECS: Record<string, object> = {
 
 const DEPICT_SIZE = 400;
 
-export class GufeSmallMolecule extends GufeElement<SmallMoleculePayload> {
+export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
   protected override placeholder(): string {
-    return "Waiting for a SmallMoleculeComponent payload…";
+    return "Waiting for a SmallMoleculeComponent payload...";
   }
 
-  protected renderView(host: HTMLDivElement, payload: SmallMoleculePayload): ViewHandle {
-    const sdf = payload.data.sdf;
+  protected renderView(host: HTMLDivElement, payload: SmallMoleculeComponentViz): ViewHandle {
+    const sdf = payload.sdf;
     const name = payload.name ?? "";
-    const smiles = payload.data.smiles ?? "";
-    const charge = payload.data.total_charge;
+    const smiles = payload.smiles;
+    const charge = payload.total_charge;
 
     host.appendChild(headerStrip(name || "Unnamed molecule", "SmallMoleculeComponent"));
 
@@ -66,7 +64,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculePayload> {
     const host3D = viewerHost();
     right.appendChild(host3D.wrap);
 
-    // ─── info bar ───
+    // --- info bar ---
     const infoBar = el(
       "div",
       "flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:12px;" +
@@ -104,15 +102,15 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculePayload> {
     }
 
     // A schema-valid payload can still carry an empty or unusable SDF; that is a
-    // render-degraded state, not an error (PLAN Phase 2, PR 2.4 last row).
+    // render-degraded state, not an error.
     if (!sdf || !sdf.trim()) {
       depictBox.appendChild(centredMessage("No molecule provided"));
       host3D.container.appendChild(centredMessage("No molecule provided"));
       return {};
     }
 
-    // ─── 2D ───
-    depictBox.appendChild(centredMessage("Loading 2D depiction…"));
+    // --- 2D ---
+    depictBox.appendChild(centredMessage("Loading 2D depiction..."));
     loadRDKit()
       .then((RDKit) => {
         const svg = depictSVG(RDKit, sdf, DEPICT_SIZE);
@@ -126,7 +124,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculePayload> {
         depictBox.replaceChildren(centredMessage(`RDKit failed to load: ${errText(err)}`, true));
       });
 
-    // ─── 3D ───
+    // --- 3D ---
     let viewer: ThreeDmolViewer | null = null;
     let style: string = "stick";
     let spinning = false;
@@ -159,7 +157,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculePayload> {
     switcher.appendChild(spinBtn);
     right.appendChild(switcher);
 
-    host3D.container.appendChild(centredMessage("Loading 3D viewer…"));
+    host3D.container.appendChild(centredMessage("Loading 3D viewer..."));
     load3Dmol()
       .then(() => {
         host3D.container.replaceChildren();

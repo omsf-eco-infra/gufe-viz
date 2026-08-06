@@ -1,8 +1,7 @@
 /**
- * The small DOM vocabulary every view is built from — ported from `code.js`
- * lines 299–418. No framework, no virtual DOM: these elements are created once
- * and mutated in place, which is what keeps the create/update/destroy lifecycle
- * (R16) honest.
+ * The small DOM vocabulary every view is built from. No framework, no virtual
+ * DOM: these elements are created once and mutated in place, which is what
+ * keeps the create/update/destroy lifecycle honest.
  */
 
 import { T } from "./theme.js";
@@ -28,12 +27,9 @@ export function esc(s: unknown): string {
 /**
  * Describe a thrown value.
  *
- * The engines do not always reject with an `Error` — 3Dmol hands back a bare
+ * The engines do not always reject with an `Error` - 3Dmol hands back a bare
  * object when WebGL is unavailable, which otherwise turns every such failure
  * into the message "undefined".
- *
- * (`code.js` had `if (errText(e)) return errText(e)` here, which recursed until
- * the stack blew. The intent was plainly to prefer `e.message`.)
  */
 export function errText(e: unknown): string {
   if (e == null) return "unknown error";
@@ -44,7 +40,7 @@ export function errText(e: unknown): string {
 }
 
 export const fmt = (n: number): string => n.toLocaleString("en-US");
-export const EM_DASH = "—";
+export const EM_DASH = "-";
 
 export const BTN_CSS =
   `background:${T.btnBg};color:${T.btnFg};border:1px solid ${T.btnBorder};` +
@@ -101,7 +97,7 @@ export function buttonGroup(
   return group;
 }
 
-/** "label <b>value</b>" with an optional colour dot — the stats readouts. */
+/** "label <b>value</b>" with an optional colour dot - the stats readouts. */
 export function statChip(label: string, value: string, dotColor?: string): HTMLSpanElement {
   const chip = el("span", "display:inline-flex;align-items:center;gap:5px;white-space:nowrap;");
   if (dotColor) {
@@ -135,7 +131,7 @@ export function floatingWarning(host: HTMLElement, message: string): HTMLDivElem
   return warn;
 }
 
-/** A centred message filling its container — the placeholder / error state. */
+/** A centred message filling its container - the placeholder / error state. */
 export function centredMessage(text: string, isError = false): HTMLDivElement {
   return el(
     "div",

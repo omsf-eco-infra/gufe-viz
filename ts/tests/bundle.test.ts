@@ -3,8 +3,8 @@
  *
  * Everything else in this suite imports `ts/src/**` and so proves the source is
  * right. It does not prove that what Vite emits into
- * `python/gufe_viz/_assets/gufe-viz.js` — the file that is committed, shipped in
- * the wheel, and inlined into every `to_html` page — actually runs. A broken
+ * `python/gufe_viz/_assets/gufe-viz.js` - the file that is committed, shipped in
+ * the wheel, and inlined into every `to_html` page - actually runs. A broken
  * `vite.lib.config.ts` (a stray code-split, an externalised import that should
  * have been bundled) would sail past every other test here and only show up
  * when someone opened a generated page.
@@ -26,7 +26,7 @@ describe("the built bundle", () => {
   beforeAll(async () => {
     // Guard rather than fail cryptically: this test is meaningless without a
     // build, and `pixi run build` is the fix.
-    expect(existsSync(BUNDLE), `${BUNDLE} is missing — run \`pixi run build\``).toBe(true);
+    expect(existsSync(BUNDLE), `${BUNDLE} is missing - run \`pixi run build\``).toBe(true);
     await import(pathToFileURL(BUNDLE).href);
   });
 

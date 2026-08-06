@@ -1,44 +1,46 @@
 /**
- * `<gufe-view>` — the dispatcher, and the browser end of the contract.
+ * `<gufe-view>` - the dispatcher, and the browser end of the contract.
  *
- * Set `.payload` and it does three things in order: refuse a schema major it
- * does not know, validate against `schema/gufe-viz.schema.json`, then mount the
- * `<gufe-*>` element that claims the payload's `kind`. Replaces the framejs
- * frame's `VIEWS.find(v => inputs[v.key] != null)` first-match-wins key sniffing
- * with the explicit closed discriminator R20 asks for: a payload that says it is
- * a chemical system is drawn by the chemical-system view or by nothing at all.
+ * Set `.payload` and it does two things in order: validate against
+ * `schema/gufe-viz.schema.json`, then mount the `<gufe-*>` element that claims
+ * the payload's `type`. The discriminator is explicit and closed rather than
+ * inferred from which keys happen to be present: a payload that says it is a
+ * chemical system is drawn by the chemical-system view or by nothing at all.
  *
- * Nothing here throws at the caller (R19). Every failure — a payload that is not
- * an object, a kind with no view, a missing required field, a version from the
- * future — becomes a panel that names what happened and where.
+ * There is no version check, because a payload carries no version. Every
+ * consumer ships the reader and the writer in one artifact - the generated page
+ * inlines the exact bundle that reads it - so the two cannot be at different
+ * versions. The version lives in the schema's `$id`.
+ *
+ * Nothing here throws at the caller, because the caller is often a notebook
+ * widget with no way to surface an exception. Every failure - a payload that is
+ * not an object, a type with no view, a missing required field - becomes a panel
+ * that names what happened and where.
  */
 
 import { centredMessage, el, esc } from "./shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "./shared/element.js";
 import { T } from "./shared/theme.js";
-import { formatIssues, schemaVersionProblem, validatePayload } from "./schema/validate.js";
-import type { PayloadKind } from "./schema/types.js";
-
-export { SUPPORTED_SCHEMA_MAJOR } from "./schema/validate.js";
+import { formatIssues, validatePayload } from "./schema/validate.js";
+import type { PayloadType } from "./schema/types.js";
 
 /**
- * The dispatch table: `kind` → custom element tag.
+ * The dispatch table: `type` -> custom element tag.
  *
- * This is the TypeScript half of the cross-language parity test (PLAN §6): every
- * key here must be a `kind` the schema declares. The converse does not hold and
- * is not meant to — a kind in the schema with no entry here renders the "no
- * visualization for X yet" panel, which is exactly what a V1 build should do
- * when handed a Phase-4 payload.
+ * This is the TypeScript half of the cross-language parity test: every key here
+ * must be a `type` the schema declares. The converse does not hold and is not
+ * meant to - a type in the schema with no entry here renders the "no
+ * visualization for X yet" panel, which is exactly what a build should do when
+ * handed a payload whose view has not been written.
  */
-export const VIEW_TAGS: Partial<Record<PayloadKind, string>> = {
-  SmallMoleculeComponent: "gufe-small-molecule",
-  ProteinComponent: "gufe-protein",
-  LigandNetwork: "gufe-ligand-network",
+export const VIEW_TAGS: Partial<Record<PayloadType, string>> = {
+  SmallMoleculeComponentViz: "gufe-small-molecule",
+  ProteinComponentViz: "gufe-protein",
+  LigandNetworkViz: "gufe-ligand-network",
 };
 
 interface UnknownPayload {
-  schema_version?: unknown;
-  kind?: unknown;
+  type?: unknown;
   name?: unknown;
 }
 
@@ -54,35 +56,30 @@ export function describeProblem(payload: unknown): DispatchProblem | null {
     return { message: "This does not look like a gufe-viz payload (expected a JSON object)." };
   }
 
-  // Version first: a payload from the future fails the schema too, but "must
-  // match pattern ^1\.(0|[1-9][0-9]*)$" is not the useful thing to read.
-  const versionProblem = schemaVersionProblem(payload);
-  if (versionProblem) return { message: versionProblem };
-
-  const { kind } = payload as UnknownPayload;
-  if (typeof kind !== "string" || !kind) {
-    return { message: "This payload has no `kind`, so there is nothing to say what it is." };
+  const { type } = payload as UnknownPayload;
+  if (typeof type !== "string" || !type) {
+    return { message: "This payload has no `type`, so there is nothing to say what it is." };
   }
 
-  // Order matters. A `kind` nobody has ever declared is not a malformed
-  // SmallMoleculeComponent — it is an unknown thing, and saying "does not match
-  // the schema" about it would be true but unhelpful. Answer the bigger
+  // Order matters. A `type` nobody has ever declared is not a malformed
+  // SmallMoleculeComponentViz - it is an unknown thing, and saying "does not
+  // match the schema" about it would be true but unhelpful. Answer the bigger
   // question first.
-  if (!VIEW_TAGS[kind as PayloadKind]) return noVisualization(kind);
+  if (!VIEW_TAGS[type as PayloadType]) return noVisualization(type);
 
   const { valid, issues } = validatePayload(payload);
   if (!valid) {
     return {
-      message: `This payload says it is a ${kind}, but it does not match the gufe-viz schema.`,
+      message: `This payload says it is a ${type}, but it does not match the gufe-viz schema.`,
       detail: formatIssues(issues),
     };
   }
   return null;
 }
 
-function noVisualization(kind: string): DispatchProblem {
+function noVisualization(type: string): DispatchProblem {
   const known = Object.keys(VIEW_TAGS).sort().join(", ");
-  return { message: `Sorry, there is no visualization for ${kind} yet. This build can draw: ${known}.` };
+  return { message: `Sorry, there is no visualization for ${type} yet. This build can draw: ${known}.` };
 }
 
 /** Back-compat shim for callers that only want the sentence. */
@@ -92,7 +89,7 @@ export function dispatchProblem(payload: unknown): string | null {
 
 export class GufeView extends GufeElement<unknown> {
   protected override placeholder(): string {
-    return "Waiting for data…";
+    return "Waiting for data...";
   }
 
   protected renderView(host: HTMLDivElement, payload: unknown): ViewHandle {
@@ -102,8 +99,8 @@ export class GufeView extends GufeElement<unknown> {
       return {};
     }
 
-    const kind = (payload as { kind: PayloadKind }).kind;
-    const tag = VIEW_TAGS[kind]!;
+    const type = (payload as { type: PayloadType }).type;
+    const tag = VIEW_TAGS[type]!;
     const child = document.createElement(tag) as HTMLElement & { payload?: unknown };
     child.style.cssText = "flex:1;min-height:0;min-width:0;";
     // Set the payload before connecting: the element renders in
@@ -115,16 +112,16 @@ export class GufeView extends GufeElement<unknown> {
     return {
       onResize: () => (child as { resize?(): void }).resize?.(),
       // Removing the child fires its own `disconnectedCallback`, which is where
-      // its viewers and observers are released — no manual teardown here.
+      // its viewers and observers are released - no manual teardown here.
       cleanup: () => child.remove(),
     };
   }
 }
 
 /**
- * The graceful-degradation panel (R19). It names the thing it could not draw,
+ * The graceful-degradation panel. It names the thing it could not draw,
  * lists the failing fields when there are any, and shows the payload's own
- * shape — because "sorry, I can't visualize this" is only useful if you can
+ * shape - because "sorry, I can't visualize this" is only useful if you can
  * tell *what* was handed over.
  */
 function unsupportedPanel(problem: DispatchProblem, payload: unknown): HTMLDivElement {
@@ -158,11 +155,10 @@ function describePayload(payload: unknown): string | null {
   if (payload == null || typeof payload !== "object") return null;
   const p = payload as UnknownPayload;
   const bits: string[] = [];
-  if (typeof p.kind === "string") bits.push(`kind: ${esc(p.kind)}`);
+  if (typeof p.type === "string") bits.push(`type: ${esc(p.type)}`);
   if (typeof p.name === "string" && p.name) bits.push(`name: ${esc(p.name)}`);
-  if (typeof p.schema_version === "string") bits.push(`schema_version: ${esc(p.schema_version)}`);
   const keys = Object.keys(payload);
-  if (keys.length) bits.push(`keys: ${keys.slice(0, 12).join(", ")}${keys.length > 12 ? ", …" : ""}`);
+  if (keys.length) bits.push(`keys: ${keys.slice(0, 12).join(", ")}${keys.length > 12 ? ", ..." : ""}`);
   return bits.length ? bits.join("\n") : null;
 }
 

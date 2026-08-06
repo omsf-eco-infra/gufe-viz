@@ -1,7 +1,7 @@
 /**
  * What each view actually puts on the page, and how they behave when
- * the data is present-but-unusable — schema-valid, render-degraded (PLAN Phase 2
- * PR 2.4, last row: "truncated/garbage SDF → error panel, no crash").
+ * the data is present-but-unusable: schema-valid but not renderable, such as a
+ * truncated SDF, which must produce an error panel rather than a crash.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -10,7 +10,7 @@ import "../src/index.js";
 import { parseCounts, parseSDF } from "../src/shared/sdf.js";
 import { parsePdbStats } from "../src/shared/pdb.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
-import type { LigandNetworkPayload } from "../src/schema/types.js";
+import type { LigandNetworkViz } from "../src/schema/types.js";
 
 function mount<T extends HTMLElement>(tag: string, payload: unknown): T {
   const node = document.createElement(tag) as T & { payload: unknown };
@@ -36,10 +36,10 @@ describe("<gufe-small-molecule>", () => {
 
     const text = node.textContent ?? "";
     expect(text).toContain(payload.name as string);
-    expect(text).toContain((payload.data as { smiles: string }).smiles);
+    expect(text).toContain((payload as { smiles: string }).smiles);
     expect(text).toContain("SmallMoleculeComponent");
 
-    const counts = parseCounts((payload.data as { sdf: string }).sdf)!;
+    const counts = parseCounts((payload as { sdf: string }).sdf)!;
     expect(text).toContain(String(counts.atoms));
     expect(text).toContain(String(counts.bonds));
   });
@@ -55,10 +55,9 @@ describe("<gufe-small-molecule>", () => {
 
   it("says so, rather than crashing, when the SDF is empty", async () => {
     const node = mount("gufe-small-molecule", {
-      schema_version: "1.0",
-      kind: "SmallMoleculeComponent",
+      type: "SmallMoleculeComponentViz",
       name: "empty",
-      data: { sdf: "   " },
+      sdf: "   ",
     });
     await flush();
 
@@ -82,7 +81,7 @@ describe("<gufe-protein>", () => {
     const node = mount("gufe-protein", payload);
     await flush();
 
-    const stats = parsePdbStats((payload.data as { pdb: string }).pdb);
+    const stats = parsePdbStats((payload as { pdb: string }).pdb);
     expect(stats.atoms).toBeGreaterThan(0);
     expect(node.textContent).toContain(`${stats.chains} chains`);
     expect(node.textContent).toContain(payload.name as string);
@@ -101,10 +100,9 @@ describe("<gufe-protein>", () => {
 
   it("says so, rather than crashing, when the PDB is empty", async () => {
     const node = mount("gufe-protein", {
-      schema_version: "1.0",
-      kind: "ProteinComponent",
+      type: "ProteinComponentViz",
       name: "empty",
-      data: { pdb: "" },
+      pdb: "",
     });
     await flush();
 
@@ -123,17 +121,17 @@ describe("<gufe-ligand-network>", () => {
     document.body.replaceChildren();
   });
 
-  const network = () => readExample("ligand_network.json") as unknown as LigandNetworkPayload;
+  const network = () => readExample("ligand_network.json") as unknown as LigandNetworkViz;
 
   it("draws a node per ligand and a line per mapping", async () => {
     const payload = network();
     const node = mount("gufe-ligand-network", payload);
     await flush();
 
-    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.data.nodes.length);
+    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length);
     // One visible line, one halo and one hit target per edge.
-    expect(node.querySelectorAll("svg line")).toHaveLength(payload.data.edges.length * 3);
-    expect(node.textContent).toContain(`${payload.data.nodes.length}`);
+    expect(node.querySelectorAll("svg line")).toHaveLength(payload.edges.length * 3);
+    expect(node.textContent).toContain(`${payload.nodes.length}`);
     expect(node.textContent).toContain("LigandNetwork");
   });
 
@@ -145,7 +143,7 @@ describe("<gufe-ligand-network>", () => {
     expect(engines.simulations, "d3's force simulation was never configured").toBe(1);
     // Every ligand in the graph, plus the two endpoints of the selected edge in
     // the detail pane.
-    expect(engines.depicted.length).toBeGreaterThanOrEqual(payload.data.nodes.length);
+    expect(engines.depicted.length).toBeGreaterThanOrEqual(payload.nodes.length);
   });
 
   it("labels unnamed ligands from their gufe key, and named ones by name", async () => {
@@ -153,7 +151,7 @@ describe("<gufe-ligand-network>", () => {
     // is the same network with names. Both must be legible.
     const unnamed = mount("gufe-ligand-network", network());
     await flush();
-    const key = network().data.nodes[0].id.split("-").pop()!.slice(0, 6);
+    const key = network().nodes[0].id.split("-").pop()!.slice(0, 6);
     expect(unnamed.textContent).toContain(key);
 
     const named = mount("gufe-ligand-network", readExample("ligand_network_named.json"));
@@ -166,7 +164,7 @@ describe("<gufe-ligand-network>", () => {
     const node = mount("gufe-ligand-network", payload);
     await flush();
 
-    const edge = payload.data.edges[0];
+    const edge = payload.edges[0];
     const text = node.textContent ?? "";
     expect(text).toContain("score");
     expect(text).toContain(edge.score!.toFixed(3));
@@ -181,9 +179,9 @@ describe("<gufe-ligand-network>", () => {
 
     // The hit targets are the transparent wide lines, in edge order.
     const hits = [...node.querySelectorAll("line")].filter((l) => l.getAttribute("stroke") === "transparent");
-    expect(hits).toHaveLength(payload.data.edges.length);
+    expect(hits).toHaveLength(payload.edges.length);
 
-    const last = payload.data.edges[payload.data.edges.length - 1];
+    const last = payload.edges[payload.edges.length - 1];
     hits[hits.length - 1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flush();
 
@@ -192,13 +190,15 @@ describe("<gufe-ligand-network>", () => {
 
   it("drops an edge that names a ligand the network does not contain, and says so", async () => {
     const payload = network();
-    payload.data.edges = [{ source: "nope", target: "also-nope", score: 0.5 }];
+    payload.edges = [
+      { source: "nope", target: "also-nope", score: 0.5, componentA_to_componentB: {}, annotations: {} },
+    ];
     const node = mount("gufe-ligand-network", payload);
     await flush();
 
     expect(node.textContent).toContain("does not contain");
     expect(node.querySelectorAll("svg line")).toHaveLength(0);
-    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.data.nodes.length);
+    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length);
   });
 
   it("falls back to the circular layout when d3 cannot be loaded", async () => {
@@ -216,10 +216,10 @@ describe("<gufe-ligand-network>", () => {
 
   it("says so, rather than crashing, when the network is empty", async () => {
     const node = mount("gufe-ligand-network", {
-      schema_version: "1.0",
-      kind: "LigandNetwork",
+      type: "LigandNetworkViz",
       name: "empty",
-      data: { nodes: [], edges: [] },
+      nodes: [],
+      edges: [],
     });
     await flush();
 
@@ -245,7 +245,7 @@ describe("SDF parsing degrades rather than throwing garbage", () => {
   it("round-trips every example molecule", () => {
     for (const name of ["small_molecule.json", "small_molecule_charged.json"]) {
       const payload = readExample(name);
-      const sdf = (payload.data as { sdf: string }).sdf;
+      const sdf = (payload as { sdf: string }).sdf;
       const mol = parseSDF(sdf);
       const counts = parseCounts(sdf)!;
       expect(mol.symbols, name).toHaveLength(counts.atoms);

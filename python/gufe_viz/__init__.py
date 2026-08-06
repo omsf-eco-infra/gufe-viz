@@ -1,4 +1,4 @@
-"""gufe-viz — interactive browser visualizations for gufe objects.
+"""gufe-viz - interactive browser visualizations for gufe objects.
 
     >>> import gufe_viz
     >>> html = gufe_viz.to_html(small_molecule_component)  # returns a string
@@ -9,38 +9,79 @@ a development convenience rather than the OpenFE CLI integration.
 
 The intermediate value is a plain, schema-valid dict:
 
-    >>> payload = gufe_viz.payload_dict_for(small_molecule_component)
+    >>> payload = gufe_viz.payload_for(small_molecule_component)
 
 ``schema/gufe-viz.schema.json`` in this repository is the contract it satisfies,
 and the compiled TypeScript in ``gufe_viz/_assets/`` is what draws it.
 
-gufe is an **optional** dependency: everything except :func:`payload_for` works
-without it, and nothing here imports gufe at module scope. gufe itself never
-imports this package.
+This package depends on gufe and gufe never depends on this package. The
+dependency is imported lazily inside :func:`payload_for` rather than at module
+scope, which is what lets ``import gufe_viz`` and :func:`to_html` on an existing
+payload dict work in an environment that has the wheel but not gufe.
 """
 
 from __future__ import annotations
 
-from .html import BundleMissing, bundle_source, to_html
-from .payloads import NoVisualization, payload_dict_for, payload_for
-from .schema import PAYLOAD_KINDS, SCHEMA_VERSION, Payload
+from typing import Any
 
-try:  # pragma: no cover — the real version comes from setuptools-scm at build time
+from .html import BundleMissing, bundle_source, to_html
+
+try:  # pragma: no cover - the real version comes from setuptools-scm at build time
     from importlib.metadata import PackageNotFoundError, version
 
     __version__ = version("gufe-viz")
 except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
+
+def payload_for(obj: Any) -> dict[str, Any]:
+    """Serialize a gufe object into a schema-valid payload dict.
+
+    Dispatch is ``isinstance``, most-derived first. Ordering matters in one
+    place: every component goes through :func:`components.component_payload`,
+    which has its own most-derived-first table so that a membrane system is not
+    serialized as a plain protein.
+
+    Raises ``TypeError`` for anything this cannot visualize, including a gufe
+    object of a kind with no builder - a Protocol, say. That is deliberate and
+    is *not* in tension with the graceful-degradation rule: degrading matters
+    for an unrecognized component found *inside* a chemical system, where the
+    user did nothing wrong and the alternative is that the whole system fails to
+    draw. Those return an ``UnknownComponentViz`` and never raise. A top-level
+    call on an unsupported type is a mistake at the call site, and saying so
+    immediately is more useful than a panel.
+    """
+    import gufe
+    from gufe.transformations.transformation import TransformationBase
+
+    from .alchemical import alchemical_network_payload, transformation_payload
+    from .components import chemical_system_payload, component_payload
+    from .networks import ligand_atom_mapping_payload, ligand_network_payload
+
+    if isinstance(obj, gufe.Component):
+        return component_payload(obj)
+    if isinstance(obj, gufe.ChemicalSystem):
+        return chemical_system_payload(obj)
+    if isinstance(obj, gufe.LigandAtomMapping):
+        return ligand_atom_mapping_payload(obj)
+    if isinstance(obj, gufe.LigandNetwork):
+        return ligand_network_payload(obj)
+    if isinstance(obj, gufe.AlchemicalNetwork):
+        return alchemical_network_payload(obj)
+    if isinstance(obj, TransformationBase):
+        return transformation_payload(obj)
+
+    raise TypeError(
+        f"gufe-viz has no visualization for {type(obj).__name__}. "
+        "It can visualize components, chemical systems, atom mappings, ligand "
+        "networks, transformations and alchemical networks."
+    )
+
+
 __all__ = [
-    "PAYLOAD_KINDS",
-    "SCHEMA_VERSION",
     "BundleMissing",
-    "NoVisualization",
-    "Payload",
     "__version__",
     "bundle_source",
-    "payload_dict_for",
     "payload_for",
     "to_html",
 ]
