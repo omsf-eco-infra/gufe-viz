@@ -50,7 +50,14 @@ jobs:
 
       - run: pixi run check-generated
 
-  # gufe-viz must install without a Node toolchain anywhere in sight.
+  # gufe-viz must build and install without a Node toolchain anywhere in sight,
+  # and the compiled bundle must be inside the wheel rather than beside it.
+  #
+  # `--no-deps` because gufe comes from conda-forge: the declared `gufe>=1.12`
+  # is deliberately unsatisfiable on PyPI, whose newest release is 0.4, so
+  # resolving dependencies here would fail by design. That failure is tested
+  # separately below. What this job is actually for is the Node question, and
+  # `--no-deps` is what isolates it.
   pip-install:
     name: pip install (no node)
     runs-on: ubuntu-latest
@@ -63,7 +70,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install .
+      - run: pip install --no-deps .
       - name: the bundle shipped with the wheel
         run: python -c "import gufe_viz; print(gufe_viz.bundle_source()[:80])"
         working-directory: ${{ runner.temp }}
+
+      # The other half of the same decision: a plain `pip install` must refuse
+      # rather than hand someone the pre-1.0 gufe from PyPI.
+      - name: pip refuses to install the wrong gufe
+        run: |
+          if pip install --dry-run . 2>err.log; then
+            echo "expected the gufe>=1.12 requirement to be unsatisfiable on PyPI"
+            exit 1
+          fi
+          grep -q "gufe>=1.12" err.log || { echo "failed, but not on gufe:"; cat err.log; exit 1; }
+          echo "refused as intended:"; grep "gufe" err.log

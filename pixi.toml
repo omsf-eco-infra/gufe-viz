@@ -8,8 +8,12 @@ platforms = ["osx-arm64", "osx-64", "linux-64", "linux-aarch64", "win-64"]
 [dependencies]
 python = ">=3.11,<3.15"
 nodejs = ">=20"
-# Pinned to a floor rather than left open: 1.12 is where SolvatedPDBComponent
-# and ProteinMembraneComponent appear, and the schema declares both.
+# gufe is declared here *and* in pyproject.toml, deliberately. pyproject is the
+# only file pip can see, so the requirement has to live there; but a PyPI
+# requirement is satisfied by a conda package only when that package is also in
+# this table, so this line is what makes pixi resolve gufe from conda-forge
+# rather than from PyPI - where the newest release is 0.4 and the 1.0 API does
+# not exist yet. The two entries must agree on the floor.
 gufe = ">=1.12"
 rdkit = "*"
 pytest = "*"

@@ -10191,7 +10191,7 @@ packages:
 - pypi: ./
   name: gufe-viz
   requires_dist:
-  - gufe ; extra == 'gufe'
+  - gufe>=1.12
   - jsonschema>=4 ; extra == 'test'
   - pytest>=7 ; extra == 'test'
   requires_python: '>=3.11,<3.15'

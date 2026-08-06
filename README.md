@@ -113,10 +113,19 @@ the wheel, which is what makes that true.
 > this package is developed and tested against and what `pixi install` gives
 > you. `conda install -c conda-forge gufe` is the other route.
 >
-> gufe is therefore declared in `pixi.toml` and in the conda recipe, not in
-> `pyproject.toml`, which has no runtime dependencies at all. `import gufe_viz`
-> and `to_html(payload_dict)` work without gufe present; building a payload from
-> a live gufe object is the only thing that needs it.
+> gufe is declared in **both** `pyproject.toml` and `pixi.toml`, which is not a
+> duplication to tidy up. `pyproject.toml` is the only file pip can see, so the
+> requirement has to live there; a PyPI requirement is satisfied by a conda
+> package only when that package is also in pixi's own dependency table, so the
+> entry in `pixi.toml` is what redirects it to conda-forge. Remove either one
+> and something breaks.
+>
+> The `>=1.12` floor is what protects you: `pip install gufe-viz` fails with
+> *"Could not find a version that satisfies the requirement gufe>=1.12 (from
+> versions: 0.4)"* rather than quietly installing a gufe whose API is gone.
+>
+> `import gufe_viz` and `to_html(payload_dict)` need no gufe at all - the import
+> is lazy - so `pip install --no-deps` is a valid way to get just the renderer.
 
 ---
 

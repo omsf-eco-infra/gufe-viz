@@ -26,13 +26,22 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Chemistry",
 ]
 dynamic = [ "version" ]
-# No runtime dependencies. The schema is a data file, the payload builders
-# return plain dicts, and `to_html` is string assembly over a committed bundle.
-dependencies = []
-# gufe itself is *not* a hard dependency: the schema, the validator and
-# `to_html(payload_dict)` all work without it. Only `payload_for(gufe_object)`
-# needs it, and it imports gufe lazily.
-optional-dependencies.gufe = [ "gufe" ]
+# Everything pip-installable is declared here, including gufe, because this is
+# the only file a `pip install` can see. pixi.toml lists gufe as well, and that
+# is not an oversight: a PyPI requirement is satisfied by a conda package only
+# when that package is also in pixi's own dependency table, so the entry there
+# is what redirects this requirement to conda-forge instead of to PyPI. Remove
+# it from either file and something breaks - pip users lose the constraint, or
+# pixi tries to resolve gufe from PyPI and fails.
+#
+# The `>=1.12` floor is doing real work. PyPI's gufe is a single 0.4 release
+# predating the 1.0 API, so this makes `pip install gufe-viz` fail with
+# "Could not find a version that satisfies the requirement gufe>=1.12 (from
+# versions: 0.4)" rather than quietly installing a gufe whose API is gone. The
+# floor is also where SolvatedPDBComponent and ProteinMembraneComponent appear.
+dependencies = [
+  "gufe>=1.12",
+]
 optional-dependencies.test = [
   "jsonschema>=4",
   "pytest>=7",
