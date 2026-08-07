@@ -116,6 +116,7 @@ def test_every_example_is_valid_before_mutation(example, schema):
     name, payload = example
     assert _jsonschema_error(payload, schema) is None, name
 
+
 # The structure-bearing field each drawable component type legitimately carries.
 # Anything outside a type's own set is a foreign field the schema must reject.
 NATIVE_STRUCTURE_FIELDS: dict[str, set[str]] = {
