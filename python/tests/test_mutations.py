@@ -115,3 +115,94 @@ def test_every_example_is_valid_before_mutation(example, schema):
     """The premise of every row above: the unmutated fixtures are valid."""
     name, payload = example
     assert _jsonschema_error(payload, schema) is None, name
+
+# The structure-bearing field each drawable component type legitimately carries.
+# Anything outside a type's own set is a foreign field the schema must reject.
+NATIVE_STRUCTURE_FIELDS: dict[str, set[str]] = {
+    "SmallMoleculeComponentViz": {"sdf"},
+    "ProteinComponentViz": {"pdb"},
+    "SolvatedPDBComponentViz": {"pdb"},
+    "ProteinMembraneComponentViz": {"pdb"},
+    "SolventComponentViz": {"positive_ion", "negative_ion", "neutralize", "ion_concentration"},
+    "UnknownComponentViz": set(),
+}
+
+# A representative, schema-shaped value for each structure field, so the only
+# reason validation can fail is the field being foreign - never a type error.
+STRUCTURE_FIELD_VALUES: dict[str, object] = {
+    "sdf": "mol\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n",
+    "pdb": "ATOM      1  N   ALA A   1      0.000   0.000   0.000\nEND\n",
+    "positive_ion": "Na+",
+    "negative_ion": "Cl-",
+    "neutralize": True,
+    "ion_concentration": "0.15 molar",
+}
+
+ALL_STRUCTURE_FIELDS = sorted(STRUCTURE_FIELD_VALUES)
+
+
+def _component_examples() -> dict[str, dict]:
+    """One valid payload per component type in ``NATIVE_STRUCTURE_FIELDS``.
+
+    The five drawable types come from the committed fixtures.
+    ``UnknownComponentViz`` has no fixture - it exists for a class that is not in
+    gufe - but a valid one needs no gufe object, so it is spelled out here. It is
+    the strongest exclusivity case of all: it carries no structure field, so
+    every field in the grid is foreign to it.
+    """
+    found: dict[str, dict] = {
+        "UnknownComponentViz": {
+            "type": "UnknownComponentViz",
+            "name": "custom",
+            "gufe_type": "SomebodysOwnComponent",
+        }
+    }
+    for name in example_names():
+        payload = read_example(name)
+        if payload["type"] in NATIVE_STRUCTURE_FIELDS:
+            found.setdefault(payload["type"], payload)
+    return found
+
+
+def _exclusivity_cases():
+    """Every (component type, foreign structure field) the fixtures can exercise."""
+    for type_name, payload in _component_examples().items():
+        for field in ALL_STRUCTURE_FIELDS:
+            if field in NATIVE_STRUCTURE_FIELDS[type_name] or field in payload:
+                continue
+            yield pytest.param(payload, field, id=f"{type_name}-plus-{field}")
+
+
+@pytest.mark.parametrize(("payload", "field"), list(_exclusivity_cases()))
+def test_structure_fields_are_mutually_exclusive(payload: dict, field: str, schema: dict):
+    """A component carrying a foreign structure field is rejected by the schema.
+
+    Adds one field that belongs to another component type (an ``sdf`` on a
+    protein, a ``pdb`` on a small molecule, a solvent setting on either) to an
+    otherwise-valid payload and requires jsonschema to reject it. This is the
+    ``additionalProperties: false`` on each per-type ``$def`` doing the work the
+    old builder-side check used to do alone.
+    """
+    import copy
+
+    smuggled = copy.deepcopy(payload)
+    smuggled[field] = STRUCTURE_FIELD_VALUES[field]
+
+    error = _jsonschema_error(smuggled, schema)
+    assert error is not None, (
+        f"the schema accepted a {payload['type']} carrying a foreign {field!r} field - "
+        "structure fields must be mutually exclusive"
+    )
+
+
+def test_every_component_type_has_an_exclusivity_case():
+    """Guard against the grid above silently covering nothing.
+
+    Each drawable component type must contribute at least one foreign-field case,
+    otherwise a fixture rename or a change to the field map could quietly empty
+    the parametrization and turn the exclusivity check into a no-op.
+    """
+    covered = {case.values[0]["type"] for case in _exclusivity_cases()}
+    assert covered == set(NATIVE_STRUCTURE_FIELDS), (
+        f"component types with no exclusivity case: {set(NATIVE_STRUCTURE_FIELDS) - covered}"
+    )
