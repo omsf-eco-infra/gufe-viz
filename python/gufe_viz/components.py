@@ -2,11 +2,7 @@
 
 This is the Python half of the contract. It reads **live gufe objects** and asks
 them to serialize themselves the way they already know how - ``to_sdf()``,
-``to_pdb_file()`` - rather than touching gufe's own JSON representation. That
-rule is the single most important one in the design: it confines every hard
-question about gufe serialization (deduplicated key-chains, ``:custom:`` codecs,
-``to_dict`` vs ``to_json``, ``QuickRun`` still writing ``to_dict``) to Python,
-where the people who know the history can answer it.
+``to_pdb_file()`` - rather than touching gufe's own JSON representation.
 
 When the input is a saved gufe ``.json`` file, Python deserializes it into live
 gufe objects *first* and then builds the payload from those. TypeScript never
