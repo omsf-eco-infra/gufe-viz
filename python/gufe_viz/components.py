@@ -14,7 +14,7 @@ anything here: a schema derived from Python carries across only what the
 derivation step happens to translate, so a rule can be enforced in the code and
 missing from the schema the browser reads. Correctness is enforced by tests
 instead - every builder's output is validated against the schema, and
-``schema/mutations.json`` proves the schema rejects what it claims to reject.
+``python/tests/mutations.json`` proves the schema rejects what it claims to reject.
 """
 
 from __future__ import annotations

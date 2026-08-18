@@ -15,7 +15,7 @@ import pytest
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 EXAMPLES_DIR = REPO / "examples"
 SCHEMA_PATH = REPO / "schema" / "gufe-viz.schema.json"
-MUTATIONS_PATH = REPO / "schema" / "mutations.json"
+MUTATIONS_PATH = REPO / "python" / "tests" / "mutations.json"
 
 
 def example_paths() -> list[pathlib.Path]:

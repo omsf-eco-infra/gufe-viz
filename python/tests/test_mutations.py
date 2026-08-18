@@ -1,6 +1,6 @@
 """Mutation testing.
 
-Every entry in ``schema/mutations.json`` is applied to every applicable golden
+Every entry in ``python/tests/mutations.json`` is applied to every applicable golden
 payload and validated against ``schema/gufe-viz.schema.json``.
 ``ts/tests/validate.test.ts`` runs the identical table against Ajv, so a
 disagreement between the two languages turns one of the suites red.

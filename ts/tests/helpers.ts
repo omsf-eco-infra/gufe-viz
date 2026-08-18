@@ -155,7 +155,7 @@ export const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
 // --- the mutation matrix ---------------------------------------------------
 //
-// Declared once in `schema/mutations.json` and applied identically here and in
+// Declared once in `python/tests/mutations.json` and applied identically here and in
 // `python/tests/test_mutations.py`. Keeping the *table* shared rather than the
 // code is what makes "both sides agree" a checkable claim instead of a hope.
 
@@ -171,7 +171,7 @@ export interface Mutation {
 }
 
 export function mutations(): Mutation[] {
-  const path = join(import.meta.dirname, "..", "..", "schema", "mutations.json");
+  const path = join(import.meta.dirname, "..", "..", "python", "tests", "mutations.json");
   return JSON.parse(readFileSync(path, "utf-8")).mutations as Mutation[];
 }
 
