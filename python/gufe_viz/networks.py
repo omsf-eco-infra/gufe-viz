@@ -109,7 +109,7 @@ def ligand_network_payload(network: Any) -> dict[str, Any]:
 
     return {
         "type": "LigandNetworkViz",
-        "name": getattr(network, "name", "") or "",
+        "name": getattr(network, "name", ""),
         "nodes": [
             {
                 "id": str(mol.key),

@@ -23,8 +23,8 @@ def transformation_payload(transformation: Any) -> dict[str, Any]:
     ``TransformationBase`` rather than parent and child, which is why this
     dispatches on the base class.
     """
-    if not isinstance(transformation, gufe.tokenization.GufeTokenizable):
-        raise TypeError(f"expected a gufe Transformation, got {type(transformation).__name__}")
+    if not isinstance(transformation, gufe.TransformationBase):
+        raise TypeError(f"expected a gufe Transformation or NonTransformation, got {type(transformation).__name__}")
 
     mapping = getattr(transformation, "mapping", None)
     if mapping is None:

@@ -34,7 +34,7 @@ def display_name(obj: Any) -> str:
     an error, and a view that wants to show something else falls back on its own
     terms rather than having to distinguish "" from ``None``.
     """
-    return getattr(obj, "name", "") or ""
+    return getattr(obj, "name", "")
 
 
 def pdb_string(component: Any) -> str:
