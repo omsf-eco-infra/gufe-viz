@@ -16,6 +16,8 @@ import json
 import sys
 from pathlib import Path
 
+from gufe.tokenization import GufeTokenizable
+
 from .html import default_output_path, to_html
 
 
@@ -31,7 +33,7 @@ def _looks_like_payload(value: object) -> bool:
     return isinstance(value, dict) and isinstance(value.get("type"), str) and value["type"].endswith("Viz")
 
 
-def load(path: Path):
+def load(path: Path) -> GufeTokenizable:
     """Return something :func:`gufe_viz.to_html` can render.
 
     Tries, in order: a gufe-viz payload, then a serialized gufe object.
@@ -49,7 +51,7 @@ def load(path: Path):
     return _load_gufe_object(text, path)
 
 
-def _load_gufe_object(text: str, path: Path):
+def _load_gufe_object(text: str, path: Path) -> GufeTokenizable:
     """Deserialize a saved gufe object, or explain why we could not.
 
     Which of gufe's serialization forms round-trips reliably today is still an

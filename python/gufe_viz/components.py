@@ -24,9 +24,10 @@ import json
 from typing import Any
 
 import gufe
+from gufe.tokenization import GufeTokenizable
 
 
-def display_name(obj: Any) -> str:
+def display_name(obj: GufeTokenizable) -> str:
     """The object's name, as a string that is never ``None``.
 
     Every ``name`` in the schema is a required, non-nullable string. gufe's own
@@ -37,7 +38,7 @@ def display_name(obj: Any) -> str:
     return getattr(obj, "name", "")
 
 
-def pdb_string(component: Any) -> str:
+def pdb_string(component: gufe.ProteinComponent) -> str:
     """Render a PDB-capable component to a string, without a sidecar file."""
     buffer = io.StringIO()
     component.to_pdb_file(buffer)
@@ -61,7 +62,7 @@ def json_safe(value: Any) -> Any:
 # --------------------------------------------------------------------------- #
 
 
-def small_molecule_payload(component: Any) -> dict[str, Any]:
+def small_molecule_payload(component: gufe.SmallMoleculeComponent) -> dict[str, Any]:
     return {
         "type": "SmallMoleculeComponentViz",
         "name": display_name(component),
@@ -71,7 +72,7 @@ def small_molecule_payload(component: Any) -> dict[str, Any]:
     }
 
 
-def protein_payload(component: Any) -> dict[str, Any]:
+def protein_payload(component: gufe.ProteinComponent) -> dict[str, Any]:
     return {
         "type": "ProteinComponentViz",
         "name": display_name(component),
@@ -79,7 +80,7 @@ def protein_payload(component: Any) -> dict[str, Any]:
     }
 
 
-def solvated_pdb_payload(component: Any) -> dict[str, Any]:
+def solvated_pdb_payload(component: gufe.SolvatedPDBComponent) -> dict[str, Any]:
     return {
         "type": "SolvatedPDBComponentViz",
         "name": display_name(component),
@@ -87,7 +88,7 @@ def solvated_pdb_payload(component: Any) -> dict[str, Any]:
     }
 
 
-def protein_membrane_payload(component: Any) -> dict[str, Any]:
+def protein_membrane_payload(component: gufe.ProteinMembraneComponent) -> dict[str, Any]:
     return {
         "type": "ProteinMembraneComponentViz",
         "name": display_name(component),
@@ -95,7 +96,7 @@ def protein_membrane_payload(component: Any) -> dict[str, Any]:
     }
 
 
-def solvent_payload(component: Any) -> dict[str, Any]:
+def solvent_payload(component: gufe.SolventComponent) -> dict[str, Any]:
     return {
         "type": "SolventComponentViz",
         "name": display_name(component),
@@ -108,7 +109,7 @@ def solvent_payload(component: Any) -> dict[str, Any]:
     }
 
 
-def unknown_component_payload(component: Any) -> dict[str, Any]:
+def unknown_component_payload(component: gufe.Component) -> dict[str, Any]:
     """The graceful fallback: enough to name the thing, nothing to draw it."""
     return {
         "type": "UnknownComponentViz",
@@ -136,7 +137,7 @@ def unknown_component_payload(component: Any) -> dict[str, Any]:
 # `BaseSolventComponent` alongside the solvated types rather than from
 # `ProteinComponent`, so it can never be shadowed by them.
 
-COMPONENT_BUILDERS: tuple[tuple[type, Any], ...] = (
+COMPONENT_BUILDERS: tuple[tuple[type[gufe.Component], Any], ...] = (
     (gufe.ProteinMembraneComponent, protein_membrane_payload),
     (gufe.SolvatedPDBComponent, solvated_pdb_payload),
     (gufe.ProteinComponent, protein_payload),
@@ -145,7 +146,7 @@ COMPONENT_BUILDERS: tuple[tuple[type, Any], ...] = (
 )
 
 
-def component_payload(component: Any) -> dict[str, Any]:
+def component_payload(component: gufe.Component) -> dict[str, Any]:
     """Build the visualization payload for one gufe component.
 
     The failure rule is three-way, and the middle case is the one worth stating.
@@ -170,7 +171,7 @@ def component_payload(component: Any) -> dict[str, Any]:
     return unknown_component_payload(component)
 
 
-def chemical_system_payload(system: Any) -> dict[str, Any]:
+def chemical_system_payload(system: gufe.ChemicalSystem) -> dict[str, Any]:
     """A chemical system, as its labelled components.
 
     Components are sorted by label so a committed fixture is byte-stable across

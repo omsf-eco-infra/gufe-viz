@@ -21,6 +21,9 @@ import re
 import sys
 import warnings
 
+import gufe
+from gufe.tokenization import GufeTokenizable
+
 REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "python"))
 
@@ -33,7 +36,7 @@ def _gufe_data() -> pathlib.Path:
     return pathlib.Path(gufe.__file__).parent / "tests" / "data"
 
 
-def _benzene_modifications() -> dict:
+def _benzene_modifications() -> dict[str, gufe.SmallMoleculeComponent]:
     """The seven substituted benzenes gufe ships, keyed by name."""
     from gufe import SmallMoleculeComponent
     from rdkit import Chem
@@ -42,7 +45,7 @@ def _benzene_modifications() -> dict:
     return {m.GetProp("_Name"): SmallMoleculeComponent.from_rdkit(m) for m in supplier if m is not None}
 
 
-def _acetate():
+def _acetate() -> gufe.SmallMoleculeComponent:
     """A charged molecule, so `total_charge` is exercised as something but 0."""
     from gufe import SmallMoleculeComponent
     from rdkit import Chem
@@ -55,7 +58,7 @@ def _acetate():
     return SmallMoleculeComponent.from_rdkit(mol)
 
 
-def _named_network(network):
+def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
     """``network`` again, with every ligand named after its SMILES.
 
     gufe's GraphML fixture has three unnamed molecules, which is a realistic and
@@ -83,7 +86,7 @@ def _named_network(network):
     )
 
 
-def build() -> dict[str, object]:
+def build() -> dict[str, GufeTokenizable]:
     """Return ``{filename: gufe object}``.
 
     Two types are absent on purpose. ``TransformationViz`` and
@@ -136,7 +139,7 @@ def build() -> dict[str, object]:
     }
 
 
-def _solvated(pdb_path: pathlib.Path, class_name: str):
+def _solvated(pdb_path: pathlib.Path, class_name: str) -> gufe.ProteinComponent:
     """A small ``SolvatedPDBComponent`` or ``ProteinMembraneComponent``.
 
     Both need box vectors, which ``infer_box_vectors`` derives from the
@@ -175,7 +178,7 @@ def _fragment_text(pdb_path: pathlib.Path) -> str:
     return "\n".join(header + keep + ["END"]) + "\n"
 
 
-def _protein_fragment(pdb_path: pathlib.Path):
+def _protein_fragment(pdb_path: pathlib.Path) -> gufe.ProteinComponent:
     """Chain A, residues 1-40 of ``181l``, plus its hetero atoms.
 
     A ~50 kB stand-in for the 214 kB original: small enough to read in a diff and

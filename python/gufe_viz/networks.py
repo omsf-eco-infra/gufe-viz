@@ -8,6 +8,7 @@ that draws one on its own.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import gufe
@@ -19,7 +20,7 @@ from .components import json_safe
 # --------------------------------------------------------------------------- #
 
 
-def _atom_map(mapping: Any) -> dict[str, int]:
+def _atom_map(mapping: gufe.LigandAtomMapping) -> dict[str, int]:
     """The A-to-B index correspondence, with stringified keys.
 
     JSON object keys are always strings, so the A-side indices are stringified
@@ -29,7 +30,7 @@ def _atom_map(mapping: Any) -> dict[str, int]:
     return {str(key): value for key, value in mapping.componentA_to_componentB.items()}
 
 
-def _mapping_fields(mapping: Any) -> dict[str, Any]:
+def _mapping_fields(mapping: gufe.LigandAtomMapping) -> dict[str, Any]:
     """Everything a mapping carries except its ``type`` and ``name``."""
     return {
         "molA_sdf": mapping.componentA.to_sdf(),
@@ -51,7 +52,7 @@ def _mapping_name(name_a: str, name_b: str) -> str:
     return f"{name_a} -> {name_b}" if (name_a or name_b) else ""
 
 
-def ligand_atom_mapping_payload(mapping: Any) -> dict[str, Any]:
+def ligand_atom_mapping_payload(mapping: gufe.LigandAtomMapping) -> dict[str, Any]:
     if not isinstance(mapping, gufe.LigandAtomMapping):
         raise TypeError(f"expected a gufe.LigandAtomMapping, got {type(mapping).__name__}")
 
@@ -68,7 +69,7 @@ def ligand_atom_mapping_payload(mapping: Any) -> dict[str, Any]:
 # --------------------------------------------------------------------------- #
 
 
-def mapping_score(annotations: Any) -> float | None:
+def mapping_score(annotations: Mapping[str, Any]) -> float | None:
     """The mapping's ``score`` annotation, if it is a plain number.
 
     gufe puts nothing in ``annotations`` by design - LOMAP, kartograf and
@@ -83,7 +84,7 @@ def mapping_score(annotations: Any) -> float | None:
     return float(score)
 
 
-def ligand_network_payload(network: Any) -> dict[str, Any]:
+def ligand_network_payload(network: gufe.LigandNetwork) -> dict[str, Any]:
     """Walk the live network: SDF per ligand, flat topology per mapping.
 
     Deliberately *not* ``to_graphml()``. That output embeds a gufe ``to_json``

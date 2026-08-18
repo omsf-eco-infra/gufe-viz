@@ -9,12 +9,13 @@ from __future__ import annotations
 from typing import Any
 
 import gufe
+from gufe.transformations.transformation import TransformationBase
 
 from .components import chemical_system_payload, display_name
 from .networks import ligand_atom_mapping_payload
 
 
-def transformation_payload(transformation: Any) -> dict[str, Any]:
+def transformation_payload(transformation: TransformationBase) -> dict[str, Any]:
     """One transformation, as a state A / state B pair plus its mappings.
 
     ``NonTransformation`` renders through here unchanged: it exposes the same
@@ -23,14 +24,19 @@ def transformation_payload(transformation: Any) -> dict[str, Any]:
     ``TransformationBase`` rather than parent and child, which is why this
     dispatches on the base class.
     """
-    if not isinstance(transformation, gufe.TransformationBase):
+    if not isinstance(transformation, TransformationBase):
         raise TypeError(f"expected a gufe Transformation or NonTransformation, got {type(transformation).__name__}")
 
+    # gufe accepts one mapping, a list of them, a label -> mapping dict, or none
+    # at all, and ``NonTransformation`` has no ``mapping`` attribute to read.
     mapping = getattr(transformation, "mapping", None)
+    mappings: list[gufe.ComponentMapping]
     if mapping is None:
         mappings = []
     elif isinstance(mapping, list):
         mappings = mapping
+    elif isinstance(mapping, dict):
+        mappings = list(mapping.values())
     else:
         mappings = [mapping]
 
@@ -44,7 +50,7 @@ def transformation_payload(transformation: Any) -> dict[str, Any]:
     }
 
 
-def _component_summary(label: str, component: Any) -> dict[str, Any]:
+def _component_summary(label: str, component: gufe.Component) -> dict[str, str]:
     """What a component *is*, with nothing to draw it from.
 
     Deliberately not a component payload. An alchemical network that inlined
@@ -58,7 +64,7 @@ def _component_summary(label: str, component: Any) -> dict[str, Any]:
     }
 
 
-def alchemical_network_payload(network: Any) -> dict[str, Any]:
+def alchemical_network_payload(network: gufe.AlchemicalNetwork) -> dict[str, Any]:
     """The whole graph: chemical systems as nodes, transformations as edges.
 
     ``AlchemicalNetwork`` has no ``to_graphml()``, so the graph is walked here.
@@ -68,7 +74,7 @@ def alchemical_network_payload(network: Any) -> dict[str, Any]:
     if not isinstance(network, gufe.AlchemicalNetwork):
         raise TypeError(f"expected a gufe.AlchemicalNetwork, got {type(network).__name__}")
 
-    def node_id(system: Any) -> str:
+    def node_id(system: gufe.ChemicalSystem) -> str:
         return str(system.key)
 
     return {

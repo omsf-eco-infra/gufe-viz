@@ -26,8 +26,11 @@ from __future__ import annotations
 import json
 import re
 from importlib import resources
+from pathlib import Path
 from string import Template
 from typing import Any
+
+from gufe.tokenization import GufeTokenizable
 
 #: Name of the committed Vite build inside the package.
 BUNDLE = "gufe-viz.js"
@@ -112,7 +115,7 @@ def _escape_html(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _as_payload_dict(obj: Any) -> dict[str, Any]:
+def _as_payload_dict(obj: GufeTokenizable | dict[str, Any]) -> dict[str, Any]:
     """Accept either a gufe object or an already-built payload dict."""
     if isinstance(obj, dict):
         return obj
@@ -122,7 +125,7 @@ def _as_payload_dict(obj: Any) -> dict[str, Any]:
     return payload_for(obj)
 
 
-def to_html(obj: Any, *, title: str | None = None) -> str:
+def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None) -> str:
     """Return a standalone HTML page that renders ``obj``, as one string.
 
     Parameters
@@ -160,13 +163,11 @@ def to_html(obj: Any, *, title: str | None = None) -> str:
     )
 
 
-def default_output_path(input_path):
+def default_output_path(input_path: Path | str) -> Path:
     """``<input>.html`` beside the input.
 
     ``ligand.json`` becomes ``ligand.json.html``, keeping the original suffix so
     two inputs that differ only by extension do not collide.
     """
-    import pathlib
-
-    path = pathlib.Path(input_path)
+    path = Path(input_path)
     return path.with_name(path.name + ".html")

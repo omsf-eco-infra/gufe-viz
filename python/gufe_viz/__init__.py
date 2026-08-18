@@ -24,6 +24,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from gufe.tokenization import GufeTokenizable
+
 from .html import BundleMissing, bundle_source, to_html
 
 try:  # pragma: no cover - the real version comes from setuptools-scm at build time
@@ -34,7 +36,7 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
 
-def payload_for(obj: Any) -> dict[str, Any]:
+def payload_for(obj: GufeTokenizable) -> dict[str, Any]:
     """Serialize a gufe object into a schema-valid payload dict.
 
     Dispatch is ``isinstance``, most-derived first. Ordering matters in one
