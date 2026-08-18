@@ -22,11 +22,12 @@ payload dict work in an environment that has the wheel but not gufe.
 
 from __future__ import annotations
 
-from typing import Any
-
-from gufe.tokenization import GufeTokenizable
+from typing import TYPE_CHECKING, Any
 
 from .html import BundleMissing, bundle_source, to_html
+
+if TYPE_CHECKING:  # gufe is imported inside payload_for, never at module scope
+    from gufe.tokenization import GufeTokenizable
 
 try:  # pragma: no cover - the real version comes from setuptools-scm at build time
     from importlib.metadata import PackageNotFoundError, version

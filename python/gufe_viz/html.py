@@ -28,9 +28,10 @@ import re
 from importlib import resources
 from pathlib import Path
 from string import Template
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from gufe.tokenization import GufeTokenizable
+if TYPE_CHECKING:  # importing gufe at runtime would make `import gufe_viz` need it
+    from gufe.tokenization import GufeTokenizable
 
 #: Name of the committed Vite build inside the package.
 BUNDLE = "gufe-viz.js"
