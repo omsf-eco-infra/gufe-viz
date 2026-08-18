@@ -126,12 +126,12 @@ def _as_payload_dict(obj: GufeTokenizable | dict[str, Any]) -> dict[str, Any]:
 
 
 def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None) -> str:
-    """Return a standalone HTML page that renders ``obj``, as one string.
+    """Return a standalone HTML page that renders ``obj`` as a string.
 
     Parameters
     ----------
     obj
-        A gufe object, or an already-built payload dict.
+        A GufeTokenizable object, or an already-built payload dict.
     title
         The page ``<title>``. Defaults to the payload's name, then its type.
 
