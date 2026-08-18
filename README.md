@@ -18,7 +18,7 @@ data.
 ### 1. Install pixi
 
 **[pixi](https://pixi.sh) and git. That is the whole list.** pixi provides
-everything else - Python 3.11+, Node 20+, gufe, RDKit, pytest, jsonschema and
+everything else - Python 3.12+, Node 20+, gufe, RDKit, pytest, jsonschema and
 ruff all come from `pixi.toml`, pinned in `pixi.lock`. You do not need a system
 Python, a system Node, or a conda install of your own.
 
