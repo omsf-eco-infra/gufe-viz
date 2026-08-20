@@ -6,6 +6,7 @@ build/
 dist/
 .pytest_cache/
 .ruff_cache/
+.ipynb_checkpoints
 python/gufe_viz/_version.py
 
 # Node
