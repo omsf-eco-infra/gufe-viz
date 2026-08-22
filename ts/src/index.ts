@@ -1,11 +1,9 @@
 /**
  * The bundle entry point.
  *
- * Importing this registers every `<gufe-*>` custom element as a side effect -
- * which is the whole API surface for the HTML export and the future notebook
- * widget: put a `<gufe-view>` on the page and set its `.payload`.
- *
- * `mount()` is the two-line convenience on top of that.
+ * Importing this registers every `<gufe-*>` custom element and sets it's payload.
+ * Each gufe/schema type as a corresponding <gufe-*> element.
+ * This is for the HTML export and soon the notebook widget
  */
 
 import "./gufe-view.js";
@@ -14,11 +12,13 @@ import "./views/protein.js";
 import "./views/ligand-network.js";
 
 export { GufeView, VIEW_TAGS, describeProblem, dispatchProblem } from "./gufe-view.js";
-export { PAYLOAD_TYPES, SCHEMA_TYPES, formatIssues, validatePayload } from "./schema/validate.js";
+export { PAYLOAD_TYPES, SCHEMA_TYPES, formatIssues, validateAs, validatePayload } from "./schema/validate.js";
+export { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryEntry, type RegistryIndex } from "./schema/registry.js";
 export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein } from "./views/protein.js";
-export { GufeLigandNetwork, mappingDataFor } from "./views/ligand-network.js";
+export { GufeLigandNetwork, mappingPayloadFor } from "./views/ligand-network.js";
 export { GufeElement, defineElement, type ViewHandle } from "./shared/element.js";
+export { DEBUG_ATTRIBUTE, DEBUG_GLOBAL, debugEnabled, logPayload, payloadJson } from "./shared/debug.js";
 export type * from "./schema/types.js";
 
 /**

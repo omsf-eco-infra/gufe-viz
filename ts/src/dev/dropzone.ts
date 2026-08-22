@@ -1,7 +1,7 @@
 /**
  * A page you drag a payload JSON onto.
  *
- * No Python, no wiring, no build step in the loop - a file lands on the page and
+ * No Python, no wiring, no build step in the loop: a file lands on the page and
  * a molecule appears. `?file=<url>` loads one on startup instead, so the
  * edit-a-payload-and-reload loop needs no dragging at all.
  *

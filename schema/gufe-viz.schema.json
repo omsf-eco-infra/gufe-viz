@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openfree.energy/schemas/gufe-viz/1.0/gufe-viz.schema.json",
+  "$id": "https://raw.githubusercontent.com/omsf-eco-infra/gufe-viz/main/schema/gufe-viz.schema.json",
   "title": "gufe-viz payload",
-  "description": "The Python-to-TypeScript contract for gufe visualizations. Nothing generates this file, and both languages are downstream of it. A payload is its 'type' plus its own fields, flat, and it is the same object whether it stands alone or is nested inside another. The version lives in $id, not in the payload.",
+  "description": "Python-to-TypeScript contract bridge for gufe visualizations. Source of truth both languages are downstream of it. This schema is not strictly versioned or published as it is only internally consumed by this codebase. Schema description: one schema object per gufe class: every $def named *Viz is the visualization form of exactly one GufeTokenizable, it carries that object's `gufe-key`. Every reference from one gufe object to another is that object's gufe key, and the objects themselves live in the `registry` on the root payload. So a ligand network's nodes are keys, a chemical system's components and a transformation's protocol are keys and each one resolves to a complete, drawable object. An alchemical network whose forty systems share one protein carries that PDB once and points at it forty times, and the browser can still drill into it, because what it points at is a whole ProteinComponentViz. This is a single-shot dump rather than a conversation with a server, so the registry travels with the payload.",
 
   "oneOf": [
     { "$ref": "#/$defs/SmallMoleculeComponentViz" },
@@ -11,6 +11,7 @@
     { "$ref": "#/$defs/ProteinMembraneComponentViz" },
     { "$ref": "#/$defs/SolventComponentViz" },
     { "$ref": "#/$defs/UnknownComponentViz" },
+    { "$ref": "#/$defs/ProtocolViz" },
     { "$ref": "#/$defs/LigandAtomMappingViz" },
     { "$ref": "#/$defs/LigandNetworkViz" },
     { "$ref": "#/$defs/ChemicalSystemViz" },
@@ -19,6 +20,50 @@
   ],
 
   "$defs": {
+    "GufeKey": {
+      "title": "GufeKey",
+      "description": "A gufe key: the identity of a GufeTokenizable, of the form 'ClassName-<hex digest>'. It is deterministic and repeatable within a software environment. Only its non-emptiness is checked",
+      "type": "string",
+      "minLength": 1
+    },
+
+    "ComponentKey": {
+      "title": "ComponentKey",
+      "description": "A gufe key naming a ComponentViz in the registry. Identical to GufeKey at validation time: JSON Schema has no way to say 'this string is the gufe-key of an entry in that array, and that entry has this type', because that is a join across two parts of the document. What the name buys is that the referent's type is stated in the contract and carried into the generated TypeScript, instead of living only in a test and a view.",
+      "$ref": "#/$defs/GufeKey"
+    },
+
+    "SmallMoleculeComponentKey": {
+      "title": "SmallMoleculeComponentKey",
+      "description": "A gufe key naming a SmallMoleculeComponentViz in the registry. Resolving it yields the whole molecule, SDF included. See ComponentKey for what the schema can and cannot check about that.",
+      "$ref": "#/$defs/GufeKey"
+    },
+
+    "ChemicalSystemKey": {
+      "title": "ChemicalSystemKey",
+      "description": "A gufe key naming a ChemicalSystemViz in the registry. See ComponentKey for what the schema can and cannot check about that.",
+      "$ref": "#/$defs/GufeKey"
+    },
+
+    "ProtocolKey": {
+      "title": "ProtocolKey",
+      "description": "A gufe key naming a ProtocolViz in the registry. Every transformation of a network usually names the same one. See ComponentKey for what the schema can and cannot check about that.",
+      "$ref": "#/$defs/GufeKey"
+    },
+
+    "Registry": {
+      "title": "Registry",
+      "description": "The pool of gufe objects this payload refers to by key, each a complete payload object in its own right. Entries are unique by `gufe-key` and sorted by (type, gufe-key) so a committed fixture is byte-stable. JSON Schema cannot express 'unique by a property' or 'every reference resolves', so both are covered by tests on the Python side and degraded over by the views.",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/ComponentViz" },
+          { "$ref": "#/$defs/ProtocolViz" },
+          { "$ref": "#/$defs/ChemicalSystemViz" }
+        ]
+      }
+    },
+
     "ComponentViz": {
       "title": "ComponentViz",
       "description": "Any single chemical-system component",
@@ -34,10 +79,11 @@
 
     "SmallMoleculeComponentViz": {
       "title": "SmallMoleculeComponentViz",
-      "description": "A small molecule, carried as a complete SDF record. The SDF holds the conformer, so nothing downstream reconstructs coordinates.",
+      "description": "A small molecule, carried as a complete SDF record.",
       "type": "object",
       "properties": {
         "type": { "const": "SmallMoleculeComponentViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "sdf": {
           "type": "string",
@@ -50,7 +96,7 @@
           "description": "Net formal charge. Displayed, never recomputed from the SDF."
         }
       },
-      "required": ["type", "name", "sdf", "smiles", "total_charge"],
+      "required": ["type", "gufe-key", "name", "sdf", "smiles", "total_charge"],
       "additionalProperties": false
     },
 
@@ -60,6 +106,7 @@
       "type": "object",
       "properties": {
         "type": { "const": "ProteinComponentViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "pdb": {
           "type": "string",
@@ -67,7 +114,7 @@
           "description": "Complete inline PDB representation."
         }
       },
-      "required": ["type", "name", "pdb"],
+      "required": ["type", "gufe-key", "name", "pdb"],
       "additionalProperties": false
     },
 
@@ -77,6 +124,7 @@
       "type": "object",
       "properties": {
         "type": { "const": "SolvatedPDBComponentViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "pdb": {
           "type": "string",
@@ -84,7 +132,7 @@
           "description": "Complete inline PDB representation, including explicit solvent."
         }
       },
-      "required": ["type", "name", "pdb"],
+      "required": ["type", "gufe-key", "name", "pdb"],
       "additionalProperties": false
     },
 
@@ -94,6 +142,7 @@
       "type": "object",
       "properties": {
         "type": { "const": "ProteinMembraneComponentViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "pdb": {
           "type": "string",
@@ -101,7 +150,7 @@
           "description": "Complete inline PDB representation of the protein and membrane system."
         }
       },
-      "required": ["type", "name", "pdb"],
+      "required": ["type", "gufe-key", "name", "pdb"],
       "additionalProperties": false
     },
 
@@ -111,6 +160,7 @@
       "type": "object",
       "properties": {
         "type": { "const": "SolventComponentViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "smiles": { "type": "string", "minLength": 1 },
         "positive_ion": { "type": "string" },
@@ -123,6 +173,7 @@
       },
       "required": [
         "type",
+        "gufe-key",
         "name",
         "smiles",
         "positive_ion",
@@ -139,6 +190,7 @@
       "type": "object",
       "properties": {
         "type": { "const": "UnknownComponentViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "gufe_type": {
           "type": "string",
@@ -146,33 +198,68 @@
           "description": "The gufe class name, so the panel can say which type it could not draw."
         }
       },
-      "required": ["type", "name", "gufe_type"],
+      "required": ["type", "gufe-key", "name", "gufe_type"],
+      "additionalProperties": false
+    },
+
+    "ProtocolViz": {
+      "title": "ProtocolViz",
+      "description": "A gufe Protocol, named. Every transformation in an alchemical network usually shares one, so this is a registry entry that many edges point at rather than a class name repeated per edge. Settings are deliberately absent for now: they are large, deeply nested, and nothing draws them yet, adding a `settings` field later is additive and breaks nothing.",
+      "type": "object",
+      "properties": {
+        "type": { "const": "ProtocolViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
+        "name": { "type": "string" },
+        "gufe_type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The Protocol's class name, which is what identifies it to a reader, a Protocol has no name of its own, so `name` is usually empty."
+        }
+      },
+      "required": ["type", "gufe-key", "name", "gufe_type"],
       "additionalProperties": false
     },
 
     "ChemicalSystemViz": {
       "title": "ChemicalSystemViz",
-      "description": "Visualization-only representation of a GUFE 1.12 ChemicalSystem.",
+      "description": "A gufe ChemicalSystem: labels mapped to the gufe keys of its components.",
       "type": "object",
       "properties": {
         "type": { "const": "ChemicalSystemViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
         "components": {
           "type": "object",
-          "description": "ChemicalSystem labels mapped to component payloads.",
-          "additionalProperties": { "$ref": "#/$defs/ComponentViz" }
-        }
+          "description": "ChemicalSystem labels mapped to the gufe keys of the components in the registry.",
+          "additionalProperties": { "$ref": "#/$defs/ComponentKey" }
+        },
+        "registry": { "$ref": "#/$defs/Registry" }
       },
-      "required": ["type", "name", "components"],
+      "required": ["type", "gufe-key", "name", "components"],
       "additionalProperties": false
     },
 
     "AtomMapping": {
       "title": "AtomMapping",
-      "description": "Atom index correspondence from molecule A to molecule B. Keys are A's atom indices as decimal strings, because JSON object keys are always strings; values are B's indices as integers.",
-      "type": "object",
-      "propertyNames": { "pattern": "^(0|[1-9][0-9]*)$" },
-      "additionalProperties": { "type": "integer", "minimum": 0 }
+      "description": "Atom index correspondence from molecule A to molecule B, as a list of index pairs. A list rather than an object keyed by A's index, because JSON object keys can only be strings: keying by index would put decimal strings such as '12' in the payload and leave both languages casting them back to integers, and it is Python's dict-of-int shape only by resemblance. As a list, both indices stay integers, and 'an entry has a B index for every A index' becomes a `required` the schema states rather than a convention a reader has to trust. Pairs are ordered by `index_A` so a committed fixture is byte-stable.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index_A": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "An atom index in molecule A."
+          },
+          "index_B": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The atom index in molecule B that it maps to."
+          }
+        },
+        "required": ["index_A", "index_B"],
+        "additionalProperties": false
+      }
     },
 
     "Annotations": {
@@ -183,186 +270,101 @@
 
     "LigandAtomMappingViz": {
       "title": "LigandAtomMappingViz",
-      "description": "One atom mapping between two small molecules, standalone. The same object is what the ligand-network view hands to the embedded mapping viewer when an edge is clicked, so there is one mapping shape rather than a standalone one and an in-graph one.",
+      "description": "One atom mapping between two small molecules. This is also what an edge of a ligand network is because the two endpoints are gufe keys either way: standalone they resolve in this object's own registry, and in a network they resolve in the network's, where they are the same entries the nodes name. `componentA` and `componentB` are the molecules the two sides of `componentA_to_componentB` index into: an `index_A` is an atom of the SmallMoleculeComponentViz that `componentA` names, and an `index_B` an atom of `componentB`'s.",
       "type": "object",
       "properties": {
         "type": { "const": "LigandAtomMappingViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
-        "molA_sdf": { "type": "string", "minLength": 1 },
-        "molB_sdf": { "type": "string", "minLength": 1 },
-        "nameA": { "type": "string" },
-        "nameB": { "type": "string" },
+        "componentA": { "$ref": "#/$defs/SmallMoleculeComponentKey" },
+        "componentB": { "$ref": "#/$defs/SmallMoleculeComponentKey" },
         "componentA_to_componentB": { "$ref": "#/$defs/AtomMapping" },
-        "annotations": { "$ref": "#/$defs/Annotations" }
+        "score": {
+          "type": ["number", "null"],
+          "description": "The 'score' annotation when it is a plain number, otherwise null. This is the one annotation key that is interpreted rather than displayed: it drives the edge colouring and the force layout's link distance."
+        },
+        "annotations": { "$ref": "#/$defs/Annotations" },
+        "registry": { "$ref": "#/$defs/Registry" }
       },
       "required": [
         "type",
+        "gufe-key",
         "name",
-        "molA_sdf",
-        "molB_sdf",
-        "nameA",
-        "nameB",
+        "componentA",
+        "componentB",
         "componentA_to_componentB",
+        "score",
         "annotations"
       ],
       "additionalProperties": false
     },
 
-    "LigandNetworkNodeViz": {
-      "title": "LigandNetworkNodeViz",
-      "description": "One ligand in a network. Molecules live here rather than inlined per edge, because a forty-ligand network would otherwise carry each SDF several times over.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The gufe key. An identity, not a label: gufe's own network fixtures have unnamed molecules, so the view falls back to a short form of this when name is empty."
-        },
-        "name": { "type": "string" },
-        "sdf": { "type": "string", "minLength": 1 },
-        "smiles": { "type": "string" }
-      },
-      "required": ["id", "name", "sdf", "smiles"],
-      "additionalProperties": false
-    },
-
-    "LigandNetworkEdgeViz": {
-      "title": "LigandNetworkEdgeViz",
-      "description": "One mapping in a network, as topology only. Not a standalone payload: source and target name nodes in the same LigandNetworkViz, and the view reassembles a LigandAtomMappingViz from an edge plus its two endpoint nodes. JSON Schema cannot express that referential constraint, so a Python test covers it, and the view drops a dangling edge with a banner rather than failing.",
-      "type": "object",
-      "properties": {
-        "source": { "type": "string", "minLength": 1 },
-        "target": { "type": "string", "minLength": 1 },
-        "score": {
-          "type": ["number", "null"],
-          "description": "The 'score' annotation when it is a plain number, otherwise null. This is the one annotation key that is interpreted rather than displayed: it drives the edge colouring."
-        },
-        "componentA_to_componentB": { "$ref": "#/$defs/AtomMapping" },
-        "annotations": { "$ref": "#/$defs/Annotations" }
-      },
-      "required": ["source", "target", "score", "componentA_to_componentB", "annotations"],
-      "additionalProperties": false
-    },
-
     "LigandNetworkViz": {
       "title": "LigandNetworkViz",
-      "description": "A ligand network as ligands plus topology. Deliberately not gufe's GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.",
+      "description": "A ligand network: the ligands in the registry, the nodes as keys into it, and the mappings as edges. Deliberately not gufe's GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.",
       "type": "object",
       "properties": {
         "type": { "const": "LigandNetworkViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
+        "registry": { "$ref": "#/$defs/Registry" },
         "nodes": {
           "type": "array",
-          "items": { "$ref": "#/$defs/LigandNetworkNodeViz" }
+          "description": "The gufe key of each ligand, resolved in `registry`.",
+          "items": { "$ref": "#/$defs/SmallMoleculeComponentKey" }
         },
         "edges": {
           "type": "array",
-          "items": { "$ref": "#/$defs/LigandNetworkEdgeViz" }
+          "description": "The mappings, whose `componentA` and `componentB` name nodes of this network. JSON Schema cannot express that referential constraint, so a Python test covers it, and the view drops a dangling edge with a banner rather than failing.",
+          "items": { "$ref": "#/$defs/LigandAtomMappingViz" }
         }
       },
-      "required": ["type", "name", "nodes", "edges"],
+      "required": ["type", "gufe-key", "name", "registry", "nodes", "edges"],
       "additionalProperties": false
     },
 
     "TransformationViz": {
       "title": "TransformationViz",
-      "description": "A transformation between two chemical systems. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.",
+      "description": "A transformation between two chemical systems, both named by gufe key, as is its protocol: `stateA` is the system it starts from, `stateB` the one it ends at, and every edge of a network usually names the same protocol. This is also what an edge of an alchemical network is (there is no separate edge type) because `stateA` and `stateB` are keys either way, and in a network they are the keys the nodes name. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.",
       "type": "object",
       "properties": {
         "type": { "const": "TransformationViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
-        "protocol": {
-          "type": "string",
-          "description": "The protocol class name. Named only, never inspected."
-        },
-        "stateA": { "$ref": "#/$defs/ChemicalSystemViz" },
-        "stateB": { "$ref": "#/$defs/ChemicalSystemViz" },
+        "protocol": { "$ref": "#/$defs/ProtocolKey" },
+        "stateA": { "$ref": "#/$defs/ChemicalSystemKey" },
+        "stateB": { "$ref": "#/$defs/ChemicalSystemKey" },
         "mappings": {
           "type": "array",
           "items": { "$ref": "#/$defs/LigandAtomMappingViz" }
-        }
-      },
-      "required": ["type", "name", "protocol", "stateA", "stateB", "mappings"],
-      "additionalProperties": false
-    },
-
-    "ComponentSummaryViz": {
-      "title": "ComponentSummaryViz",
-      "description": "A component named but not drawn. This is deliberately not a ComponentViz and must not be mistaken for one: it carries no structure at all, because an alchemical network that inlined every system's SDF and PDB would be enormous, and this view shows composition and topology rather than chemistry.",
-      "type": "object",
-      "properties": {
-        "label": { "type": "string" },
-        "gufe_type": { "type": "string", "minLength": 1 },
-        "name": { "type": "string" }
-      },
-      "required": ["label", "gufe_type", "name"],
-      "additionalProperties": false
-    },
-
-    "AlchemicalNetworkNodeViz": {
-      "title": "AlchemicalNetworkNodeViz",
-      "description": "One ChemicalSystem in an alchemical network, summarized.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The ChemicalSystem's gufe key. Edges reference it."
         },
-        "name": { "type": "string" },
-        "components": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/ComponentSummaryViz" }
-        }
+        "registry": { "$ref": "#/$defs/Registry" }
       },
-      "required": ["id", "name", "components"],
-      "additionalProperties": false
-    },
-
-    "AlchemicalNetworkEdgeViz": {
-      "title": "AlchemicalNetworkEdgeViz",
-      "description": "One Transformation in an alchemical network.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1,
-          "description": "The Transformation's gufe key."
-        },
-        "name": { "type": "string" },
-        "source": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Node id of stateA."
-        },
-        "target": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Node id of stateB."
-        },
-        "protocol": { "type": "string" }
-      },
-      "required": ["id", "name", "source", "target", "protocol"],
+      "required": ["type", "gufe-key", "name", "protocol", "stateA", "stateB", "mappings"],
       "additionalProperties": false
     },
 
     "AlchemicalNetworkViz": {
       "title": "AlchemicalNetworkViz",
-      "description": "A graph of chemical systems joined by transformations.",
+      "description": "A graph of chemical systems joined by transformations. What repeats here is not the nodes and edges themselves but what they are made of: in practice every system shares one protein and every transformation shares one protocol. Both live in the registry, once, as whole objects so this view can show composition and topology while still letting a reader open a node and see the protein.",
       "type": "object",
       "properties": {
         "type": { "const": "AlchemicalNetworkViz" },
+        "gufe-key": { "$ref": "#/$defs/GufeKey" },
         "name": { "type": "string" },
+        "registry": { "$ref": "#/$defs/Registry" },
         "nodes": {
           "type": "array",
-          "items": { "$ref": "#/$defs/AlchemicalNetworkNodeViz" }
+          "description": "The gufe key of each ChemicalSystem, resolved in `registry`.",
+          "items": { "$ref": "#/$defs/ChemicalSystemKey" }
         },
         "edges": {
           "type": "array",
-          "items": { "$ref": "#/$defs/AlchemicalNetworkEdgeViz" }
+          "description": "The transformations, whose `stateA` and `stateB` name nodes of this network.",
+          "items": { "$ref": "#/$defs/TransformationViz" }
         }
       },
-      "required": ["type", "name", "nodes", "edges"],
+      "required": ["type", "gufe-key", "name", "registry", "nodes", "edges"],
       "additionalProperties": false
     }
   }

@@ -54,6 +54,23 @@ description = "Rebuild examples/*.json from real gufe objects."
 cmd = "python scripts/make_examples.py"
 
 # --------------------------------------------------------------------------- #
+# Rendering                                                                     #
+# --------------------------------------------------------------------------- #
+#
+# `gufe-viz` is a console script from pyproject.toml, so it is already on PATH
+# inside this environment and `pixi run gufe-viz ...` would work with no task at
+# all. It is declared anyway, because I use 'pixi run' by default, so it's a nice
+# convenience. Arguments after the task name are appended to `cmd`
+
+[tasks.gufe-viz]
+description = "Render a payload or gufe object as one page: `pixi run gufe-viz examples/small_molecule.json -o /tmp/mol.html`"
+cmd = "python -m gufe_viz.cli"
+
+[tasks.gufe-viz-debug]
+description = "The same, with the payload printed to the browser console (also reachable as <url>?debug)."
+cmd = "python -m gufe_viz.cli --debug"
+
+# --------------------------------------------------------------------------- #
 # Checks                                                                        #
 # --------------------------------------------------------------------------- #
 

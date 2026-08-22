@@ -19,6 +19,12 @@ network access at all.
 The bootstrap uses only the custom-element API (``document.querySelector`` plus
 a ``.payload`` assignment). That is on purpose: it does not depend on any name
 the bundler chose, and it is the same two lines the notebook widget will use.
+
+``to_html(obj, debug=True)`` puts a ``debug`` attribute on the ``<gufe-view>``,
+which makes the bundle print the payload it was handed to the browser console.
+It is not the only way in: any page this writes also answers to ``?debug`` in
+its URL, so a file already on disk can be re-opened as
+``file:///.../out.html?debug`` and print the same thing without being rebuilt.
 """
 
 from __future__ import annotations
@@ -73,7 +79,7 @@ _TEMPLATE = Template("""<!doctype html>
 </head>
 <body>
 <div id="gufe-error"></div>
-<gufe-view></gufe-view>
+<gufe-view$view_attributes></gufe-view>
 <script id="gufe-payload" type="application/json">$payload</script>
 $engines
 <script type="module">
@@ -126,7 +132,7 @@ def _as_payload_dict(obj: GufeTokenizable | dict[str, Any]) -> dict[str, Any]:
     return payload_for(obj)
 
 
-def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None) -> str:
+def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None, debug: bool = False) -> str:
     """Return a standalone HTML page that renders ``obj`` as a string.
 
     Parameters
@@ -135,6 +141,11 @@ def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None) 
         A GufeTokenizable object, or an already-built payload dict.
     title
         The page ``<title>``. Defaults to the payload's name, then its type.
+    debug
+        Bake the debug switch into the page, so it prints the payload it was
+        handed to the browser console before drawing anything. The same page
+        without this also prints it when opened as ``<url>?debug``; the flag is
+        for handing someone a file that does it on its own.
 
     Returns
     -------
@@ -161,6 +172,9 @@ def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None) 
         payload=json.dumps(payload).replace("</", "<\\/"),
         engines=_CDN_ENGINES_NOTE,
         code=_script_safe(code),
+        # A bare boolean attribute, because that is what the element tests for -
+        # no value to keep in step between the two languages.
+        view_attributes=" debug" if debug else "",
     )
 
 

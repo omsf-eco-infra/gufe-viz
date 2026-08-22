@@ -1,9 +1,12 @@
 /**
  * `<gufe-ligand-network>` - the network graph, and a detail pane driven by it.
  *
- * This file is drawing code and nothing else. Python hands over SDF per ligand
- * and flat topology per mapping, so nothing here decodes a structure format:
- * no atomic-number tables, no conformer blobs, no GraphML.
+ * This file is drawing code and nothing else. Python hands over the ligands in
+ * the payload's registry and the mappings as edges that name them by gufe key,
+ * so nothing here decodes a structure format: no atomic-number tables, no
+ * conformer blobs, no GraphML. Resolving a key gives back a whole
+ * `SmallMoleculeComponentViz` - which is what lets the detail pane draw the two
+ * molecules of the selected mapping without a second shape to unpack.
  *
  * d3 is used for one thing: the force layout. Zoom, pan, drag, the colour ramp
  * and the SVG itself are plain DOM, so a network still draws when d3 cannot be
@@ -24,12 +27,8 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG, parseCounts } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
-import type {
-  LigandAtomMappingViz,
-  LigandNetworkEdgeViz,
-  LigandNetworkNodeViz,
-  LigandNetworkViz,
-} from "../schema/types.js";
+import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
+import type { LigandAtomMappingViz, LigandNetworkViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
 // --- just enough of d3-force to configure it -------------------------------
 //
@@ -39,7 +38,7 @@ import type {
 
 interface D3Force {
   id(accessor: (node: NetNode) => string): D3Force;
-  distance(value: number | ((link: NetEdge) => number)): D3Force;
+  distance(value: number | ((link: D3Link) => number)): D3Force;
   strength(value: number): D3Force;
   distanceMin(value: number): D3Force;
   distanceMax(value: number): D3Force;
@@ -54,9 +53,17 @@ interface D3Simulation {
   alphaDecay(): number;
 }
 
+/** What d3-force wants a link to look like. It rewrites these in place, which
+ * is why they are their own objects rather than the payload's edges. */
+interface D3Link {
+  source: string;
+  target: string;
+  score: number | null;
+}
+
 interface D3ForceModule {
   forceSimulation(nodes: NetNode[]): D3Simulation;
-  forceLink(links: NetEdge[]): D3Force;
+  forceLink(links: D3Link[]): D3Force;
   forceManyBody(): D3Force;
   forceCenter(x: number, y: number): D3Force;
   forceCollide(radius: number): D3Force;
@@ -66,8 +73,13 @@ interface D3ForceModule {
 
 // --- layout state ----------------------------------------------------------
 
-/** A payload node with the coordinates the layout gives it. d3 mutates these. */
-interface NetNode extends LigandNetworkNodeViz {
+/**
+ * A ligand resolved out of the registry, with the coordinates the layout gives
+ * it. It is the whole `SmallMoleculeComponentViz` - SDF, SMILES and all - not a
+ * node-shaped subset of one, so the depiction and the detail pane read the same
+ * object the schema declares.
+ */
+interface NetNode extends SmallMoleculeComponentViz {
   x: number;
   y: number;
   /** Pinned position: set by the non-force layouts and by dragging. */
@@ -75,8 +87,11 @@ interface NetNode extends LigandNetworkNodeViz {
   fy?: number;
 }
 
-/** A payload edge with its endpoints resolved. d3-force replaces the ids. */
-interface NetEdge extends LigandNetworkEdgeViz {
+/**
+ * An edge - which is a `LigandAtomMappingViz`, the same object a standalone
+ * mapping payload is - with its two endpoint keys resolved to their ligands.
+ */
+interface NetEdge extends LigandAtomMappingViz {
   index: number;
   from: NetNode;
   to: NetNode;
@@ -141,46 +156,33 @@ function scoreColor(score: number | null | undefined): string {
   return `rgb(${mix.join(",")})`;
 }
 
-/**
- * A node's label. gufe's own network fixtures have unnamed molecules, and a row
- * of blank circles is not a visualization - so fall back to the distinctive
- * tail of the gufe key rather than to nothing.
- */
-function label(node: LigandNetworkNodeViz): string {
-  if (node.name) return node.name;
-  const tail = node.id.split("-").pop() ?? node.id;
-  return tail.slice(0, 6);
-}
+/** A ligand's label, from the registry entry the node key resolved to. */
+const label = entryLabel;
 
 const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}...` : text);
 
 /**
- * The edge as the atom-mapping viewer wants it.
+ * A network edge, cut loose as a payload that stands on its own.
  *
- * This is the component-reuse seam. The payload keeps molecules in `nodes` and
- * the correspondence in `edges` so a forty-ligand network carries each SDF
- * once; this puts the two back together.
+ * This is the component-reuse seam, and after the registry change there is
+ * almost nothing left of it: an edge already *is* a `LigandAtomMappingViz`, so
+ * all this does is give it a registry of its own holding the two ligands it
+ * names. There is no field to rename, no molecule to inline and no second
+ * mapping shape to translate into.
  *
- * What comes out is a **complete, schema-valid `LigandAtomMappingViz`** - the
- * `type` and `name` are here rather than being filled in by the caller, because
- * that is the whole claim: what the network view hands to `<gufe-atom-mapping>`
- * is byte-for-byte the kind of payload that element receives standalone. Same
- * component, standalone or embedded, with no second code path and no
- * translation step.
+ * What comes out is exactly the payload `<gufe-atom-mapping>` will receive when
+ * someone drops a mapping on the page by itself. `ts/tests/views.test.ts`
+ * validates the result against the schema, so that claim is checked rather than
+ * asserted in a comment.
+ *
+ * Returns `null` when either endpoint names nothing the registry holds - the
+ * same schema-valid-but-undrawable case the view drops with a banner.
  */
-export function mappingDataFor(edge: NetEdge): LigandAtomMappingViz {
-  const nameA = label(edge.from);
-  const nameB = label(edge.to);
-  return {
-    type: "LigandAtomMappingViz",
-    name: nameA || nameB ? `${nameA} -> ${nameB}` : "",
-    molA_sdf: edge.from.sdf,
-    molB_sdf: edge.to.sdf,
-    nameA,
-    nameB,
-    componentA_to_componentB: edge.componentA_to_componentB ?? {},
-    annotations: edge.annotations ?? {},
-  };
+export function mappingPayloadFor(edge: LigandAtomMappingViz, registry: RegistryIndex): LigandAtomMappingViz | null {
+  const from = lookupOfType<SmallMoleculeComponentViz>(registry, edge.componentA, "SmallMoleculeComponentViz");
+  const to = lookupOfType<SmallMoleculeComponentViz>(registry, edge.componentB, "SmallMoleculeComponentViz");
+  if (!from || !to) return null;
+  return { ...edge, registry: from["gufe-key"] === to["gufe-key"] ? [from] : [from, to] };
 }
 
 export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
@@ -189,18 +191,31 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   }
 
   protected renderView(host: HTMLDivElement, payload: LigandNetworkViz): ViewHandle {
-    const nodes: NetNode[] = (payload.nodes ?? []).map((n) => ({ ...n, x: 0, y: 0 }));
-    const byId = new Map(nodes.map((n) => [n.id, n]));
+    // The nodes are gufe keys; the ligands themselves are in the registry. A key
+    // that names no entry is a schema-valid payload the view has to survive -
+    // JSON Schema cannot express "this key resolves" - so it is counted and
+    // reported rather than crashed on.
+    const registry = buildRegistry(payload);
+    const nodes: NetNode[] = [];
+    let unresolved = 0;
+    for (const key of payload.nodes ?? []) {
+      const ligand = lookupOfType<SmallMoleculeComponentViz>(registry, key, "SmallMoleculeComponentViz");
+      if (!ligand) {
+        unresolved++;
+        continue;
+      }
+      nodes.push({ ...ligand, x: 0, y: 0 });
+    }
+    const byKey = new Map(nodes.map((n) => [n["gufe-key"], n]));
 
-    // An edge whose endpoints are not both in `nodes` cannot be drawn. JSON
-    // Schema cannot express "source names a node that exists", so this is a
-    // schema-valid payload the view has to handle: drop the edge, and say how
-    // many were dropped rather than silently showing a smaller network.
+    // The same rule for an edge: both endpoints must name ligands this network
+    // actually contains. Drop the edge, and say how many were dropped rather
+    // than silently showing a smaller network.
     const edges: NetEdge[] = [];
     let dangling = 0;
     for (const edge of payload.edges ?? []) {
-      const from = byId.get(edge.source);
-      const to = byId.get(edge.target);
+      const from = byKey.get(edge.componentA);
+      const to = byKey.get(edge.componentB);
       if (!from || !to) {
         dangling++;
         continue;
@@ -230,9 +245,22 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const detail = this.#detailPane(right);
 
     if (!nodes.length) {
-      canvas.appendChild(centredMessage("This network has no ligands."));
+      // Naming the cause matters here: "no ligands" and "the ligands it names
+      // are missing from its registry" are very different bugs to go looking
+      // for, and only the payload knows which one happened.
+      canvas.appendChild(
+        centredMessage(
+          unresolved ? "None of this network's ligands are in its registry." : "This network has no ligands.",
+        ),
+      );
       detail.message("Nothing to show.");
       return {};
+    }
+    if (unresolved) {
+      floatingWarning(
+        canvas,
+        `${unresolved} ligand${unresolved === 1 ? "" : "s"} named by this network are not in its registry`,
+      );
     }
     if (dangling) {
       floatingWarning(canvas, `${dangling} mapping${dangling === 1 ? "" : "s"} name a ligand this network does not contain`);
@@ -360,20 +388,21 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         message("Click an edge to see its mapping.");
         return;
       }
-      const mapping = mappingDataFor(edge);
+      // The endpoints are already resolved to whole ligands, so the pane reads
+      // the same `SmallMoleculeComponentViz` the single-molecule view does.
       body.replaceChildren();
 
       const heading = el(
         "div",
         `padding:10px 14px;font-size:13px;font-weight:600;color:${T.textPrimary};` +
           `border-bottom:1px solid ${T.toolbarBorder};`,
-        `${mapping.nameA} -> ${mapping.nameB}`,
+        `${label(edge.from)} -> ${label(edge.to)}`,
       );
       body.appendChild(heading);
 
       const pair = el("div", "display:flex;flex-direction:row;min-height:180px;");
       body.appendChild(pair);
-      const boxes = [mapping.molA_sdf, mapping.molB_sdf].map((sdf, i) => {
+      const boxes = [edge.from.sdf, edge.to.sdf].map((sdf, i) => {
         const pane = el("div", "flex:1 1 50%;min-width:0;display:flex;flex-direction:column;");
         pane.appendChild(
           el("div", `padding:4px 10px;font-size:11px;color:${T.textMuted2};`, i === 0 ? "A" : "B"),
@@ -389,9 +418,9 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         return { box, sdf };
       });
 
-      const mapped = Object.keys(mapping.componentA_to_componentB ?? {}).length;
-      const countsA = parseCounts(mapping.molA_sdf);
-      const countsB = parseCounts(mapping.molB_sdf);
+      const mapped = (edge.componentA_to_componentB ?? []).length;
+      const countsA = parseCounts(edge.from.sdf);
+      const countsB = parseCounts(edge.to.sdf);
       const stats = el(
         "div",
         "display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 14px;font-size:11px;" +
@@ -403,7 +432,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       stats.appendChild(statChip("atoms B", countsB ? String(countsB.atoms) : EM_DASH));
       body.appendChild(stats);
 
-      const annotations = Object.entries(mapping.annotations ?? {}).filter(([key]) => key !== "score");
+      const annotations = Object.entries(edge.annotations ?? {}).filter(([key]) => key !== "score");
       if (annotations.length) {
         const list = el(
           "div",
@@ -507,7 +536,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const depictionGroups: SVGGElement[] = [];
     const initials: SVGTextElement[] = [];
     const groups = nodes.map((node) => {
-      const group = titled(svg("g", { style: "cursor:grab;" }), `${label(node)}\n${node.smiles ?? ""}\nid: ${node.id}`);
+      const group = titled(svg("g", { style: "cursor:grab;" }), `${label(node)}\n${node.smiles ?? ""}\n${node["gufe-key"]}`);
       group.appendChild(
         svg("circle", {
           r: NODE_RADIUS,
@@ -724,23 +753,23 @@ function seedPositions(nodes: NetNode[], width: number, height: number, layout: 
   if (layout === "Radial" && nodes.length) {
     // Breadth-first rings from the best-connected ligand - the shape a hub-and-
     // spoke network actually has, which a circle hides.
-    const neighbours = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
+    const neighbours = new Map<string, string[]>(nodes.map((n) => [n["gufe-key"], []]));
     for (const edge of edges) {
-      neighbours.get(edge.from.id)!.push(edge.to.id);
-      neighbours.get(edge.to.id)!.push(edge.from.id);
+      neighbours.get(edge.from["gufe-key"])!.push(edge.to["gufe-key"]);
+      neighbours.get(edge.to["gufe-key"])!.push(edge.from["gufe-key"]);
     }
-    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const byKey = new Map(nodes.map((n) => [n["gufe-key"], n]));
     const start = nodes.reduce((best, n) =>
-      neighbours.get(n.id)!.length > neighbours.get(best.id)!.length ? n : best,
+      neighbours.get(n["gufe-key"])!.length > neighbours.get(best["gufe-key"])!.length ? n : best,
     );
 
-    const seen = new Set([start.id]);
-    let level = [start.id];
+    const seen = new Set([start["gufe-key"]]);
+    let level = [start["gufe-key"]];
     let depth = 0;
     const step = Math.min(width, height) * 0.18;
     while (level.length) {
       ring(
-        level.map((id) => byId.get(id)!),
+        level.map((key) => byKey.get(key)!),
         depth === 0 ? 0 : depth * step + 40,
       );
       const next: string[] = [];
@@ -756,7 +785,7 @@ function seedPositions(nodes: NetNode[], width: number, height: number, layout: 
       depth++;
     }
     // Anything unreachable from the hub still needs somewhere to be.
-    ring(nodes.filter((n) => !seen.has(n.id)), Math.min(width, height) * 0.45);
+    ring(nodes.filter((n) => !seen.has(n["gufe-key"])), Math.min(width, height) * 0.45);
     return;
   }
 
@@ -779,15 +808,15 @@ async function relax(nodes: NetNode[], edges: NetEdge[], width: number, height: 
   }
 
   // d3-force rewrites link endpoints in place, so it gets its own objects.
-  const links: NetEdge[] = edges.map((edge) => ({ ...edge, source: edge.from.id, target: edge.to.id }));
+  const links: D3Link[] = edges.map((edge) => ({ source: edge.from["gufe-key"], target: edge.to["gufe-key"], score: edge.score }));
   const simulation = d3
     .forceSimulation(nodes)
     .force(
       "link",
       d3
         .forceLink(links)
-        .id((node: NetNode) => node.id)
-        .distance((link: NetEdge) => FORCE.linkBaseDistance + (1 - (link.score ?? 0.5)) * FORCE.linkScoreBonus)
+        .id((node: NetNode) => node["gufe-key"])
+        .distance((link: D3Link) => FORCE.linkBaseDistance + (1 - (link.score ?? 0.5)) * FORCE.linkScoreBonus)
         .strength(FORCE.linkStrength),
     )
     .force(

@@ -215,6 +215,13 @@ export function applyMutation(payload: Record<string, unknown>, mutation: Mutati
 
   const leaf = parts[parts.length - 1];
   if (Array.isArray(node)) {
+    // `-` is RFC 6901's "past the end" token: `add` there appends, which is what
+    // the registry rows use. Anything else needs a real index.
+    if (leaf === "-") {
+      if (mutation.op !== "add") throw new Error(`op ${mutation.op} is not supported at the end of an array`);
+      node.push(mutation.value);
+      return result;
+    }
     const index = Number(leaf);
     if (!Number.isInteger(index) || index < 0 || index >= node.length) throw new PointerMissing(mutation.path);
     if (mutation.op === "remove") node.splice(index, 1);

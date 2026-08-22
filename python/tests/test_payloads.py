@@ -27,6 +27,11 @@ def _validate(payload: dict) -> None:
     jsonschema.validate(payload, json.loads(SCHEMA_PATH.read_text(encoding="utf-8")))
 
 
+def _registry(payload: dict) -> dict[str, dict]:
+    """A payload's registry as ``{gufe-key: entry}``, the way a view reads it."""
+    return {entry["gufe-key"]: entry for entry in payload.get("registry", [])}
+
+
 def _declared_types(schema: dict) -> set[str]:
     """Every ``type`` const the schema declares, read from ``$defs``.
 
@@ -39,6 +44,17 @@ def _declared_types(schema: dict) -> set[str]:
         for definition in schema["$defs"].values()
         if "properties" in definition and "type" in definition.get("properties", {})
     }
+
+
+def _single_ref(schema: dict, name: str) -> dict:
+    """A schema document that accepts one declared type and nothing else.
+
+    The review asked for exactly this shape - a document per object type that
+    ``$ref``s one branch - both as the thing to publish alongside the union and
+    as the thing tests validate against. Built here rather than committed,
+    because the union is the single source and these are derivable from it.
+    """
+    return {"$schema": schema["$schema"], "$defs": schema["$defs"], "$ref": f"#/$defs/{name}"}
 
 
 class TestContractParity:
@@ -75,6 +91,27 @@ class TestContractParity:
             assert payload["type"] == declared
             _validate(payload)
 
+    def test_no_declared_type_accepts_another_type_s_payload(self, schema, every_payload_type):
+        """The discriminator is load-bearing, for all twelve types.
+
+        The top-level ``oneOf`` only says a payload is *some* declared type.
+        This says it is the intended one: each payload is validated against the
+        single-``$ref`` document for every other declared type and has to fail
+        every time.
+
+        The pair this exists for is ``ProtocolViz`` and ``UnknownComponentViz``.
+        Their field sets are identical - ``type``, ``gufe-key``, ``name``,
+        ``gufe_type`` - so the ``type`` const is the only thing between them,
+        and neither has a committed example to catch it from the other side.
+        """
+        import jsonschema
+
+        for declared, payload in every_payload_type.items():
+            jsonschema.validate(payload, _single_ref(schema, declared))
+            for other in sorted(_declared_types(schema) - {declared}):
+                with pytest.raises(jsonschema.ValidationError):
+                    jsonschema.validate(payload, _single_ref(schema, other))
+
     def test_typescript_draws_a_subset_of_what_the_schema_declares(self, schema):
         """Every `type` the TS dispatch table claims must exist in the schema.
 
@@ -102,6 +139,29 @@ class TestGoldenPayloads:
         name, payload = example
         jsonschema.validate(payload, schema)  # raises with a useful path on failure
         assert isinstance(payload["type"], str), name
+
+    def test_validates_as_its_own_type_and_as_no_other(self, example, schema):
+        """A payload passes the branch it names, and fails every other branch.
+
+        The top-level ``oneOf`` only proves a payload is *some* declared type.
+        This proves it is the *intended* one: validating each fixture against
+        the single-``$ref`` document for every other declared type, and
+        requiring a failure each time. That is what makes the ``type``
+        discriminator load-bearing rather than decorative - if two types were
+        ever loose enough to accept each other's payloads, a view would dispatch
+        on ``type`` to something the schema could not tell apart.
+        """
+        import jsonschema
+
+        name, payload = example
+        declared = payload["type"]
+        others = sorted(_declared_types(schema) - {declared})
+        assert others, name
+
+        jsonschema.validate(payload, _single_ref(schema, declared))
+        for other in others:
+            with pytest.raises(jsonschema.ValidationError):
+                jsonschema.validate(payload, _single_ref(schema, other))
 
     def test_contains_only_values_the_browser_can_parse(self, example):
         """No NaN or Infinity anywhere in the payload.
@@ -199,12 +259,20 @@ class TestDispatch:
         so it is left to raise while an *unrecognized* type still degrades.
         """
         import gufe
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
 
         class BrokenMolecule(gufe.SmallMoleculeComponent):
             def to_sdf(self):
                 raise RuntimeError("no conformer")
 
-        broken = BrokenMolecule.__new__(BrokenMolecule)
+        # A real molecule with one broken method, rather than an uninitialized
+        # shell: every payload now reads `.key` first, and a shell has no key
+        # either - which would prove nothing about the serializer.
+        mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))
+        AllChem.EmbedMolecule(mol, randomSeed=0xF00D)
+        broken = BrokenMolecule.from_rdkit(mol)
+
         with pytest.raises(RuntimeError, match="no conformer"):
             component_payload(broken)
 
@@ -258,22 +326,38 @@ class TestBuilders:
         assert "molar" in payload["ion_concentration"]
         _validate(payload)
 
-    def test_mapping_carries_both_endpoints_and_the_index_map(self):
+    def test_mapping_carries_both_endpoints_by_key_and_the_index_map(self):
+        """A standalone mapping names its two molecules and carries them once.
+
+        The endpoints are gufe keys resolved in the mapping's own registry -
+        exactly as they are when the same object is an edge of a ligand network,
+        where they resolve in the network's registry instead. One shape, two
+        contexts.
+        """
         from .conftest import read_example
 
         payload = read_example("ligand_atom_mapping.json")
-        assert payload["molA_sdf"].strip() and payload["molB_sdf"].strip()
-        # JSON object keys are strings, so the A-side indices are stringified.
-        assert all(k.isdigit() for k in payload["componentA_to_componentB"])
-        assert all(isinstance(v, int) for v in payload["componentA_to_componentB"].values())
+        registry = _registry(payload)
+        for side in ("componentA", "componentB"):
+            molecule = registry[payload[side]]
+            assert molecule["type"] == "SmallMoleculeComponentViz"
+            assert molecule["sdf"].strip()
+
+        # A list of integer pairs, not an object keyed by a stringified index.
+        pairs = payload["componentA_to_componentB"]
+        assert isinstance(pairs, list)
+        assert all(isinstance(pair["index_A"], int) and isinstance(pair["index_B"], int) for pair in pairs)
+        assert [pair["index_A"] for pair in pairs] == sorted(pair["index_A"] for pair in pairs)
         _validate(payload)
 
-    def test_ligand_network_carries_ligands_once_and_topology_flat(self):
-        """Nodes hold the structures, edges hold ids - never gufe's GraphML.
+    def test_ligand_network_carries_each_ligand_exactly_once(self):
+        """The registry holds the structures; nodes and edges hold keys.
 
-        The GraphML embeds a gufe ``to_json`` moldict per node, so forwarding it
-        would put a ``.npy`` conformer decoder in TypeScript. These are the
-        assertions that keep it out.
+        This is the deduplication the whole registry exists for: the three
+        molecules of gufe's fixture appear in three mappings between them, and
+        each SDF is carried once rather than twice over. Never gufe's GraphML -
+        that embeds a gufe ``to_json`` moldict per node, so forwarding it would
+        put a ``.npy`` conformer decoder in TypeScript.
         """
         from .conftest import read_example
 
@@ -284,18 +368,36 @@ class TestBuilders:
             assert len(payload["nodes"]) == 3, name
             assert len(payload["edges"]) == 3, name
 
-            ids = {node["id"] for node in payload["nodes"]}
-            assert len(ids) == 3, f"{name}: node ids are not unique"
-            for node in payload["nodes"]:
-                assert node["sdf"].strip(), name
-                assert "$$$$" in node["sdf"], f"{name}: {node['id']} is not a complete SDF record"
+            registry = _registry(payload)
+            assert len(registry) == len(payload["registry"]), f"{name}: registry keys are not unique"
+            assert len(set(payload["nodes"])) == 3, f"{name}: node keys are not unique"
+
+            # Every ligand is a whole SmallMoleculeComponentViz, so clicking
+            # into a node or an edge yields something drawable rather than a
+            # name-only stub.
+            for key in payload["nodes"]:
+                node = registry[key]
+                assert node["type"] == "SmallMoleculeComponentViz", name
+                assert "$$$$" in node["sdf"], f"{name}: {key} is not a complete SDF record"
+
             for edge in payload["edges"]:
                 # Every endpoint must name a node. The view can survive a
                 # dangling edge, but a builder must never emit one - and JSON
                 # Schema cannot say so, which is why this is a test.
-                assert edge["source"] in ids, name
-                assert edge["target"] in ids, name
-                assert all(k.isdigit() for k in edge["componentA_to_componentB"]), name
+                assert edge["type"] == "LigandAtomMappingViz", name
+                assert edge["componentA"] in payload["nodes"], name
+                assert edge["componentB"] in payload["nodes"], name
+                assert all(
+                    isinstance(pair["index_A"], int) and isinstance(pair["index_B"], int)
+                    for pair in edge["componentA_to_componentB"]
+                ), name
+
+            # The point of the exercise: three mappings name six endpoints
+            # between them, and the payload carries three molecules.
+            endpoints = [edge[side] for edge in payload["edges"] for side in ("componentA", "componentB")]
+            assert len(endpoints) == 6, name
+            assert len(registry) == 3, f"{name}: the registry did not deduplicate"
+
             _validate(payload)
 
     def test_ligand_network_named_variant_differs_only_in_names(self):
@@ -305,8 +407,8 @@ class TestBuilders:
         unnamed = read_example("ligand_network.json")
         named = read_example("ligand_network_named.json")
 
-        assert [n["name"] for n in unnamed["nodes"]] == ["", "", ""]
-        assert [n["name"] for n in named["nodes"]] == [n["smiles"] for n in named["nodes"]]
+        assert [entry["name"] for entry in unnamed["registry"]] == ["", "", ""]
+        assert [entry["name"] for entry in named["registry"]] == [entry["smiles"] for entry in named["registry"]]
         assert sorted(e["score"] for e in unnamed["edges"]) == sorted(e["score"] for e in named["edges"])
 
     def test_a_score_annotation_becomes_the_edge_score(self):
@@ -321,64 +423,93 @@ class TestBuilders:
         # a thing - so booleans are excluded deliberately.
         assert mapping_score({"score": True}) is None
 
-    def test_chemical_system_keys_components_by_label(self):
+    def test_chemical_system_maps_labels_to_component_keys(self):
         from .conftest import read_example
 
         payload = read_example("chemical_system.json")
         components = payload["components"]
         assert set(components) == {"ligand", "solvent"}
 
+        registry = _registry(payload)
+        ligand = registry[components["ligand"]]
+        solvent = registry[components["solvent"]]
+
         # Each component carries its own type's fields and *only* those. The
         # keys another type would use are absent rather than present-and-null,
         # which is what lets the schema forbid them instead of merely tolerating
-        # them - see the exclusivity mutations in schema/mutations.json.
-        assert components["ligand"]["type"] == "SmallMoleculeComponentViz"
-        assert components["ligand"]["sdf"]
-        assert "pdb" not in components["ligand"]
-        assert "neutralize" not in components["ligand"]
+        # them - see the exclusivity mutations in python/tests/mutations.json.
+        assert ligand["type"] == "SmallMoleculeComponentViz"
+        assert ligand["sdf"]
+        assert "pdb" not in ligand
+        assert "neutralize" not in ligand
 
-        assert components["solvent"]["type"] == "SolventComponentViz"
-        assert components["solvent"]["ion_concentration"]
-        assert "sdf" not in components["solvent"]
-        assert "pdb" not in components["solvent"]
+        assert solvent["type"] == "SolventComponentViz"
+        assert solvent["ion_concentration"]
+        assert "sdf" not in solvent
+        assert "pdb" not in solvent
         _validate(payload)
 
-    def test_transformation_states_are_whole_chemical_systems(self, every_payload_type):
-        """A transformation's two states are complete ChemicalSystemViz objects.
+    def test_transformation_names_its_states_and_protocol_by_key(self, every_payload_type):
+        """A transformation's states are complete ChemicalSystemViz objects, and
+        its protocol is a complete ProtocolViz - both reached through the
+        registry.
 
         The alternative - a bespoke sub-shape for "a system inside a
-        transformation" - is what would make the chemical-system view unusable
-        for drawing either half of a diff.
+        transformation", and a bare class-name string for the protocol - is what
+        would make the chemical-system view unusable for drawing either half of
+        a diff, and would leave a protocol with nowhere to grow.
         """
         payload = every_payload_type["TransformationViz"]
-        assert payload["protocol"] == "DummyProtocol"
+        registry = _registry(payload)
+
+        assert registry[payload["protocol"]]["gufe_type"] == "DummyProtocol"
         for state in (payload["stateA"], payload["stateB"]):
-            assert state["type"] == "ChemicalSystemViz"
-            _validate(state)
+            system = registry[state]
+            assert system["type"] == "ChemicalSystemViz"
+            # Its own components resolve in the same registry.
+            for component_key in system["components"].values():
+                assert registry[component_key]["type"].endswith("ComponentViz")
 
     def test_alchemical_network_edges_reference_nodes_that_exist(self, every_payload_type):
         """Referential integrity, which JSON Schema cannot express.
 
         The same rule the ligand network is held to, one level up: an edge
         naming a system that is not in ``nodes`` is a graph the view cannot
-        draw, and only a test can catch it.
+        draw, and only a test can catch it. Registering the nodes before the
+        edges is what makes it true by construction.
         """
         network = every_payload_type["AlchemicalNetworkViz"]
-        node_ids = {node["id"] for node in network["nodes"]}
-        assert len(node_ids) == len(network["nodes"]), "node ids are not unique"
+        registry = _registry(network)
+        assert len(set(network["nodes"])) == len(network["nodes"]), "node keys are not unique"
         assert network["edges"], "the fixture has no edges to check"
         for edge in network["edges"]:
-            assert edge["source"] in node_ids
-            assert edge["target"] in node_ids
+            assert edge["type"] == "TransformationViz"
+            assert edge["stateA"] in network["nodes"]
+            assert edge["stateB"] in network["nodes"]
+            assert registry[edge["protocol"]]["type"] == "ProtocolViz"
 
-    def test_a_nested_component_is_the_same_object_as_a_standalone_one(self):
-        """The claim the single ComponentViz union is making, asserted directly.
+    def test_an_alchemical_network_carries_its_shared_protocol_once(self, every_payload_type):
+        """The deduplication the registry buys on the alchemical side.
 
-        A component inside a chemical system validates as a payload on its own,
-        with no unwrapping step - which is what lets the chemical-system view
-        hand the sub-object straight to the element that claims its type.
+        Every edge of a real network names the same protocol, and every node
+        usually shares one protein. Both are registry entries, so the payload
+        carries them once however many edges point at them.
+        """
+        network = every_payload_type["AlchemicalNetworkViz"]
+        protocols = [entry for entry in network["registry"] if entry["type"] == "ProtocolViz"]
+        assert len(protocols) == 1
+        assert {edge["protocol"] for edge in network["edges"]} == {protocols[0]["gufe-key"]}
+
+    def test_a_registry_entry_is_the_same_object_as_a_standalone_payload(self):
+        """The claim the one-object-per-gufe-class rule is making, asserted directly.
+
+        A component in a registry validates as a payload on its own, with no
+        unwrapping step - which is what lets a view hand the entry straight to
+        the element that claims its type, and what makes drilling into a network
+        node possible at all.
         """
         from .conftest import read_example
 
-        for component in read_example("chemical_system.json")["components"].values():
-            _validate(component)
+        for name in ("chemical_system.json", "ligand_network.json", "ligand_atom_mapping.json"):
+            for entry in read_example(name)["registry"]:
+                _validate(entry)

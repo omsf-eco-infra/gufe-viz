@@ -68,6 +68,32 @@
       "pointerContains": ""
     },
     {
+      "id": "drop-the-gufe-key",
+      "why": "Every payload stands for a GufeTokenizable and carries its key. Without one it cannot be put in a registry, cannot be referred to, and cannot be identified when it fails to draw.",
+      "op": "remove",
+      "path": "/gufe-key",
+      "expect": "invalid",
+      "pointerContains": ""
+    },
+    {
+      "id": "empty-gufe-key",
+      "why": "minLength:1 - an empty key is a builder that read `.key` off something that does not have one, and it would silently collide with every other empty key in the registry.",
+      "op": "replace",
+      "path": "/gufe-key",
+      "value": "",
+      "expect": "invalid",
+      "pointerContains": "/gufe-key"
+    },
+    {
+      "id": "drop-the-registry",
+      "why": "A network's nodes are gufe keys, so without a registry there is nothing for them to resolve to and no ligand to draw.",
+      "types": ["LigandNetworkViz", "AlchemicalNetworkViz"],
+      "op": "remove",
+      "path": "/registry",
+      "expect": "invalid",
+      "pointerContains": ""
+    },
+    {
       "id": "wrong-type-total-charge",
       "why": "A string where a number belongs is the classic payload-builder typo, and the error must name the field.",
       "types": ["SmallMoleculeComponentViz"],
@@ -108,28 +134,69 @@
       "pointerContains": "/edges"
     },
     {
-      "id": "atom-mapping-key-is-not-an-index",
-      "why": "propertyNames - the A-side keys are stringified atom indices, so a non-numeric key means someone put a label where an index belongs.",
+      "id": "atom-mapping-as-an-object-keyed-by-index",
+      "why": "The shape this field used to have. An object keyed by a stringified A index carries the same information, but it makes the indices strings on the wire and cannot state that every A index has a B index - which is why it was replaced, and why it must not quietly validate now.",
       "types": ["LigandAtomMappingViz"],
       "op": "replace",
       "path": "/componentA_to_componentB",
-      "value": { "carbon-3": 4 },
+      "value": { "0": 0, "1": 2 },
       "expect": "invalid",
       "pointerContains": "/componentA_to_componentB"
     },
     {
-      "id": "atom-mapping-value-is-not-an-index",
-      "why": "The B-side values are atom indices too, so a negative number cannot be one.",
+      "id": "atom-mapping-pair-without-a-b-index",
+      "why": "The constraint the list shape exists to buy: an A index with nothing to map it to is not a correspondence, and the schema now says so rather than leaving it to a builder.",
       "types": ["LigandAtomMappingViz"],
       "op": "replace",
       "path": "/componentA_to_componentB",
-      "value": { "0": -1 },
+      "value": [{ "index_A": 0 }],
+      "expect": "invalid",
+      "pointerContains": "/componentA_to_componentB"
+    },
+    {
+      "id": "atom-mapping-index-is-not-an-index",
+      "why": "Both sides are atom indices, so a negative number cannot be one.",
+      "types": ["LigandAtomMappingViz"],
+      "op": "replace",
+      "path": "/componentA_to_componentB",
+      "value": [{ "index_A": 0, "index_B": -1 }],
+      "expect": "invalid",
+      "pointerContains": "/componentA_to_componentB"
+    },
+    {
+      "id": "atom-mapping-pair-with-an-extra-field",
+      "why": "A pair is exactly two indices. An extra key is a hand-written payload inventing a field the views will never read.",
+      "types": ["LigandAtomMappingViz"],
+      "op": "replace",
+      "path": "/componentA_to_componentB",
+      "value": [{ "index_A": 0, "index_B": 0, "distance": 0.4 }],
       "expect": "invalid",
       "pointerContains": "/componentA_to_componentB"
     },
 
     {
-      "$comment": "The per-type exclusivity rows. Each is stated twice, once against a standalone component and once against the same component nested in a chemical system, because the single ComponentViz union claims those are the same object.",
+      "id": "a-node-that-is-an-object-instead-of-a-key",
+      "why": "Nodes are gufe keys into the registry, not inlined objects. Putting the object back where the key belongs is the shape the old schema had, and it must not quietly validate under the new one.",
+      "types": ["LigandNetworkViz", "AlchemicalNetworkViz"],
+      "op": "replace",
+      "path": "/nodes",
+      "value": [{ "type": "SmallMoleculeComponentViz", "gufe-key": "SmallMoleculeComponent-abc", "name": "" }],
+      "expect": "invalid",
+      "pointerContains": "/nodes"
+    },
+    {
+      "id": "a-component-inlined-where-a-key-belongs",
+      "why": "The same rule inside a chemical system: `components` maps a label to a gufe key, and the component itself lives in the registry.",
+      "types": ["ChemicalSystemViz"],
+      "op": "replace",
+      "path": "/components/ligand",
+      "value": { "type": "SmallMoleculeComponentViz", "gufe-key": "SmallMoleculeComponent-abc", "name": "" },
+      "expect": "invalid",
+      "pointerContains": "/components/ligand"
+    },
+
+    {
+      "$comment": "The per-type exclusivity rows. Each is stated twice, once against a standalone component and once against the same component sitting in a registry, because the single ComponentViz union claims those are the same object.",
       "id": "standalone-small-molecule-carrying-a-pdb",
       "why": "A small molecule carries an sdf and cannot also carry a pdb. Each component type declares only its own structure field, so the other one is an unknown key.",
       "types": ["SmallMoleculeComponentViz"],
@@ -166,53 +233,50 @@
       "expect": "valid"
     },
     {
-      "id": "nested-component-carrying-two-structure-formats",
-      "why": "The same exclusivity, one level down: a component nested in a chemical system is validated as itself, so the rule holds there identically.",
-      "types": ["ChemicalSystemViz"],
+      "$comment": "Registry entries are sorted by (type, gufe-key), so entry 0 of a chemical system's registry and of a ligand network's registry is a small molecule in both. The rows below that need a specific type say so with `types`; the rest hold for any entry at all.",
+      "id": "registry-entry-carrying-two-structure-formats",
+      "why": "The same exclusivity, one level down: a component in a registry is validated as itself, so the rule holds there identically. This is what replaces the old 'nested component' rows - components are reached through the registry now, not inlined.",
       "op": "add",
-      "path": "/components/ligand/pdb",
+      "path": "/registry/0/pdb",
       "value": "ATOM      1  N   ALA A   1\nEND\n",
       "expect": "invalid",
-      "pointerContains": "/components/ligand"
+      "pointerContains": "/registry/0"
     },
     {
-      "id": "nested-solvent-carrying-an-sdf",
-      "why": "Same, for the solvent slot of a chemical system.",
+      "id": "registry-solvent-carrying-an-sdf",
+      "why": "Same, from the other side: a chemical system's registry holds its solvent at entry 1, and a solvent is a specification rather than a structure.",
       "types": ["ChemicalSystemViz"],
       "op": "add",
-      "path": "/components/solvent/sdf",
+      "path": "/registry/1/sdf",
       "value": "solvent\n  0  0\nEND\n",
       "expect": "invalid",
-      "pointerContains": "/components/solvent"
+      "pointerContains": "/registry/1"
     },
     {
-      "id": "nested-small-molecule-carrying-solvent-fields",
+      "id": "registry-small-molecule-carrying-solvent-fields",
       "why": "Each component subschema declares only its own fields, so a solvent setting on a small molecule is an unknown key rather than a permitted null.",
-      "types": ["ChemicalSystemViz"],
       "op": "add",
-      "path": "/components/ligand/neutralize",
+      "path": "/registry/0/neutralize",
       "value": true,
       "expect": "invalid",
-      "pointerContains": "/components/ligand"
+      "pointerContains": "/registry/0"
     },
     {
-      "id": "nested-component-dropping-its-structure",
-      "why": "sdf is required on a nested small molecule exactly as it is on a standalone one.",
-      "types": ["ChemicalSystemViz"],
+      "id": "registry-entry-dropping-its-gufe-key",
+      "why": "A registry entry with no gufe key can never be found: the key is the only way anything refers to it.",
       "op": "remove",
-      "path": "/components/ligand/sdf",
+      "path": "/registry/0/gufe-key",
       "expect": "invalid",
-      "pointerContains": "/components/ligand"
+      "pointerContains": "/registry/0"
     },
     {
-      "id": "nested-component-with-an-undeclared-type",
-      "why": "The component union is closed. An unrecognized gufe class is carried as an UnknownComponentViz by the builder, not smuggled through under its own name.",
-      "types": ["ChemicalSystemViz"],
+      "id": "registry-entry-with-an-undeclared-type",
+      "why": "The registry union is closed. An unrecognized gufe class is carried as an UnknownComponentViz by the builder, not smuggled through under its own name.",
       "op": "replace",
-      "path": "/components/ligand/type",
+      "path": "/registry/0/type",
       "value": "TotallyMadeUpComponentViz",
       "expect": "invalid",
-      "pointerContains": "/components/ligand"
+      "pointerContains": "/registry/0"
     },
 
     {
@@ -227,19 +291,49 @@
     },
     {
       "id": "dangling-edge-endpoint",
-      "why": "JSON Schema cannot express 'source names a node that exists', so this validates and the view drops the edge with a banner. A Python test covers the referential integrity that the schema cannot.",
+      "why": "JSON Schema cannot express 'componentA names a node that exists', so this validates and the view drops the edge with a banner. A Python test covers the referential integrity that the schema cannot.",
       "types": ["LigandNetworkViz"],
       "op": "replace",
       "path": "/edges",
       "value": [
         {
-          "source": "no-such-node",
-          "target": "also-missing",
+          "type": "LigandAtomMappingViz",
+          "gufe-key": "LigandAtomMapping-dangling",
+          "name": "",
+          "componentA": "no-such-node",
+          "componentB": "also-missing",
           "score": 0.5,
-          "componentA_to_componentB": { "0": 0 },
+          "componentA_to_componentB": [{ "index_A": 0, "index_B": 0 }],
           "annotations": {}
         }
       ],
+      "expect": "valid"
+    },
+    {
+      "id": "a-node-key-that-resolves-to-nothing",
+      "why": "The other half of the same gap: JSON Schema cannot express 'this key names a registry entry'. The view drops the node with a banner, and a Python test holds the builders to never emitting one.",
+      "types": ["LigandNetworkViz", "AlchemicalNetworkViz"],
+      "op": "add",
+      "path": "/nodes/-",
+      "value": "SmallMoleculeComponent-not-in-the-registry",
+      "expect": "valid"
+    },
+    {
+      "id": "a-registry-entry-nothing-refers-to",
+      "why": "An unreferenced entry is waste, not corruption - a builder that registered something and then did not use it. The contract does not forbid it and the views ignore it.",
+      "types": ["LigandNetworkViz"],
+      "op": "add",
+      "path": "/registry/-",
+      "value": {
+        "type": "SolventComponentViz",
+        "gufe-key": "SolventComponent-unreferenced",
+        "name": "",
+        "smiles": "O",
+        "positive_ion": "Na+",
+        "negative_ion": "Cl-",
+        "neutralize": true,
+        "ion_concentration": "0.15 molar"
+      },
       "expect": "valid"
     },
     {

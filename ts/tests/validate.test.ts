@@ -11,7 +11,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PAYLOAD_TYPES } from "../src/schema/types.js";
-import { formatIssues, SCHEMA_TYPES, validatePayload } from "../src/schema/validate.js";
+import { formatIssues, SCHEMA_TYPES, validateAs, validatePayload } from "../src/schema/validate.js";
 import { VIEW_TAGS } from "../src/gufe-view.js";
 import {
   applyMutation,
@@ -27,6 +27,20 @@ describe("the golden payloads", () => {
   it.each(exampleNames())("%s validates against the schema", (name) => {
     const { valid, issues } = validatePayload(readExample(name));
     expect(valid, formatIssues(issues)).toBe(true);
+  });
+
+  it.each(exampleNames())("%s validates as its own type and as no other", (name) => {
+    // Passing the union only means being *some* declared type. This is what
+    // says it is the intended one, and it is the same assertion
+    // `test_validates_as_its_own_type_and_as_no_other` makes in pytest.
+    const payload = readExample(name);
+    const declared = payload.type as string;
+
+    expect(validateAs(declared, payload).valid).toBe(true);
+    for (const other of SCHEMA_TYPES) {
+      if (other === declared) continue;
+      expect(validateAs(other, payload).valid, `${name} also validates as ${other}`).toBe(false);
+    }
   });
 
   it("covers more than one type", () => {
@@ -149,12 +163,23 @@ describe("validation messages", () => {
     }
   });
 
-  it("reports a nested component's failure at its own path", () => {
-    // The property the single ComponentViz union buys: a component nested in a
-    // chemical system is validated as itself, so the error names the component
-    // rather than the system that happens to contain it.
+  it("reports a registry entry's failure at its own path", () => {
+    // The property the single ComponentViz union buys: a component in a
+    // registry is validated as itself, so the error names the component rather
+    // than the payload that happens to carry it.
     const broken = readExample("chemical_system.json");
-    (broken.components as Record<string, Record<string, unknown>>).ligand.pdb = "ATOM\nEND\n";
+    (broken.registry as Record<string, unknown>[])[0].pdb = "ATOM\nEND\n";
+
+    const { valid, issues } = validatePayload(broken);
+    expect(valid).toBe(false);
+    expect(issues.some((i) => i.path.startsWith("/registry/0"))).toBe(true);
+  });
+
+  it("reports a component key that is not a string at its own path", () => {
+    // Components are gufe keys now. Putting the object back is the mistake the
+    // old shape invites, and the error must land on the label that carries it.
+    const broken = readExample("chemical_system.json");
+    (broken.components as Record<string, unknown>).ligand = { type: "SmallMoleculeComponentViz" };
 
     const { valid, issues } = validatePayload(broken);
     expect(valid).toBe(false);

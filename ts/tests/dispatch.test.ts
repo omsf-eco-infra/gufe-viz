@@ -2,7 +2,7 @@
  * `<gufe-view>` dispatch, and degrading gracefully when it cannot draw.
  *
  * The whole point of the explicit `type` discriminator is that a payload is
- * drawn by the view that claims that type, or by nothing at all - and that
+ * drawn by the view that claims that type, or by nothing at all and that
  * "nothing at all" is a panel, never a traceback.
  */
 

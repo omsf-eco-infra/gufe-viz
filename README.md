@@ -6,7 +6,7 @@ Turns a gufe object into an interactive browser visualization - a single HTML
 file you open locally. No server, no account, no network round-trip for your
 data.
 
-> **Under construction.** The pipeline runs end to end, and three of the eleven
+> **Under construction.** The pipeline runs end to end, and three of the twelve
 > payload types have a view. The rest are declared in the schema, built by
 > Python, and render as "sorry, there is no visualization for X yet" until their
 > views land. Nothing is published, so nothing here is stable yet.
@@ -85,6 +85,18 @@ The input may be one of our payload JSONs *or* a serialized gufe object; a gufe
 object is deserialized into live Python objects first and turned into a payload
 from there.
 
+To see the payload the page was built from, render it with the debug switch
+baked in:
+
+```bash
+pixi run gufe-viz-debug examples/ligand_network_named.json -o /tmp/network.html
+```
+
+Both tasks take the same flags as the bare command - `pixi task list` shows them
+with the rest. `gufe-viz` is a console script from `pyproject.toml`, so
+`pixi run gufe-viz ...` would work with no task declared at all; the tasks exist
+so that the command is findable if you (like me) just use `pixi run`
+
 ### 4. Do it with your own object
 
 ```python
@@ -133,7 +145,7 @@ the wheel, which is what makes that true.
 
 Python serializes a gufe object into a **schema-valid payload**; compiled
 TypeScript custom elements ingest that payload and draw a picture. The JSON
-Schema is the contract between the two, and it lives here - not in gufe.
+Schema is the contract between the two, and it lives here, not in gufe.
 
 ```mermaid
 flowchart LR
@@ -213,6 +225,11 @@ which in minified JavaScript only ever occurs inside a string or regex literal
 where `<\/script` means the same thing. A molecule named
 `</script><script>alert(1)</script>` is a test case here, not a hypothetical.
 
+**Reading it by eye:** you cannot - it is one line, and a protein page's is
+54 kB of it. Open the page as `<url>?debug` and the bundle prints it to the
+console instead, indented. See [Debugging: seeing the
+payload](#debugging-seeing-the-payload).
+
 **Where the code comes from:** `python/gufe_viz/_assets/gufe-viz.js`, the
 committed Vite build, read by `gufe_viz.bundle_source()` and inlined verbatim.
 That file being in the repository and in the wheel is what lets `pip install`
@@ -240,7 +257,10 @@ panel that names the problem - never a thrown exception, and never a blank box.
 
 ```mermaid
 flowchart TD
-  arrive(["view.payload = ..."]) --> isobj{"a JSON object?"}
+  arrive(["view.payload = ..."]) --> dbg{"debug<br/>switch on?"}
+  dbg -->|yes| console["console: the payload,<br/>as JSON and as an object"]
+  dbg -->|no| isobj{"a JSON object?"}
+  console --> isobj
   isobj -->|no| p1["panel: this does not look<br/>like a gufe-viz payload"]
   isobj -->|yes| hastype{"has a <code>type</code>?"}
   hastype -->|no| p3["panel: nothing says<br/>what this is"]
@@ -268,6 +288,67 @@ Engines are loaded lazily and only when a view needs them: a protein page never
 pays for RDKit's ~7 MB of WebAssembly, and a small-molecule page never pays for
 d3.
 
+### Debugging: seeing the payload
+
+The payload is the contract between the two halves of this project, so the first
+question about a page that draws the wrong thing - or nothing - is always *what
+JSON did the browser actually get?* That is hard to answer by hand: in a
+generated page it is one unbroken line inside `#gufe-payload`, and in a notebook
+it never touches the DOM at all.
+
+So the bundle will print it. Three switches turn that on, and any one of them is
+enough:
+
+| Switch | How | The case it exists for |
+|---|---|---|
+| URL | open the page as `<url>?debug` | a page **already written** - nothing is rebuilt, and `file:///tmp/network.html?debug` works |
+| attribute | `to_html(obj, debug=True)`, `pixi run gufe-viz-debug <input>` | handing someone a file that does it on its own |
+| global | `window.GUFE_VIZ_DEBUG = true`, set before `.payload` | a host that mounts the element itself: a notebook widget, or a console session |
+
+`?gufe-debug` is accepted as well as `?debug`, for a host page that already uses
+`?debug` for something of its own.
+
+What lands in the console is one collapsed group per render:
+
+```
+> [gufe-viz] payload LigandNetworkViz (3542 chars)
+    {
+      "type": "LigandNetworkViz",
+      "gufe-key": "LigandNetwork-fd4275a34f7e2c5b5021b5d9eb51d62d",
+      "name": "",
+      ...
+    }
+    > Object { type: "LigandNetworkViz", ... }
+```
+
+Both forms, because they answer different questions. The **text** is what to
+copy into a file or a bug report, and it is exactly what the schema validator
+saw. The **object** is the one the console lets you expand and click through.
+The group is collapsed because a lysozyme page would otherwise put 217 kB of PDB
+between you and the next message.
+
+Two properties are worth relying on:
+
+* **It logs before validation and before dispatch.** A payload that fails the
+  schema, or names a type this build cannot draw, is still printed in full -
+  which is the case the switch is for. The panel on the page tells you *which
+  field*; the console tells you *what was actually there*.
+* **It logs from `<gufe-view>`**, which every host goes through - the generated
+  page, the dropzone, the gallery, and any embedding of the bundle. There is
+  nothing to wire up per view.
+
+Off, it costs one attribute read per render; `JSON.stringify` only ever runs when
+it is on. So a page built without `debug=True` carries the capability at no cost
+and answers to `?debug` for the rest of its life - which is why the URL switch,
+not the build flag, is the one to reach for first.
+
+The pieces are exported from the bundle for a host that wants to do its own
+reporting, or to decide whether to:
+
+```js
+import { debugEnabled, logPayload, payloadJson } from "./gufe-viz.js";
+```
+
 ---
 
 ## The contract: schema, sources and generated artifacts
@@ -291,7 +372,7 @@ flowchart TD
   views -->|"pixi run build"| bundle["<b>python/gufe_viz/_assets/gufe-viz.js</b><br/><i>generated · committed</i>"]
   bundle --> wheel(["the wheel: <code>pip install</code><br/>needs no Node toolchain"])
 
-  src --> fixtures["examples/*.json + schema/mutations.json<br/>checked by <i>both</i> test suites"]
+  src --> fixtures["examples/*.json + python/tests/mutations.json<br/>checked by <i>both</i> test suites"]
 ```
 
 The schema is the source of truth and testing its correctness is what `mutations.json` is for.
@@ -307,11 +388,13 @@ pixi run examples && pixi run types && pixi run build   # the fix, always
 
 ### The payload shape
 
-There is no envelope. A payload is its `type` plus its own fields, flat:
+There is no envelope. A payload is its `type`, its `gufe-key` and its own
+fields, flat:
 
 ```json
 {
   "type": "SmallMoleculeComponentViz",
+  "gufe-key": "SmallMoleculeComponent-ec3c7a92...",
   "name": "benzene",
   "sdf": "...",
   "smiles": "c1ccccc1",
@@ -319,33 +402,50 @@ There is no envelope. A payload is its `type` plus its own fields, flat:
 }
 ```
 
-and it is **the same object whether it stands alone or is nested**:
+Anything that refers to another gufe object refers to it **by gufe key**, and
+the objects themselves are carried once, in the `registry` on the root payload:
 
 ```json
 {
   "type": "ChemicalSystemViz",
+  "gufe-key": "ChemicalSystem-b51f409f...",
   "name": "benzene in water",
   "components": {
-    "ligand":  { "type": "SmallMoleculeComponentViz", "name": "benzene", "sdf": "..." },
-    "solvent": { "type": "SolventComponentViz", "name": "", "smiles": "O" }
-  }
+    "ligand":  "SmallMoleculeComponent-ec3c7a92...",
+    "solvent": "SolventComponent-26b4034a..."
+  },
+  "registry": [
+    { "type": "SmallMoleculeComponentViz", "gufe-key": "SmallMoleculeComponent-ec3c7a92...", "sdf": "..." },
+    { "type": "SolventComponentViz",       "gufe-key": "SolventComponent-26b4034a...",       "smiles": "O" }
+  ]
 }
 ```
 
+- **One schema object per gufe class.** Every `*Viz` is the visualization form
+  of exactly one `GufeTokenizable`, and there is no second summary-only or
+  reference-only variant of it anywhere. A ligand network's node, a mapping's
+  endpoint and a standalone molecule are all the same
+  `SmallMoleculeComponentViz`.
+- **`gufe-key` on every object.** It is what the registry addresses an object
+  by, and - being deterministic and repeatable within a software environment -
+  it is also the identifier worth having in front of you when a payload does not
+  draw.
+- **A key always resolves to a whole object.** That is what makes drilling in
+  possible: opening a network node gives you the ligand's SDF, opening an
+  alchemical node gives you the protein's PDB.
+- **The registry is the only deduplication mechanism.** An alchemical network
+  whose forty systems share a protein carries that PDB once and points at it
+  forty times. A payload is a single-shot dump with no server to ask, so the
+  registry travels with it.
 - **`type` is a closed discriminator.** A chemical-system view handed something
   else refuses it by name rather than guessing from which keys happen to be
   present.
-- **One subschema per component type**, combined into a `ComponentViz` union
-  with `oneOf`. That is what makes "the same object standalone or nested" true
-  by construction: the chemical-system view renders a component by handing the
-  sub-object straight to the element that claims its `type`, with no translation
-  step and no second code path.
 - **`additionalProperties: false` everywhere**, so a typo in a payload builder
   is a validation error rather than a blank picture.
 - The `Viz` suffix marks these as lossy visualization projections rather than
   gufe classes, so nobody expects a round trip.
 
-All eleven types are declared even though three have views; declaring them up
+All twelve types are declared even though three have views; declaring them up
 front costs nothing and means adding a view is an additive change.
 
 See [`schema/README.md`](./schema/README.md) for the full contract.
@@ -358,13 +458,14 @@ GraphML is not on it. `LigandNetwork.to_graphml()` is a graph whose *node
 payloads are gufe `to_json` moldicts*, so forwarding it does not avoid the
 problem - it relocates it, and the browser still ends up decoding atomic
 numbers, bond tuples and a base-1-per-char `.npy` conformer blob. A
-`LigandNetworkViz` payload is ligands-as-SDF plus flat topology instead.
+`LigandNetworkViz` payload is a registry of ligands-as-SDF plus keyed topology
+instead.
 
 ### How the two sides are kept honest
 
 `examples/*.json` is the hinge. The same eleven golden payloads - built from real
 gufe objects by `scripts/make_examples.py` - feed pytest, vitest, the
-drag-and-drop page and the gallery. `schema/mutations.json` declares a mutation
+drag-and-drop page and the gallery. `python/tests/mutations.json` declares a mutation
 matrix **once, as data**, and both suites apply it against the same schema file:
 each row alters a payload in one specific way and pins what must happen.
 
@@ -444,6 +545,11 @@ from differs.
 From Python, `gufe_viz.bundle_source()` returns the bundle as a string if you
 want to inline it yourself rather than use `to_html`.
 
+A host that mounts the element itself is the case `window.GUFE_VIZ_DEBUG = true`
+exists for: set it before assigning `.payload` and the element prints what it was
+handed. See [Debugging: seeing the
+payload](#debugging-seeing-the-payload).
+
 ### Integrating with OpenFE
 
 `gufe-viz <input>` exists as a working reference implementation, **not** as the
@@ -471,7 +577,7 @@ That is `test-py` and `test-ts` together. Run them separately when iterating:
 | Command | Suite | Covers |
 |---|---|---|
 | `pixi run test-py` | pytest | Payload builders per type; every fixture against the schema; the `isinstance` dispatch order against gufe's real class hierarchy; schema and TypeScript dispatch parity; the mutation matrix; `to_html` and the CLI. |
-| `pixi run test-ts` | vitest | The same fixtures and the same mutation matrix through Ajv; `<gufe-view>` dispatch and graceful degradation; the create/update/destroy lifecycle; what each view puts on the page; a smoke test that loads the **built bundle** and drives it through the generated page's bootstrap. |
+| `pixi run test-ts` | vitest | The same fixtures and the same mutation matrix through Ajv; `<gufe-view>` dispatch and graceful degradation; the create/update/destroy lifecycle; what each view puts on the page; the three debug switches and what they print; a smoke test that loads the **built bundle** and drives it through the generated page's bootstrap. |
 
 Two more checks, both of which CI runs and both of which are easy to forget
 locally:
@@ -519,6 +625,8 @@ somewhere sensible - for that, see
 | Task | What it does |
 |---|---|
 | `pixi run dev` | Vite dev server - dropzone and gallery |
+| `pixi run gufe-viz <input> [-o out.html]` | Render one payload or gufe object as a standalone page |
+| `pixi run gufe-viz-debug <input> [-o out.html]` | The same, with the payload printed to the browser console |
 | `pixi run build` | Bundle TypeScript into `python/gufe_viz/_assets/gufe-viz.js` |
 | `pixi run types` | Regenerate `ts/src/schema/types.ts` from the JSON Schema |
 | `pixi run examples` | Rebuild `examples/*.json` from real gufe objects |

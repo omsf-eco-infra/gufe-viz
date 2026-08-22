@@ -9,6 +9,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "../src/index.js";
 import { parseCounts, parseSDF } from "../src/shared/sdf.js";
 import { parsePdbStats } from "../src/shared/pdb.js";
+import { formatIssues, validatePayload } from "../src/schema/validate.js";
+import { buildRegistry } from "../src/schema/registry.js";
+import { mappingPayloadFor } from "../src/views/ligand-network.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 import type { LigandNetworkViz } from "../src/schema/types.js";
 
@@ -151,7 +154,7 @@ describe("<gufe-ligand-network>", () => {
     // is the same network with names. Both must be legible.
     const unnamed = mount("gufe-ligand-network", network());
     await flush();
-    const key = network().nodes[0].id.split("-").pop()!.slice(0, 6);
+    const key = network().nodes[0].split("-").pop()!.slice(0, 6);
     expect(unnamed.textContent).toContain(key);
 
     const named = mount("gufe-ligand-network", readExample("ligand_network_named.json"));
@@ -169,7 +172,7 @@ describe("<gufe-ligand-network>", () => {
     expect(text).toContain("score");
     expect(text).toContain(edge.score!.toFixed(3));
     expect(text).toContain("mapped atoms");
-    expect(text).toContain(String(Object.keys(edge.componentA_to_componentB!).length));
+    expect(text).toContain(String(edge.componentA_to_componentB.length));
   });
 
   it("switches the selection when another mapping is clicked", async () => {
@@ -191,7 +194,16 @@ describe("<gufe-ligand-network>", () => {
   it("drops an edge that names a ligand the network does not contain, and says so", async () => {
     const payload = network();
     payload.edges = [
-      { source: "nope", target: "also-nope", score: 0.5, componentA_to_componentB: {}, annotations: {} },
+      {
+        type: "LigandAtomMappingViz",
+        "gufe-key": "LigandAtomMapping-dangling",
+        name: "",
+        componentA: "nope",
+        componentB: "also-nope",
+        score: 0.5,
+        componentA_to_componentB: [],
+        annotations: {},
+      },
     ];
     const node = mount("gufe-ligand-network", payload);
     await flush();
@@ -199,6 +211,41 @@ describe("<gufe-ligand-network>", () => {
     expect(node.textContent).toContain("does not contain");
     expect(node.querySelectorAll("svg line")).toHaveLength(0);
     expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length);
+  });
+
+  it("drops a node whose gufe key is not in the registry, and says so", async () => {
+    // The other half of the referential integrity JSON Schema cannot express:
+    // a node key that resolves to nothing. The network still draws.
+    const payload = network();
+    payload.nodes = [...payload.nodes, "SmallMoleculeComponent-not-in-the-registry"];
+    const node = mount("gufe-ligand-network", payload);
+    await flush();
+
+    expect(node.textContent).toContain("not in its registry");
+    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length - 1);
+  });
+
+  it("hands an edge on as a payload that validates on its own", () => {
+    // The claim the single LigandAtomMappingViz makes: what the network view
+    // gives `<gufe-atom-mapping>` is exactly what that element receives when a
+    // mapping is dropped on the page by itself. No renaming, no inlining, no
+    // second shape - only a registry of the two ligands the edge names.
+    const payload = network();
+    const registry = buildRegistry(payload);
+
+    for (const edge of payload.edges) {
+      const standalone = mappingPayloadFor(edge, registry)!;
+      const { valid, issues } = validatePayload(standalone);
+      expect(valid, formatIssues(issues)).toBe(true);
+      expect(standalone.registry).toHaveLength(2);
+      expect(standalone.componentA_to_componentB).toEqual(edge.componentA_to_componentB);
+    }
+  });
+
+  it("refuses to cut loose an edge whose endpoints do not resolve", () => {
+    const payload = network();
+    const orphan = { ...payload.edges[0], componentA: "SmallMoleculeComponent-missing" };
+    expect(mappingPayloadFor(orphan, buildRegistry(payload))).toBeNull();
   });
 
   it("falls back to the circular layout when d3 cannot be loaded", async () => {

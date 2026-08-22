@@ -2,8 +2,8 @@
  * The gallery: every component, every example payload, one scrolling page.
  *
  * The point is that a change in one place can be checked everywhere it shows up,
- * in one reload. Each example renders through `<gufe-view>` - the real dispatch
- * path - and once the shared components exist this will also render them in
+ * in one reload. Each example renders through `<gufe-view>` the real dispatch
+ * path, and once the shared components exist this will also render them in
  * their *embedded* contexts, so the atom-mapping viewer can be checked
  * standalone, inside the ligand network and inside the transformation view at
  * the same time.

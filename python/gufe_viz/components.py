@@ -26,6 +26,25 @@ from typing import Any
 import gufe
 from gufe.tokenization import GufeTokenizable
 
+from .registry import Registry
+
+
+def gufe_key(obj: Any) -> str:
+    """The object's gufe key, as a string.
+
+    Every payload that stands for a ``GufeTokenizable`` carries one. It is what
+    the registry addresses an object by, and - because a gufe key is
+    deterministic and repeatable within a software environment - it is also the
+    identifier worth having in front of you when a payload does not draw.
+
+    Note the two spellings, which are the two gufe uses. In JSON the field is
+    ``gufe-key``, hyphenated, the way gufe writes it in its own serialized form.
+    In Python it is ``gufe_key``, an identifier, the way gufe writes it in
+    ``gufe_keys()`` and ``is_gufe_key_dict()``. This function is the Python one
+    and the string it is assigned to is the JSON one.
+    """
+    return str(obj.key)
+
 
 def display_name(obj: GufeTokenizable) -> str:
     """The object's name, as a string that is never ``None``.
@@ -65,6 +84,7 @@ def json_safe(value: Any) -> Any:
 def small_molecule_payload(component: gufe.SmallMoleculeComponent) -> dict[str, Any]:
     return {
         "type": "SmallMoleculeComponentViz",
+        "gufe-key": gufe_key(component),
         "name": display_name(component),
         "sdf": component.to_sdf(),
         "smiles": component.smiles,
@@ -75,6 +95,7 @@ def small_molecule_payload(component: gufe.SmallMoleculeComponent) -> dict[str, 
 def protein_payload(component: gufe.ProteinComponent) -> dict[str, Any]:
     return {
         "type": "ProteinComponentViz",
+        "gufe-key": gufe_key(component),
         "name": display_name(component),
         "pdb": pdb_string(component),
     }
@@ -83,6 +104,7 @@ def protein_payload(component: gufe.ProteinComponent) -> dict[str, Any]:
 def solvated_pdb_payload(component: gufe.SolvatedPDBComponent) -> dict[str, Any]:
     return {
         "type": "SolvatedPDBComponentViz",
+        "gufe-key": gufe_key(component),
         "name": display_name(component),
         "pdb": pdb_string(component),
     }
@@ -91,6 +113,7 @@ def solvated_pdb_payload(component: gufe.SolvatedPDBComponent) -> dict[str, Any]
 def protein_membrane_payload(component: gufe.ProteinMembraneComponent) -> dict[str, Any]:
     return {
         "type": "ProteinMembraneComponentViz",
+        "gufe-key": gufe_key(component),
         "name": display_name(component),
         "pdb": pdb_string(component),
     }
@@ -99,6 +122,7 @@ def protein_membrane_payload(component: gufe.ProteinMembraneComponent) -> dict[s
 def solvent_payload(component: gufe.SolventComponent) -> dict[str, Any]:
     return {
         "type": "SolventComponentViz",
+        "gufe-key": gufe_key(component),
         "name": display_name(component),
         "smiles": component.smiles,
         "positive_ion": component.positive_ion,
@@ -113,8 +137,25 @@ def unknown_component_payload(component: gufe.Component) -> dict[str, Any]:
     """The graceful fallback: enough to name the thing, nothing to draw it."""
     return {
         "type": "UnknownComponentViz",
+        "gufe-key": gufe_key(component),
         "name": display_name(component),
         "gufe_type": type(component).__name__,
+    }
+
+
+def protocol_payload(protocol: Any) -> dict[str, Any]:
+    """A gufe Protocol, named.
+
+    A Protocol has no ``name`` of its own, so the class name is what identifies
+    it and ``name`` is normally empty. Settings are left out for now: they are
+    large, deeply nested and nothing draws them, and adding them later is an
+    additive change.
+    """
+    return {
+        "type": "ProtocolViz",
+        "gufe-key": gufe_key(protocol),
+        "name": display_name(protocol),
+        "gufe_type": type(protocol).__name__,
     }
 
 
@@ -171,8 +212,18 @@ def component_payload(component: gufe.Component) -> dict[str, Any]:
     return unknown_component_payload(component)
 
 
-def chemical_system_payload(system: gufe.ChemicalSystem) -> dict[str, Any]:
-    """A chemical system, as its labelled components.
+def chemical_system_payload(system: gufe.ChemicalSystem, registry: Registry | None = None) -> dict[str, Any]:
+    """A chemical system, as its labels mapped to the gufe keys of its components.
+
+    The components go into ``registry``; the system carries only their keys.
+    That is what lets forty systems in an alchemical network share one protein
+    without carrying the PDB forty times, and it is the same shape whether this
+    system is the whole payload or one node of a network - there is no separate
+    "system inside a network" type.
+
+    When no ``registry`` is passed this system *is* the root payload, so it
+    builds one and carries it. When a caller passes one, the caller is the root
+    and will carry the pool itself.
 
     Components are sorted by label so a committed fixture is byte-stable across
     runs: gufe holds them in a dict built from a mapping whose order is not
@@ -181,8 +232,17 @@ def chemical_system_payload(system: gufe.ChemicalSystem) -> dict[str, Any]:
     if not isinstance(system, gufe.ChemicalSystem):
         raise TypeError(f"expected a gufe.ChemicalSystem, got {type(system).__name__}")
 
-    return {
+    is_root = registry is None
+    pool = Registry() if registry is None else registry
+
+    payload = {
         "type": "ChemicalSystemViz",
+        "gufe-key": gufe_key(system),
         "name": display_name(system),
-        "components": {label: component_payload(component) for label, component in sorted(system.components.items())},
+        "components": {
+            label: pool.add(component_payload(component)) for label, component in sorted(system.components.items())
+        },
     }
+    if is_root:
+        payload["registry"] = pool.entries()
+    return payload

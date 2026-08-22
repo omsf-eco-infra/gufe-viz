@@ -12,7 +12,10 @@
  * `/total_charge: must be number` rather than "something went wrong".
  */
 
-import Ajv2020, { type ErrorObject, type ValidateFunction } from "ajv/dist/2020.js";
+import Ajv2020, {
+  type ErrorObject,
+  type ValidateFunction,
+} from "ajv/dist/2020.js";
 
 import schema from "../../../schema/gufe-viz.schema.json" with { type: "json" };
 import type { Payload, PayloadType } from "./types.js";
@@ -35,7 +38,11 @@ const validateAny = ajv.getSchema(SCHEMA_ID) as ValidateFunction<Payload>;
  * than a table someone has to maintain.
  */
 const DECLARED = Object.entries(schema.$defs)
-  .filter(([name, def]) => (def as { properties?: { type?: { const?: string } } }).properties?.type?.const === name)
+  .filter(
+    ([name, def]) =>
+      (def as { properties?: { type?: { const?: string } } }).properties?.type
+        ?.const === name,
+  )
   .map(([name]) => name)
   .sort();
 
@@ -70,7 +77,9 @@ export interface ValidationResult {
 
 const VALID: ValidationResult = { valid: true, issues: [] };
 
-function issuesFrom(errors: ErrorObject[] | null | undefined): ValidationIssue[] {
+function issuesFrom(
+  errors: ErrorObject[] | null | undefined,
+): ValidationIssue[] {
   return (errors ?? []).map((e) => ({
     path: e.instancePath || "",
     message:
@@ -87,25 +96,70 @@ function issuesFrom(errors: ErrorObject[] | null | undefined): ValidationIssue[]
  * the issues describe that type rather than all of them.
  */
 export function validatePayload(payload: unknown): ValidationResult {
-  if (payload == null || typeof payload !== "object" || Array.isArray(payload)) {
-    return { valid: false, issues: [{ path: "", message: "must be a JSON object" }] };
+  if (
+    payload == null ||
+    typeof payload !== "object" ||
+    Array.isArray(payload)
+  ) {
+    return {
+      valid: false,
+      issues: [{ path: "", message: "must be a JSON object" }],
+    };
   }
 
   const declared = (payload as { type?: unknown }).type;
-  const validator = typeof declared === "string" ? byType.get(declared) : undefined;
+  const validator =
+    typeof declared === "string" ? byType.get(declared) : undefined;
 
   if (!validator) {
     // No `type`, or a `type` the schema has never heard of. The union validator
     // is the honest answer, and its failure is the one worth reporting.
-    return validateAny(payload) ? VALID : { valid: false, issues: issuesFrom(validateAny.errors) };
+    return validateAny(payload)
+      ? VALID
+      : { valid: false, issues: issuesFrom(validateAny.errors) };
   }
 
-  return validator(payload) ? VALID : { valid: false, issues: issuesFrom(validator.errors) };
+  return validator(payload)
+    ? VALID
+    : { valid: false, issues: issuesFrom(validator.errors) };
+}
+
+/**
+ * Validate a payload against one named type, whatever `type` it claims to be.
+ *
+ * `validatePayload` trusts the discriminator; this does not. It is what proves
+ * the types are actually distinguishable - a `SmallMoleculeComponentViz` must
+ * fail as a `ProteinComponentViz` - which the top-level union cannot say,
+ * because passing the union only means being *some* declared type. The Python
+ * suite builds the same single-`$ref` document and asserts the same thing.
+ *
+ * An unknown type name is a caller error rather than a payload error, so it
+ * comes back as an issue at the root instead of a throw.
+ */
+export function validateAs(type: string, payload: unknown): ValidationResult {
+  const validator = byType.get(type);
+  if (!validator) {
+    return {
+      valid: false,
+      issues: [
+        { path: "", message: `unknown payload type ${JSON.stringify(type)}` },
+      ],
+    };
+  }
+  return validator(payload)
+    ? VALID
+    : { valid: false, issues: issuesFrom(validator.errors) };
 }
 
 /** One line per issue, for a panel or a console warning. */
-export function formatIssues(issues: readonly ValidationIssue[], limit = 8): string {
-  const shown = issues.slice(0, limit).map((i) => `${i.path || "(root)"}: ${i.message}`);
-  if (issues.length > limit) shown.push(`... and ${issues.length - limit} more`);
+export function formatIssues(
+  issues: readonly ValidationIssue[],
+  limit = 8,
+): string {
+  const shown = issues
+    .slice(0, limit)
+    .map((i) => `${i.path || "(root)"}: ${i.message}`);
+  if (issues.length > limit)
+    shown.push(`... and ${issues.length - limit} more`);
   return shown.join("\n");
 }

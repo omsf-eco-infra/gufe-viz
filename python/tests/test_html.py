@@ -87,6 +87,18 @@ class TestToHtml:
         assert _script_safe("</SCRIPT") == "<\\/SCRIPT"
         assert _script_safe("no tags here") == "no tags here"
 
+    def test_debug_is_off_unless_asked_for(self):
+        """The `<gufe-view>` a normal page carries has no attributes at all."""
+        assert "<gufe-view></gufe-view>" in to_html(read_example("solvent.json"))
+
+    def test_debug_marks_the_element_the_bundle_reads(self):
+        """A bare `debug` attribute, which is what `debugEnabled` tests for."""
+        html = to_html(read_example("solvent.json"), debug=True)
+
+        assert "<gufe-view debug></gufe-view>" in html
+        # Nothing else about the page changes: same bundle, same payload block.
+        assert html.replace("<gufe-view debug>", "<gufe-view>") == to_html(read_example("solvent.json"))
+
     def test_refuses_an_object_it_cannot_visualize(self):
         with pytest.raises(TypeError):
             to_html(object())
@@ -131,6 +143,13 @@ class TestCli:
         assert main([str(source), "-o", "-"]) == 0
         assert capsys.readouterr().out.startswith("<!doctype html>")
         assert not list(tmp_path.glob("*.html"))
+
+    def test_debug_flag_reaches_the_page(self, tmp_path, capsys):
+        source = tmp_path / "mol.json"
+        source.write_text(json.dumps(read_example("small_molecule.json")))
+
+        assert main([str(source), "--debug", "-o", "-"]) == 0
+        assert "<gufe-view debug></gufe-view>" in capsys.readouterr().out
 
     def test_missing_input_is_a_clean_error(self, tmp_path):
         with pytest.raises(SystemExit) as exc:

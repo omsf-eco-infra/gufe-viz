@@ -99,13 +99,19 @@ def main(argv: list[str] | None = None) -> int:
         help="where to write the page (default: <input>.html, beside the input). Use - for stdout.",
     )
     parser.add_argument("--title", default=None, help="page title (default: the payload's name)")
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="make the page print its payload to the browser console. Any page can also be opened "
+        "as <url>?debug to do the same without rebuilding it.",
+    )
     args = parser.parse_args(argv)
 
     if not args.input.is_file():
         raise SystemExit(f"{args.input}: no such file")
 
     try:
-        html = to_html(load(args.input), title=args.title)
+        html = to_html(load(args.input), title=args.title, debug=args.debug)
     except TypeError as e:
         raise SystemExit(str(e)) from e
 

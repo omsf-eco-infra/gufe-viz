@@ -46,7 +46,7 @@ def payload_for(obj: GufeTokenizable) -> dict[str, Any]:
     serialized as a plain protein.
 
     Raises ``TypeError`` for anything this cannot visualize, including a gufe
-    object of a kind with no builder - a Protocol, say. That is deliberate and
+    object of a kind with no builder. That is deliberate and
     is *not* in tension with the graceful-degradation rule: degrading matters
     for an unrecognized component found *inside* a chemical system, where the
     user did nothing wrong and the alternative is that the whole system fails to
@@ -58,7 +58,7 @@ def payload_for(obj: GufeTokenizable) -> dict[str, Any]:
     from gufe.transformations.transformation import TransformationBase
 
     from .alchemical import alchemical_network_payload, transformation_payload
-    from .components import chemical_system_payload, component_payload
+    from .components import chemical_system_payload, component_payload, protocol_payload
     from .networks import ligand_atom_mapping_payload, ligand_network_payload
 
     if isinstance(obj, gufe.Component):
@@ -73,11 +73,13 @@ def payload_for(obj: GufeTokenizable) -> dict[str, Any]:
         return alchemical_network_payload(obj)
     if isinstance(obj, TransformationBase):
         return transformation_payload(obj)
+    if isinstance(obj, gufe.Protocol):
+        return protocol_payload(obj)
 
     raise TypeError(
         f"gufe-viz has no visualization for {type(obj).__name__}. "
         "It can visualize components, chemical systems, atom mappings, ligand "
-        "networks, transformations and alchemical networks."
+        "networks, protocols, transformations and alchemical networks."
     )
 
 

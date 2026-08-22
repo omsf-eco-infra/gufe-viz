@@ -68,10 +68,13 @@ export type Payload = GufeVizPayload;
  * Every declared \`type\`, including those whose view has not been built yet.
  * Derived from the schema's \`$defs\`, so it cannot fall behind the contract.
  */
-export type PayloadType = ${types_.map((k) => JSON.stringify(k)).join(" | ")};
+export type PayloadType =
+${types_.map((k) => `  | ${JSON.stringify(k)}`).join("\n")};
 
 /** The same list at runtime, for validators and dispatch-parity tests. */
-export const PAYLOAD_TYPES: readonly PayloadType[] = [${types_.map((k) => JSON.stringify(k)).join(", ")}];
+export const PAYLOAD_TYPES: readonly PayloadType[] = [
+${types_.map((k) => `  ${JSON.stringify(k)},`).join("\n")}
+];
 `;
 
 writeFileSync(OUTPUT, types, "utf-8");

@@ -56,8 +56,8 @@ def example(request) -> tuple[str, dict]:
 def every_payload_type() -> dict[str, dict]:
     """One payload of every declared type, keyed by type, built from live gufe.
 
-    ``examples/`` covers eight of the eleven. The other three cannot be a
-    committed fixture: two need a :class:`gufe.Protocol` to construct, and
+    ``examples/`` covers eight of the twelve. The other four cannot be a
+    committed fixture: three need a :class:`gufe.Protocol` to construct, and
     ``UnknownComponentViz`` exists precisely for a class that is not in gufe at
     all. They are built here instead, so that "every type the schema declares is
     something Python can actually produce" is checkable rather than assumed.
@@ -113,6 +113,7 @@ def every_payload_type() -> dict[str, dict]:
         state_b = gufe.ChemicalSystem({"ligand": molecule("CCC", "propane")}, name="B")
         transformation = gufe.Transformation(state_a, state_b, protocol=protocol, name="A to B")
 
+    payloads["ProtocolViz"] = payload_for(protocol)
     payloads["TransformationViz"] = payload_for(transformation)
     payloads["AlchemicalNetworkViz"] = payload_for(gufe.AlchemicalNetwork([transformation], name="net"))
     return payloads
@@ -153,9 +154,19 @@ def _descend(node, part: str, path: str):
 
 
 def _apply_to_list(result: dict, node: list, leaf: str, mutation: dict) -> dict:
-    """``remove`` / ``replace`` an array element. ``add`` at an index is not
-    supported: nothing in the matrix needs it, and RFC 6901 insert semantics are
-    a trap not worth reimplementing twice."""
+    """``remove`` / ``replace`` an array element, or ``add`` at ``-`` to append.
+
+    ``-`` is RFC 6901's "past the end" token and is what the registry rows use to
+    add an entry or a node key. ``add`` at a numeric *index* is still not
+    supported: nothing in the matrix needs it, and RFC 6902 insert semantics are
+    a trap not worth reimplementing twice.
+    """
+    if leaf == "-":
+        if mutation["op"] != "add":
+            raise ValueError(f"op {mutation['op']!r} is not supported at the end of an array")
+        node.append(mutation["value"])
+        return result
+
     if not leaf.isdigit() or int(leaf) >= len(node):
         raise PointerMissing(mutation["path"])
     index = int(leaf)
