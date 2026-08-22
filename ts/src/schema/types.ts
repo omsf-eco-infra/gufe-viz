@@ -10,11 +10,7 @@
  */
 
 /**
- * The Python-to-TypeScript contract for gufe visualizations. Nothing generates this file, and both languages are downstream of it. The version lives in $id, not in the payload.
- *
- * Two rules describe the whole document. First, one schema object per gufe class: every $def named *Viz is the visualization form of exactly one GufeTokenizable, it carries that object's `gufe-key`, and there is no second 'summary' or 'reference' variant of it anywhere. Second, every reference from one gufe object to another is that object's gufe key, and the objects themselves live in the `registry` on the root payload. So a ligand network's nodes are keys, a chemical system's components are keys, and a transformation's protocol is a key - and each one resolves to a complete, drawable object, never to a name-only stub.
- *
- * The registry is what makes that affordable. An alchemical network whose forty systems share one protein carries that PDB once and points at it forty times, and the browser can still drill into it, because what it points at is a whole ProteinComponentViz. This is a single-shot dump rather than a conversation with a server, so the registry travels with the payload.
+ * Python-to-TypeScript contract bridge for gufe visualizations. Source of truth both languages are downstream of it. This schema is not strictly versioned or published as it is only internally consumed by this codebase. Schema description: one schema object per gufe class: every $def named *Viz is the visualization form of exactly one GufeTokenizable, it carries that object's `gufe-key`. Every reference from one gufe object to another is that object's gufe key, and the objects themselves live in the `registry` on the root payload. So a ligand network's nodes are keys, a chemical system's components and a transformation's protocol are keys and each one resolves to a complete, drawable object. An alchemical network whose forty systems share one protein carries that PDB once and points at it forty times, and the browser can still drill into it, because what it points at is a whole ProteinComponentViz. This is a single-shot dump rather than a conversation with a server, so the registry travels with the payload.
  */
 export type GufeVizPayload =
   | SmallMoleculeComponentViz
@@ -30,11 +26,11 @@ export type GufeVizPayload =
   | TransformationViz
   | AlchemicalNetworkViz;
 /**
- * A gufe key: the identity of a GufeTokenizable, of the form 'ClassName-<hex digest>'. It is deterministic and repeatable within a software environment, which is what makes it usable both as a deduplication key here and as an identifier when debugging. Only its non-emptiness is checked - a qualified name can carry dots and angle brackets for a class defined inside a function, and refusing those would refuse a legitimate custom Component.
+ * A gufe key: the identity of a GufeTokenizable, of the form 'ClassName-<hex digest>'. It is deterministic and repeatable within a software environment. Only its non-emptiness is checked
  */
 export type GufeKey = string;
 /**
- * A gufe key naming a SmallMoleculeComponentViz in the registry. Resolving it yields the whole molecule, SDF included, which is what replaced the inlined molA_sdf/molB_sdf fields: an endpoint of a mapping and a node of a ligand network are the same key pointing at the same entry. See ComponentKey for what the schema can and cannot check about that.
+ * A gufe key naming a SmallMoleculeComponentViz in the registry. Resolving it yields the whole molecule, SDF included. See ComponentKey for what the schema can and cannot check about that.
  */
 export type SmallMoleculeComponentKey = string;
 /**
@@ -61,7 +57,7 @@ export type ComponentViz =
   | SolventComponentViz
   | UnknownComponentViz;
 /**
- * A gufe key naming a ComponentViz - any one of the six component types - in the registry. Identical to GufeKey at validation time: JSON Schema has no way to say 'this string is the gufe-key of an entry in that array, and that entry has this type', because that is a join across two parts of the document. What the name buys is that the referent's type is stated in the contract and carried into the generated TypeScript, instead of living only in a test and a view. The unstateable half is held by Python tests and degraded over by the views - see the note on referential integrity in schema/README.md.
+ * A gufe key naming a ComponentViz in the registry. Identical to GufeKey at validation time: JSON Schema has no way to say 'this string is the gufe-key of an entry in that array, and that entry has this type', because that is a join across two parts of the document. What the name buys is that the referent's type is stated in the contract and carried into the generated TypeScript, instead of living only in a test and a view.
  */
 export type ComponentKey = string;
 /**
@@ -78,7 +74,7 @@ export type ProtocolKey = string;
 export type ChemicalSystemKey = string;
 
 /**
- * A small molecule, carried as a complete SDF record. The SDF holds the conformer, so nothing downstream reconstructs coordinates. This is the only form a small molecule takes: a ligand network's node and a mapping's endpoint are both keys pointing at one of these, so drilling into either yields the same drawable object.
+ * A small molecule, carried as a complete SDF record.
  */
 export interface SmallMoleculeComponentViz {
   type: "SmallMoleculeComponentViz";
@@ -159,19 +155,19 @@ export interface UnknownComponentViz {
   gufe_type: string;
 }
 /**
- * A gufe Protocol, named. Every transformation in an alchemical network usually shares one, so this is a registry entry that many edges point at rather than a class name repeated per edge. Settings are deliberately absent for now: they are large, deeply nested, and nothing draws them yet - adding a `settings` field later is additive and breaks nothing.
+ * A gufe Protocol, named. Every transformation in an alchemical network usually shares one, so this is a registry entry that many edges point at rather than a class name repeated per edge. Settings are deliberately absent for now: they are large, deeply nested, and nothing draws them yet, adding a `settings` field later is additive and breaks nothing.
  */
 export interface ProtocolViz {
   type: "ProtocolViz";
   "gufe-key": GufeKey;
   name: string;
   /**
-   * The Protocol's class name, which is what identifies it to a reader - a Protocol has no name of its own, so `name` is usually empty.
+   * The Protocol's class name, which is what identifies it to a reader, a Protocol has no name of its own, so `name` is usually empty.
    */
   gufe_type: string;
 }
 /**
- * One atom mapping between two small molecules. This is also exactly what an edge of a ligand network is - there is no separate edge type - because the two endpoints are gufe keys either way: standalone they resolve in this object's own registry, and in a network they resolve in the network's, where they are the same entries the nodes name. `componentA` and `componentB` are the molecules the two sides of `componentA_to_componentB` index into: an `index_A` is an atom of the SmallMoleculeComponentViz that `componentA` names, and an `index_B` an atom of `componentB`'s. This is what the inlined `molA_sdf`/`molB_sdf` fields became - the same molecules, carried once in the registry and reached through a key.
+ * One atom mapping between two small molecules. This is also what an edge of a ligand network is because the two endpoints are gufe keys either way: standalone they resolve in this object's own registry, and in a network they resolve in the network's, where they are the same entries the nodes name. `componentA` and `componentB` are the molecules the two sides of `componentA_to_componentB` index into: an `index_A` is an atom of the SmallMoleculeComponentViz that `componentA` names, and an `index_B` an atom of `componentB`'s.
  */
 export interface LigandAtomMappingViz {
   type: "LigandAtomMappingViz";
@@ -192,7 +188,7 @@ export interface LigandAtomMappingViz {
  */
 export interface Annotations {}
 /**
- * A gufe ChemicalSystem: labels mapped to the gufe keys of its components. There is one of these, used standalone and as a node of an alchemical network alike - the components are keys in both cases, so a network's node is a complete chemical system that can be drilled into, not a summary of one. The shared protein of forty such systems is then carried once.
+ * A gufe ChemicalSystem: labels mapped to the gufe keys of its components.
  */
 export interface ChemicalSystemViz {
   type: "ChemicalSystemViz";
@@ -207,7 +203,7 @@ export interface ChemicalSystemViz {
   registry?: Registry;
 }
 /**
- * A ligand network: the ligands in the registry, the nodes as keys into it, and the mappings as edges. The nodes are exactly what repeats here - a mapping names two of them, and every ligand is named by several mappings - so a forty-ligand network carries each SDF once. Deliberately not gufe's GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.
+ * A ligand network: the ligands in the registry, the nodes as keys into it, and the mappings as edges. Deliberately not gufe's GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.
  */
 export interface LigandNetworkViz {
   type: "LigandNetworkViz";
@@ -224,7 +220,7 @@ export interface LigandNetworkViz {
   edges: LigandAtomMappingViz[];
 }
 /**
- * A transformation between two chemical systems, both named by gufe key, as is its protocol - `stateA` is the system it starts from, `stateB` the one it ends at, and every edge of a network usually names the same protocol. This is also exactly what an edge of an alchemical network is - there is no separate edge type - because `stateA` and `stateB` are keys either way, and in a network they are the keys the nodes name. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.
+ * A transformation between two chemical systems, both named by gufe key, as is its protocol: `stateA` is the system it starts from, `stateB` the one it ends at, and every edge of a network usually names the same protocol. This is also what an edge of an alchemical network is (there is no separate edge type) because `stateA` and `stateB` are keys either way, and in a network they are the keys the nodes name. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.
  */
 export interface TransformationViz {
   type: "TransformationViz";
@@ -237,7 +233,7 @@ export interface TransformationViz {
   registry?: Registry;
 }
 /**
- * A graph of chemical systems joined by transformations. What repeats here is not the nodes and edges themselves but what they are made of: in practice every system shares one protein and every transformation shares one protocol. Both live in the registry, once, as whole objects - so this view can show composition and topology while still letting a reader open a node and see the protein.
+ * A graph of chemical systems joined by transformations. What repeats here is not the nodes and edges themselves but what they are made of: in practice every system shares one protein and every transformation shares one protocol. Both live in the registry, once, as whole objects so this view can show composition and topology while still letting a reader open a node and see the protein.
  */
 export interface AlchemicalNetworkViz {
   type: "AlchemicalNetworkViz";
