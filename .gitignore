@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints
+python/gufe_viz/_version.py
+
+# Node
+node_modules/
+ts/dist/
+.vite/
+
+# pixi
+.pixi/
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/

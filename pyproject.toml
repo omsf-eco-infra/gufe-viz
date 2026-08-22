@@ -1,0 +1,76 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=77.0.3",
+  "setuptools-scm>=8",
+]
+
+[project]
+name = "gufe-viz"
+description = "Visualization tools for gufe"
+readme = "README.md"
+license = "MIT"
+license-files = [ "LICENSE" ]
+authors = [ { name = "The OpenFE developers", email = "openfe@omsf.io" } ]
+requires-python = ">=3.12,<3.15"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "Topic :: Scientific/Engineering :: Chemistry",
+]
+dynamic = [ "version" ]
+# Everything pip-installable is declared here, including gufe, because this is
+# the only file a `pip install` can see. pixi.toml lists gufe as well, and that
+# is not an oversight: a PyPI requirement is satisfied by a conda package only
+# when that package is also in pixi's own dependency table, so the entry there
+# is what redirects this requirement to conda-forge instead of to PyPI. Remove
+# it from either file and something breaks - pip users lose the constraint, or
+# pixi tries to resolve gufe from PyPI and fails.
+#
+# The `>=1.12` floor is doing real work. PyPI's gufe is a single 0.4 release
+# predating the 1.0 API, so this makes `pip install gufe-viz` fail with
+# "Could not find a version that satisfies the requirement gufe>=1.12 (from
+# versions: 0.4)" rather than quietly installing a gufe whose API is gone. The
+# floor is also where SolvatedPDBComponent and ProteinMembraneComponent appear.
+dependencies = [
+  "gufe>=1.12",
+]
+optional-dependencies.test = [
+  "jsonschema>=4",
+  "pytest>=7",
+]
+urls.Homepage = "https://github.com/omsf-eco-infra/gufe-viz"
+urls.Issues = "https://github.com/omsf-eco-infra/gufe-viz/issues"
+scripts.gufe-viz = "gufe_viz.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "python" }
+packages.find.where = [ "python" ]
+packages.find.namespaces = false
+include-package-data = true
+zip-safe = false
+# The Vite bundle and the HTML template are build artifacts, committed to the
+# repo so `pip install .` needs no Node toolchain.
+package-data.gufe_viz = [ "_assets/*" ]
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+format.docstring-code-format = true
+lint.select = [
+  "F",  # Pyflakes
+  "I",  # isort
+  "UP", # pyupgrade
+]
+
+[tool.pytest.ini_options]
+testpaths = [ "python/tests" ]

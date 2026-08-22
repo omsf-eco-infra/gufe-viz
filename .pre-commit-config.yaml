@@ -1,0 +1,45 @@
+# Mirrors gufe's own .pre-commit-config.yaml so contributors moving between the
+# two repos meet the same rules.
+ci:
+  autoupdate_schedule: "quarterly"
+  autofix_prs: false
+
+exclude: |
+  (?x)^(
+    python/gufe_viz/_assets/gufe-viz\.js|
+    ts/src/schema/types\.ts|
+    package-lock\.json|
+    pixi\.lock
+  )$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        # The committed bundle is exempt above; nothing else should be big.
+        args: [--maxkb=512]
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: check-json
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: end-of-file-fixer
+        exclude: '\.(graphml)$'
+      - id: trailing-whitespace
+        exclude: '\.(pdb|gro|top|sdf|xml|cif|graphml)$'
+
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: "v2.25.1"
+    hooks:
+      - id: pyproject-fmt
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.20
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

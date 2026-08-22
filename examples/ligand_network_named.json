@@ -1,0 +1,99 @@
+{
+  "type": "LigandNetworkViz",
+  "gufe-key": "LigandNetwork-fd4275a34f7e2c5b5021b5d9eb51d62d",
+  "name": "",
+  "registry": [
+    {
+      "type": "SmallMoleculeComponentViz",
+      "gufe-key": "SmallMoleculeComponent-7c1e5909b9f7ed71b4397fca9fe93156",
+      "name": "CCO",
+      "sdf": "\n     RDKit          3D\n\n  3  2  0  0  0  0  0  0  0  0999 V2000\n   -1.2990   -0.2500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2990   -0.2500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\n  2  3  1  0\nM  END\n\n>  <ofe-name>\nCCO\n\n$$$$\n",
+      "smiles": "CCO",
+      "total_charge": 0
+    },
+    {
+      "type": "SmallMoleculeComponentViz",
+      "gufe-key": "SmallMoleculeComponent-87d2f93db01dd5b434213d78fa29d9d9",
+      "name": "CC",
+      "sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\nCC\n\n$$$$\n",
+      "smiles": "CC",
+      "total_charge": 0
+    },
+    {
+      "type": "SmallMoleculeComponentViz",
+      "gufe-key": "SmallMoleculeComponent-91e72345d9064f0e053111a99adb15d5",
+      "name": "CO",
+      "sdf": "\n     RDKit          3D\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n   -0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n\n>  <ofe-name>\nCO\n\n$$$$\n",
+      "smiles": "CO",
+      "total_charge": 0
+    }
+  ],
+  "nodes": [
+    "SmallMoleculeComponent-87d2f93db01dd5b434213d78fa29d9d9",
+    "SmallMoleculeComponent-7c1e5909b9f7ed71b4397fca9fe93156",
+    "SmallMoleculeComponent-91e72345d9064f0e053111a99adb15d5"
+  ],
+  "edges": [
+    {
+      "type": "LigandAtomMappingViz",
+      "gufe-key": "LigandAtomMapping-c74cf37963263297d61d4a9cba8da7f1",
+      "name": "CCO -> CC",
+      "componentA": "SmallMoleculeComponent-7c1e5909b9f7ed71b4397fca9fe93156",
+      "componentB": "SmallMoleculeComponent-87d2f93db01dd5b434213d78fa29d9d9",
+      "componentA_to_componentB": [
+        {
+          "index_A": 0,
+          "index_B": 0
+        },
+        {
+          "index_A": 1,
+          "index_B": 1
+        }
+      ],
+      "score": 0.0,
+      "annotations": {
+        "score": 0.0,
+        "length": "1.0 angstrom"
+      }
+    },
+    {
+      "type": "LigandAtomMappingViz",
+      "gufe-key": "LigandAtomMapping-e5328c800d0ef6590aebccf46e8c0309",
+      "name": "CCO -> CO",
+      "componentA": "SmallMoleculeComponent-7c1e5909b9f7ed71b4397fca9fe93156",
+      "componentB": "SmallMoleculeComponent-91e72345d9064f0e053111a99adb15d5",
+      "componentA_to_componentB": [
+        {
+          "index_A": 0,
+          "index_B": 0
+        },
+        {
+          "index_A": 2,
+          "index_B": 1
+        }
+      ],
+      "score": 0.5,
+      "annotations": {
+        "score": 0.5,
+        "time": "2.0 second"
+      }
+    },
+    {
+      "type": "LigandAtomMappingViz",
+      "gufe-key": "LigandAtomMapping-7ad4c44bbd8cefbfeae55e299159ac9e",
+      "name": "CC -> CO",
+      "componentA": "SmallMoleculeComponent-87d2f93db01dd5b434213d78fa29d9d9",
+      "componentB": "SmallMoleculeComponent-91e72345d9064f0e053111a99adb15d5",
+      "componentA_to_componentB": [
+        {
+          "index_A": 0,
+          "index_B": 0
+        }
+      ],
+      "score": 1.0,
+      "annotations": {
+        "score": 1.0
+      }
+    }
+  ]
+}

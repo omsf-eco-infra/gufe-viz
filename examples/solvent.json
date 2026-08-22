@@ -1,0 +1,10 @@
+{
+  "type": "SolventComponentViz",
+  "gufe-key": "SolventComponent-26b4034ad9dbd9f908dfc298ea8d449f",
+  "name": "O, Na+, Cl-",
+  "smiles": "O",
+  "positive_ion": "Na+",
+  "negative_ion": "Cl-",
+  "neutralize": true,
+  "ion_concentration": "0.15 molar"
+}

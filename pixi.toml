@@ -1,0 +1,106 @@
+[workspace]
+name = "gufe-viz"
+description = "Visualization tools for gufe"
+authors = ["The OpenFE developers <openfe@omsf.io>"]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64", "linux-aarch64", "win-64"]
+
+[dependencies]
+python = ">=3.12,<3.14"
+nodejs = ">=20"
+# gufe is declared here *and* in pyproject.toml, deliberately. pyproject is the
+# only file pip can see, so the requirement has to live there; but a PyPI
+# requirement is satisfied by a conda package only when that package is also in
+# this table, so this line is what makes pixi resolve gufe from conda-forge
+# rather than from PyPI - where the newest release is 0.4 and the 1.0 API does
+# not exist yet. The two entries must agree on the floor.
+gufe = ">=1.12"
+rdkit = "*"
+pytest = "*"
+jsonschema = "*"
+ruff = "*"
+pip = "*"
+
+[pypi-dependencies]
+gufe-viz = { path = ".", editable = true }
+
+# --------------------------------------------------------------------------- #
+# Node                                                                          #
+# --------------------------------------------------------------------------- #
+
+[tasks.npm-install]
+description = "Install the Node toolchain (vite, typescript, vitest, ajv)."
+cmd = "npm ci --no-audit --no-fund || npm install --no-audit --no-fund"
+inputs = ["package.json", "package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+
+[tasks.dev]
+description = "Vite dev server: drop a payload JSON on the page and see it render."
+cmd = "npm run dev"
+depends-on = ["npm-install"]
+
+[tasks.build]
+description = "Bundle the TypeScript into python/gufe_viz/_assets/gufe-viz.js."
+cmd = "npm run build"
+depends-on = ["npm-install"]
+
+[tasks.types]
+description = "Regenerate ts/src/schema/types.ts from the JSON Schema."
+cmd = "npm run types"
+depends-on = ["npm-install"]
+
+[tasks.examples]
+description = "Rebuild examples/*.json from real gufe objects."
+cmd = "python scripts/make_examples.py"
+
+# --------------------------------------------------------------------------- #
+# Rendering                                                                     #
+# --------------------------------------------------------------------------- #
+#
+# `gufe-viz` is a console script from pyproject.toml, so it is already on PATH
+# inside this environment and `pixi run gufe-viz ...` would work with no task at
+# all. It is declared anyway, because I use 'pixi run' by default, so it's a nice
+# convenience. Arguments after the task name are appended to `cmd`
+
+[tasks.gufe-viz]
+description = "Render a payload or gufe object as one page: `pixi run gufe-viz examples/small_molecule.json -o /tmp/mol.html`"
+cmd = "python -m gufe_viz.cli"
+
+[tasks.gufe-viz-debug]
+description = "The same, with the payload printed to the browser console (also reachable as <url>?debug)."
+cmd = "python -m gufe_viz.cli --debug"
+
+# --------------------------------------------------------------------------- #
+# Checks                                                                        #
+# --------------------------------------------------------------------------- #
+
+[tasks.test-py]
+description = "pytest - payload builders, schema validity, mutation matrix."
+cmd = "pytest python/tests -q"
+
+[tasks.test-ts]
+description = "vitest - Ajv validation, mutation matrix, element lifecycle."
+cmd = "npm run test"
+depends-on = ["npm-install"]
+
+[tasks.test]
+description = "The whole suite, both languages."
+depends-on = ["test-py", "test-ts"]
+
+[tasks.lint]
+description = "ruff (check + format), tsc --noEmit"
+cmd = "ruff check python scripts && ruff format --check python scripts && npm run typecheck"
+depends-on = ["npm-install"]
+
+[tasks.format]
+description = "Apply ruff's fixes and formatting."
+cmd = "ruff check --fix python scripts && ruff format python scripts"
+
+[tasks.check-generated]
+description = "Fail if the committed TS types or JS bundle are stale."
+cmd = "bash scripts/check_generated.sh"
+depends-on = ["npm-install"]
+
+[tasks.ci]
+description = "Everything CI runs: lint, both suites, generated-artifact freshness."
+depends-on = ["lint", "test-py", "test-ts", "check-generated"]

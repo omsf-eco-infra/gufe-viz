@@ -1,0 +1,16 @@
+# Generated artifacts. Committed on purpose so `pip install` needs no Node
+# toolchain, regenerated and diffed by CI's `check-generated` job, and
+# marked here so GitHub collapses them in review
+# schema/gufe-viz.schema.json is deliberately absent from this list. It is
+# the source of truth for both languages, so it is the file
+# a reviewer should see expanded, not the one GitHub folds away.
+python/gufe_viz/_assets/gufe-viz.js linguist-generated=true
+ts/src/schema/types.ts             linguist-generated=true
+package-lock.json                  linguist-generated=true
+pixi.lock                          linguist-generated=true
+examples/*.json                    linguist-generated=true
+
+# Structure files are fixtures; leave their bytes alone.
+*.sdf      -text
+*.pdb      -text
+*.graphml  -text

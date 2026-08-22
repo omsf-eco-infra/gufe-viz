@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>gufe-viz - drop a payload</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        font: 13px/1.4 ui-sans-serif, system-ui, sans-serif;
+      }
+      #root {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { installDropzone } from "./src/dev/dropzone.ts";
+      installDropzone(document.getElementById("root"));
+    </script>
+  </body>
+</html>
