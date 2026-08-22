@@ -80,7 +80,15 @@ for dir in "${GENERATED_DIRS[@]}"; do
     echo "ok:          $dir/"
   else
     echo "STALE:       $dir/"
+    # Show what actually changed, not just which file changed. These payloads
+    # carry long single-line fields - an SDF, a PDB, a base64 conformer - so
+    # trim each line, or one stale fixture buries the log.
     diff -rq "$snapshot/$dir" "$dir" || true
+    for file in $(diff -rq "$snapshot/$dir" "$dir" 2>/dev/null | awk '/^Files /{print $2}'); do
+      echo
+      echo "--- ${file#"$snapshot/"} ---"
+      diff -u "$file" "${file#"$snapshot/"}" | cut -c1-200 | head -40 || true
+    done
     stale+=("$dir/")
   fi
 done

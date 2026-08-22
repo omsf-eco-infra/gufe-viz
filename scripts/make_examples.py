@@ -45,6 +45,49 @@ def _benzene_modifications() -> dict[str, gufe.SmallMoleculeComponent]:
     return {m.GetProp("_Name"): SmallMoleculeComponent.from_rdkit(m) for m in supplier if m is not None}
 
 
+# Coordinate precision the fixtures are quantized to, matching the four decimal
+# places a V2000 mol block stores.
+_COORD_DECIMALS = 4
+
+# How far a coordinate must sit from a rounding boundary for _quantize to accept
+# it. ETKDG and MMFF are floating point pipelines whose results agree between
+# platforms to roughly twelve decimal places, so a gap this size means every
+# platform rounds to the same double. A coordinate closer than this to a
+# boundary is not safe to round, and a divergence bigger than this is not
+# floating point noise, it is a different minimum.
+_COORD_TIE_MARGIN = 1e-9
+
+
+def _quantize(mol):
+    """Round ``mol``'s conformer to `_COORD_DECIMALS`, in place.
+
+    A gufe key is a hash of the full precision float64 conformer, but a mol
+    block stores four decimals. An embedded conformer therefore serializes to
+    the same SDF bytes on every platform while hashing to a different key, which
+    showed up as check_generated.sh failing in CI and passing on a developer
+    machine. Rounding to the precision the SDF already shows makes the key
+    describe exactly the coordinates a reader can see, on every platform.
+    """
+    from rdkit.Geometry import Point3D
+
+    conf = mol.GetConformer()
+    for index in range(mol.GetNumAtoms()):
+        pos = conf.GetAtomPosition(index)
+        conf.SetAtomPosition(index, Point3D(*(_round_coord(v) for v in (pos.x, pos.y, pos.z))))
+    return mol
+
+
+def _round_coord(value: float) -> float:
+    rounded = round(value, _COORD_DECIMALS)
+    if abs(value - rounded) > 0.5 * 10**-_COORD_DECIMALS - _COORD_TIE_MARGIN:
+        raise AssertionError(
+            f"coordinate {value!r} is within {_COORD_TIE_MARGIN} of a rounding boundary, "
+            f"so it would not round the same way on every platform. Re-embed with a "
+            f"different seed, or freeze this conformer as a mol block literal."
+        )
+    return rounded
+
+
 def _acetate() -> gufe.SmallMoleculeComponent:
     """A charged molecule, so `total_charge` is exercised as something but 0."""
     from gufe import SmallMoleculeComponent
@@ -55,7 +98,7 @@ def _acetate() -> gufe.SmallMoleculeComponent:
     AllChem.EmbedMolecule(mol, randomSeed=0xF00D)
     AllChem.MMFFOptimizeMolecule(mol)
     mol.SetProp("_Name", "acetate")
-    return SmallMoleculeComponent.from_rdkit(mol)
+    return SmallMoleculeComponent.from_rdkit(_quantize(mol))
 
 
 def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
