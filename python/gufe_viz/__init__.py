@@ -2,10 +2,13 @@
 
     >>> import gufe_viz
     >>> html = gufe_viz.to_html(small_molecule_component)  # returns a string
+    >>> gufe_viz.view(small_molecule_component)  # the same page, in a notebook
 
 :func:`to_html` returns the page and writes nothing; where it goes is the
 caller's decision. ``gufe-viz <input> -o out.html`` is one answer to that, and
 a development convenience rather than the OpenFE CLI integration.
+:func:`view` is the notebook's answer to the same question - see
+:mod:`gufe_viz.notebook` for what a cell gets and why it is in an iframe.
 
 The intermediate value is a plain, schema-valid dict:
 
@@ -24,7 +27,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from .html import BundleMissing, bundle_source, to_html
+from .html import BundleMissing, bundle_source, shell_html, to_html
+from .notebook import StaticView, view
 
 if TYPE_CHECKING:  # gufe is imported inside payload_for, never at module scope
     from gufe.tokenization import GufeTokenizable
@@ -85,8 +89,11 @@ def payload_for(obj: GufeTokenizable) -> dict[str, Any]:
 
 __all__ = [
     "BundleMissing",
+    "StaticView",
     "__version__",
     "bundle_source",
     "payload_for",
+    "shell_html",
     "to_html",
+    "view",
 ]

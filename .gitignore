@@ -17,6 +17,11 @@ ts/dist/
 # pixi
 .pixi/
 
+# notebooks
+.ipynb_checkpoints/
+# `pixi run marimo` converts the demo notebook into here; the .ipynb is the source
+examples/notebooks/.marimo/
+
 # editors / OS
 .DS_Store
 .idea/

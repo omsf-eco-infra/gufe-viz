@@ -53,6 +53,51 @@ depends-on = ["npm-install"]
 description = "Rebuild examples/*.json from real gufe objects."
 cmd = "python scripts/make_examples.py"
 
+[tasks.gallery]
+description = "Rebuild the gallery notebook: headless Chrome creates screenshots from the notebook visualizations so they work in e.g. github"
+cmd = "python scripts/make_gallery.py"
+depends-on = ["build"]
+
+# --------------------------------------------------------------------------- #
+# Notebooks                                                                     #
+# --------------------------------------------------------------------------- #
+#
+# A separate environment, because JupyterLab and marimo are heavyweight compared
+# to the non-notebook infrastructure and nothing else here needs them. 
+# `pixi run notebook` still works from anywhere:
+# the task exists in only one environment, so pixi picks it.
+
+[feature.notebook.dependencies]
+anywidget = ">=0.9"
+# anywidget requires ipywidgets>=7.6.0 but jupyterlab >= 4 needs ipywidgets 8 
+ipywidgets = ">=8"
+jupyterlab = ">=4"
+marimo = "*"
+
+[feature.notebook.tasks.notebook]
+description = "JupyterLab on the demo notebook: every visualization type, every delivery mode."
+cmd = "jupyter lab examples/notebooks/gufe-viz-demo.ipynb"
+depends-on = ["build"]
+
+[feature.notebook.tasks.marimo]
+# One notebook, two frontends: marimo reads the same .ipynb, converted. The
+# conversion is a build artifact rather than a second copy to keep in step.
+description = "The same demo, converted and opened in marimo."
+cmd = """
+rm -rf examples/notebooks/.marimo &&
+mkdir -p examples/notebooks/.marimo &&
+marimo convert examples/notebooks/gufe-viz-demo.ipynb -o examples/notebooks/.marimo/demo.py &&
+marimo edit examples/notebooks/.marimo/demo.py
+"""
+depends-on = ["build"]
+
+[feature.notebook.tasks.test-notebook]
+description = "pytest over the notebook layer, with anywidget installed."
+cmd = "pytest python/tests/test_notebook.py -q"
+
+[environments]
+notebook = ["notebook"]
+
 # --------------------------------------------------------------------------- #
 # Rendering                                                                     #
 # --------------------------------------------------------------------------- #

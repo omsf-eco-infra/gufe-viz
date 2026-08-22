@@ -109,6 +109,71 @@ open("mol.html", "w").write(html)                   # writing it is your call
 `to_html` accepts a gufe object or a plain payload dict. It returns a string and
 writes nothing, anywhere - where the page goes is the caller's decision.
 
+### 5. Notebook rendering of visualizations
+
+```python
+gufe_viz.view(small_molecule_component)   # the same page, in a cell
+```
+
+**NB:** When this is published, we can update the gufe repo with this as an optional dependency, and if installed, will render the object without the need for specific `.view(..)` calls.
+
+
+There are [two notebooks](examples/notebooks/), and the difference between them
+matters: **one is for running, one is for looking at.**
+
+```bash
+pixi run notebook    # JupyterLab on examples/notebooks/gufe-viz-demo.ipynb
+pixi run marimo      # the same notebook, converted, in marimo
+```
+
+`gufe-viz-demo.ipynb` is **the bench you run** - every payload type and every
+delivery mode, committed with no outputs. Open it with the commands above when
+you have changed something and want to know whether it still draws.
+
+[`gufe-viz-gallery.ipynb`](examples/notebooks/gufe-viz-gallery.ipynb) is **the
+one you read on GitHub**, and the only reason it exists is that GitHub's
+notebook renderer strips the `<iframe>` and `<script>` that `view()` emits - so
+an executed copy of the demo notebook shows a blank under every cell there.
+`image/png` is the one output type that survives, so the gallery's outputs are
+screenshots, rebuilt from the current source by `pixi run gallery`.
+
+You can run the gallery: its cells hold the real `view()` call, and running
+it replaces each screenshot with the live view. Just do not commit that: it
+strips out the pictures GitHub needs. `pixi run gallery` puts them back.
+[`examples/notebooks/README.md`](examples/notebooks/README.md) is the full note
+for developers, including when to regenerate.
+
+`view()` returns two layers from one call, and your frontend picks:
+
+| layer | mimetype | needs | gives |
+| --- | --- | --- | --- |
+| static | `text/html` - the page in an `<iframe srcdoc>` | nothing | a saved notebook that still draws with no kernel |
+| live | a widget view - shell page plus the payload as widget state | `anywidget` | `w.payload = other` redraws in place |
+
+```python
+w = gufe_viz.view(ligand_A)     # display it
+w.payload = ligand_B            # the cell above redraws, in place
+
+gufe_viz.view(obj, live=False)     # static only - what a kernel-less reader sees
+gufe_viz.view(obj, static=False)   # live only - half the bytes, blank on export
+```
+
+The live layer is optional: `pip install gufe-viz[notebook]`. Without it `view()`
+returns the static layer alone and everything still draws, minus the updating.
+
+**Both layers put the view in an iframe**, which is not caution. The `<gufe-*>`
+elements build light DOM, so a notebook's output-area CSS would reach inside
+every view; and the engine loaders append a `<script>` to `document.head` and
+read `window.$3Dmol` / `window.RDKit`, which in a notebook page are the globals
+py3Dmol and nglview are already using. The iframe settles both for nothing.
+
+**Views are not free to display.** Each one sends the bundle to the browser -
+in the page when `static`, in the widget's shell when live, both when both.
+Measured, for a protein: 457 kB static + 240 kB shell = ~697 kB for one cell. On
+JupyterLab those messages share the kernel's rate-limited iopub channel, so a
+notebook that creates many views in one burst can have messages dropped rather
+than delivered slowly. `static=False` and `live=False` are the two knobs.
+
 ### What a *user* of the library needs
 
 None of the above. Installing the package is plain pip, with no Node anywhere:
@@ -630,6 +695,10 @@ somewhere sensible - for that, see
 | `pixi run build` | Bundle TypeScript into `python/gufe_viz/_assets/gufe-viz.js` |
 | `pixi run types` | Regenerate `ts/src/schema/types.ts` from the JSON Schema |
 | `pixi run examples` | Rebuild `examples/*.json` from real gufe objects |
+| `pixi run gallery` | Rebuild the gallery notebook - every view, screenshotted |
+| `pixi run notebook` | JupyterLab on the demo notebook (its own environment) |
+| `pixi run marimo` | The same notebook, converted, in marimo |
+| `pixi run test-notebook` | The notebook layer's tests, with anywidget installed |
 | `pixi run test` | Both test suites |
 | `pixi run test-py` / `test-ts` | One suite each |
 | `pixi run lint` | ruff, and `tsc --noEmit` |
@@ -641,9 +710,10 @@ somewhere sensible - for that, see
 
 ```
 schema/     the Python<->TypeScript contract, and the mutation matrix
-python/     gufe_viz - payload builders, HTML writer, CLI
+python/     gufe_viz - payload builders, HTML writer, notebook view, CLI
 ts/         the custom elements, one file per view
 examples/   golden payloads, shared by pytest, vitest, the dropzone and the gallery
+            notebooks/ - one demo covering every type and every delivery mode
 scripts/    the generators, and CI runs
 ```
 
