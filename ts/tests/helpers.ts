@@ -47,6 +47,7 @@ export function makeFakeViewer(): FakeViewer {
       return Promise.resolve(1);
     },
     zoomTo: record("zoomTo"),
+    zoom: record("zoom"),
     render: record("render"),
     resize: record("resize"),
     spin: record("spin"),
