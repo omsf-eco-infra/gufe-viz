@@ -53,6 +53,10 @@ depends-on = ["npm-install"]
 description = "Regenerate ts/src/shared/atom-colors.ts by reading gufe and matplotlib."
 cmd = "python scripts/gen_atom_colors.py"
 
+[tasks.big-network]
+description = "Generate a large synthetic ligand network, to measure page size and layout cost against."
+cmd = "python scripts/make_big_network.py"
+
 [tasks.parity-reference]
 description = "Render gufe's own mapping drawings, to compare our atom-mapping view against."
 cmd = "python scripts/make_parity_reference.py"
