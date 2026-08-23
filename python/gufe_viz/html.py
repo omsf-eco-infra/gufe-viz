@@ -18,7 +18,11 @@ network access at all.
 
 The bootstrap uses only the custom-element API (``document.querySelector`` plus
 a ``.payload`` assignment). That is on purpose: it does not depend on any name
-the bundler chose, and it is the same two lines the notebook widget will use.
+the bundler chose, and it is the same two lines the notebook widget uses.
+
+:func:`shell_html` is that same document with the payload block and the
+bootstrap left out, for a host that delivers the payload itself - which is what
+the notebook widget does. One template, two fillings.
 
 ``to_html(obj, debug=True)`` puts a ``debug`` attribute on the ``<gufe-view>``,
 which makes the bundle print the payload it was handed to the browser console.
@@ -80,11 +84,21 @@ _TEMPLATE = Template("""<!doctype html>
 <body>
 <div id="gufe-error"></div>
 <gufe-view$view_attributes></gufe-view>
-<script id="gufe-payload" type="application/json">$payload</script>
+$payload
 $engines
 <script type="module">
 $code
+$bootstrap
+</script>
+</body>
+</html>
+""")
 
+#: The payload, baked into the page. Absent from the shell, which is handed its
+#: payload at runtime instead.
+_PAYLOAD_BLOCK = Template('<script id="gufe-payload" type="application/json">$payload</script>')
+
+_BOOTSTRAP = """
 // ---- bootstrap: hand the element the payload baked into this file ----
 // Only the custom-element API is used here, so nothing depends on a name the
 // bundler happened to choose.
@@ -96,10 +110,7 @@ try {
   err.textContent = String((e && e.stack) || e);
   err.style.display = "block";
 }
-</script>
-</body>
-</html>
-""")
+"""
 
 _CDN_ENGINES_NOTE = (
     "<!-- RDKit / 3Dmol / d3 are fetched from their CDNs on demand, and only by a\n"
@@ -161,20 +172,47 @@ def to_html(obj: GufeTokenizable | dict[str, Any], *, title: str | None = None, 
         If the compiled bundle is not present in the installed package.
     """
     payload = _as_payload_dict(obj)
-    code = bundle_source()
 
     # `Template.substitute` scans the template once, so a placeholder appearing
     # inside a substituted value (e.g. the payload or bundle) is left alone.
     return _TEMPLATE.substitute(
         title=_escape_html(title or payload.get("name") or payload.get("type") or "gufe-viz"),
-        # `</` cannot appear inside a <script> block, whatever the payload holds;
-        # `\/` is a legal JSON escape, so this survives JSON.parse unchanged.
-        payload=json.dumps(payload).replace("</", "<\\/"),
+        payload=_PAYLOAD_BLOCK.substitute(
+            # `</` cannot appear inside a <script> block, whatever the payload
+            # holds; `\/` is a legal JSON escape, so this survives JSON.parse
+            # unchanged.
+            payload=json.dumps(payload).replace("</", "<\\/")
+        ),
         engines=_CDN_ENGINES_NOTE,
-        code=_script_safe(code),
+        code=_script_safe(bundle_source()),
+        bootstrap=_BOOTSTRAP,
         # A bare boolean attribute, because that is what the element tests for -
         # no value to keep in step between the two languages.
         view_attributes=" debug" if debug else "",
+    )
+
+
+def shell_html(*, title: str = "gufe-viz") -> str:
+    """Return the same page as :func:`to_html`, minus the payload.
+
+    The notebook widget writes this into an iframe and then sets ``.payload`` on
+    the ``<gufe-view>`` inside it, so the payload arrives over the widget comm
+    rather than baked into the document. Everything else - the bundle, the
+    element, the stylesheet - is the page ``to_html`` produces, from the same
+    template, which is the point: there is one document to get right.
+
+    The elements are defined by the time the iframe's ``load`` event fires,
+    because a module script delays it. That is the whole handshake; a host that
+    sets ``.payload`` before then would be assigning to an element that has not
+    been upgraded yet, where the assignment would shadow the class's accessor.
+    """
+    return _TEMPLATE.substitute(
+        title=_escape_html(title),
+        payload="",
+        engines=_CDN_ENGINES_NOTE,
+        code=_script_safe(bundle_source()),
+        bootstrap="",
+        view_attributes="",
     )
 
 

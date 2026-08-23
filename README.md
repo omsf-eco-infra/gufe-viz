@@ -2,9 +2,7 @@
 
 Visualization tools for [gufe](https://github.com/OpenFreeEnergy/gufe).
 
-Turns a gufe object into an interactive browser visualization - a single HTML
-file you open locally. No server, no account, no network round-trip for your
-data.
+Turns a gufe object into an interactive browser visualization you open locally
 
 > **Under construction.** The pipeline runs end to end, and three of the twelve
 > payload types have a view. The rest are declared in the schema, built by
@@ -13,14 +11,13 @@ data.
 
 ---
 
-## Quick start - from nothing to a picture
+## Quick start
 
 ### 1. Install pixi
 
 **[pixi](https://pixi.sh) and git. That is the whole list.** pixi provides
 everything else - Python 3.12+, Node 20+, gufe, RDKit, pytest, jsonschema and
-ruff all come from `pixi.toml`, pinned in `pixi.lock`. You do not need a system
-Python, a system Node, or a conda install of your own.
+ruff all come from `pixi.toml`, pinned in `pixi.lock`.
 
 ```bash
 curl -fsSL https://pixi.sh/install.sh | bash    # macOS / Linux
@@ -39,19 +36,13 @@ cd gufe-viz
 pixi install
 ```
 
-That solves and downloads a conda environment containing RDKit and gufe - a few
-hundred megabytes, and a couple of minutes the first time, cached afterwards.
-You do **not** need to run `npm install`: every task that needs Node depends on
-an `npm-install` task that runs it for you and is skipped on a cache hit.
-
-git matters for more than cloning - the version comes from `setuptools-scm`, so
-a tarball with no `.git` in it builds as `0.0.0`.
+That solves and downloads a conda environment containing RDKit and gufe.
 
 ### 3. Look at the visualizations
 
-Three ways, in increasing order of "this is what a user will actually do".
+Three ways:
 
-**The gallery** - every example payload on one scrolling page. Start here.
+**The gallery:**  every example payload on one page, for quick debugging and checks
 
 ```bash
 pixi run dev
@@ -59,10 +50,9 @@ pixi run dev
 ```
 
 The gallery deliberately shows "sorry, there is no visualization for X yet" for
-the types that have no view. That panel is the intended behaviour, not a broken
-card. (Vite picks the next free port if 5173 is taken - watch the output.)
+the types that have no view.
 
-**Drag and drop** - the same dev server, one payload at a time. Drop any file
+**Drag and drop:** the same dev server, one payload at a time. Drop any file
 from `examples/` anywhere on the page:
 
 ```bash
@@ -70,14 +60,14 @@ pixi run dev
 # http://localhost:5173/
 ```
 
-**A standalone HTML file** - what ships. One file, opened from disk, no server:
+**A standalone HTML file:** what is actually used by this library. One file, opened from disk, no server:
 
 ```bash
 pixi run gufe-viz examples/ligand_network_named.json -o /tmp/network.html
 open /tmp/network.html          # macOS;  xdg-open on Linux
 ```
 
-With no `-o`, the page lands beside the input as `<input>.html` - so
+With no `-o`, the page lands beside the input as `<input>.html`, so
 `ligand.json` becomes `ligand.json.html`, keeping the original suffix so two
 inputs that differ only by extension cannot collide. `-o -` writes to stdout.
 
@@ -92,12 +82,9 @@ baked in:
 pixi run gufe-viz-debug examples/ligand_network_named.json -o /tmp/network.html
 ```
 
-Both tasks take the same flags as the bare command - `pixi task list` shows them
-with the rest. `gufe-viz` is a console script from `pyproject.toml`, so
-`pixi run gufe-viz ...` would work with no task declared at all; the tasks exist
-so that the command is findable if you (like me) just use `pixi run`
+### 4. Future CLI integration
 
-### 4. Do it with your own object
+Eventually `openfe` integration, but for now it's manual:
 
 ```python
 import gufe_viz
@@ -107,14 +94,66 @@ open("mol.html", "w").write(html)                   # writing it is your call
 ```
 
 `to_html` accepts a gufe object or a plain payload dict. It returns a string and
-writes nothing, anywhere - where the page goes is the caller's decision.
+writes nothing.
+
+### 5. Notebook rendering of visualizations
+
+```python
+gufe_viz.view(small_molecule_component)   # the same page, in a cell
+```
+
+**NB:** When this is published, we can update the gufe repo with this as an optional dependency, and if installed, will render the object without the need for specific `.view(..)` calls.
+
+
+There are [two notebooks](examples/notebooks/), one is for running locally and the other is so you can see the visualization in e.g. github (which restricts javascript and iframes).
+
+```bash
+pixi run notebook    # JupyterLab on examples/notebooks/gufe-viz-demo.ipynb
+pixi run marimo      # the same notebook, converted, in marimo
+```
+
+`gufe-viz-demo.ipynb` is the local **development** version, with every payload type. Make a change and refresh to iterate.
+
+[`gufe-viz-gallery.ipynb`](examples/notebooks/gufe-viz-gallery.ipynb) is the
+**GitHub** version, since GitHub's
+notebook renderer strips the `<iframe>` and `<script>` that `view()` emits,
+so you would see just blank cells instead of rendered visualizations.
+`pixi run gallery` rebuilds the gallery images.
+
+You can run the gallery: its cells hold the real `view()` call, and running
+it replaces each screenshot with the live view. Just do not commit that: it
+strips out the pictures GitHub needs. `pixi run gallery` puts them back.
+[`examples/notebooks/README.md`](examples/notebooks/README.md) is the full note
+for developers, including when to regenerate.
+
+`view()` returns two layers from one call, and your frontend picks:
+
+| layer | mimetype | needs | gives |
+| --- | --- | --- | --- |
+| static | `text/html` - the page in an `<iframe srcdoc>` | nothing | a saved notebook that still draws with no kernel |
+| live | a widget view - shell page plus the payload as widget state | `anywidget` | `w.payload = other` redraws in place |
+
+```python
+w = gufe_viz.view(ligand_A)     # display it
+w.payload = ligand_B            # the cell above redraws, in place
+
+gufe_viz.view(obj, live=False)     # static only - what a kernel-less reader sees
+gufe_viz.view(obj, static=False)   # live only - half the bytes, blank on export
+```
+
+The live layer is optional: `pip install gufe-viz[notebook]`. Without it `view()`
+returns the static layer alone and everything still draws, minus the updating.
+
+**Both layers put the view in an iframe**. We don't want any notebook css
+interference, and the visualization must be a standalone page for the CLI
+use case, so it's an iframe/page everywhere.
 
 ### What a *user* of the library needs
 
 None of the above. Installing the package is plain pip, with no Node anywhere:
 
 ```bash
-pip install .          # not on PyPI yet - see Status
+pip install .          # not on PyPI yet, see Status
 ```
 
 The compiled JavaScript bundle is committed to this repository and ships inside
@@ -174,7 +213,7 @@ flowchart LR
 Two rules hold that picture together.
 
 **gufe's own `to_json` never crosses into TypeScript.** TypeScript only ever
-sees SDF, PDB and flat, schema-valid JSON - not even GraphML, whose nodes *are*
+sees SDF, PDB and flat, schema-valid JSON, not even GraphML, whose nodes *are*
 gufe JSON. Deduplicated key-chains, `:custom:` codecs and the `to_dict`/`to_json`
 divergence all stay Python problems, because the alternative is a large amount
 of TypeScript that has to track gufe's serialization forever.
@@ -184,8 +223,8 @@ of TypeScript that has to track gufe's serialization forever.
 ### The generated HTML file: what is in it, and how it loads
 
 `to_html(obj)` returns a complete page as a **string** and writes nothing
-anywhere - the CLI is one caller that chooses to write it, not the only possible
-one. The page has four parts and no others:
+anywhere. THen the CLI chooses where write it.
+The page has four parts and no others:
 
 ```html
 <gufe-view></gufe-view>                                <!-- 1. where it draws -->
@@ -203,14 +242,14 @@ one. The page has four parts and no others:
 ```
 
 **Where the input data lives:** inside the file, in `#gufe-payload`, as *inert
-text*. `type="application/json"` is not a script type the browser executes - the
+text*. `type="application/json"` is not a script type the browser executes, the
 element is a container the DOM hands back as a string. Nothing fetches it,
 nothing sits beside it on disk, and moving or emailing the `.html` moves the
 data with it.
 
 **How it is loaded:** by that last statement, run once at parse time.
 `textContent` gets the raw JSON, `JSON.parse` turns it into an object, and
-assigning it to `.payload` starts the render. That is the entire handshake - the
+assigning it to `.payload` starts the render. That is the entire handshake: the
 same custom-element API an external page or a notebook widget would use, and it
 depends on no name the bundler chose. If anything throws, the message lands in a
 visible `#gufe-error` strip at the top of the page rather than in a console
@@ -630,6 +669,10 @@ somewhere sensible - for that, see
 | `pixi run build` | Bundle TypeScript into `python/gufe_viz/_assets/gufe-viz.js` |
 | `pixi run types` | Regenerate `ts/src/schema/types.ts` from the JSON Schema |
 | `pixi run examples` | Rebuild `examples/*.json` from real gufe objects |
+| `pixi run gallery` | Rebuild the gallery notebook - every view, screenshotted |
+| `pixi run notebook` | JupyterLab on the demo notebook (its own environment) |
+| `pixi run marimo` | The same notebook, converted, in marimo |
+| `pixi run test-notebook` | The notebook layer's tests, with anywidget installed |
 | `pixi run test` | Both test suites |
 | `pixi run test-py` / `test-ts` | One suite each |
 | `pixi run lint` | ruff, and `tsc --noEmit` |
@@ -641,9 +684,10 @@ somewhere sensible - for that, see
 
 ```
 schema/     the Python<->TypeScript contract, and the mutation matrix
-python/     gufe_viz - payload builders, HTML writer, CLI
+python/     gufe_viz - payload builders, HTML writer, notebook view, CLI
 ts/         the custom elements, one file per view
 examples/   golden payloads, shared by pytest, vitest, the dropzone and the gallery
+            notebooks/ - one demo covering every type and every delivery mode
 scripts/    the generators, and CI runs
 ```
 
