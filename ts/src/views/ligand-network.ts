@@ -25,6 +25,7 @@ import {
 } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { svg, titled } from "../shared/svg.js";
+import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG, parseCounts } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
@@ -221,7 +222,10 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     const canvas = el("div", `flex:1;position:relative;overflow:hidden;min-height:0;background:${T.netCanvasBg};`);
     left.appendChild(canvas);
-    const toolbar = this.#toolbar((next) => draw(next));
+    const toolbar = this.#toolbar(
+      (next) => draw(next),
+      () => resetView(),
+    );
     left.appendChild(toolbar.bar);
 
     const detail = this.#detailPane(right);
@@ -261,6 +265,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     let forceUnavailable = false;
     let alive = true;
     let refreshHalos = () => {};
+    let resetView = () => {};
 
     const select = (index: number) => {
       selected = index;
@@ -282,6 +287,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         if (!alive) return;
         const scene = this.#paint(canvas, nodes, edges, width, height, select);
         refreshHalos = () => scene.setSelected(selected);
+        resetView = scene.reset;
         stop = scene.cleanup;
         refreshHalos();
         rdkitReady.then((RDKit) => RDKit && scene.depict(RDKit)).catch(() => undefined);
@@ -321,7 +327,10 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
   }
 
-  #toolbar(onLayout: (layout: Layout) => void): { bar: HTMLDivElement; picker: HTMLSelectElement } {
+  #toolbar(
+    onLayout: (layout: Layout) => void,
+    onReset: () => void,
+  ): { bar: HTMLDivElement; picker: HTMLSelectElement } {
     const toolbar = el(
       "div",
       "display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;" +
@@ -348,6 +357,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     }
     picker.onchange = () => onLayout(picker.value as Layout);
     toolbar.appendChild(picker);
+    toolbar.appendChild(resetControl(onReset, "Reset pan and zoom"));
 
     return { bar: toolbar, picker };
   }
@@ -460,7 +470,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     width: number,
     height: number,
     onSelect: (index: number) => void,
-  ): { setSelected(index: number): void; depict(RDKit: RDKitModule): number; cleanup(): void } {
+  ): { setSelected(index: number): void; depict(RDKit: RDKitModule): number; reset(): void; cleanup(): void } {
     const root = svg("svg", { width, height, style: "display:block;touch-action:none;" });
     const scene = svg("g");
     root.appendChild(scene);
@@ -620,6 +630,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         return injected;
       },
 
+      reset: view.reset,
       cleanup: view.cleanup,
     };
   }
@@ -632,14 +643,17 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     nodes: NetNode[],
     groups: SVGGElement[],
     place: () => void,
-  ): { cleanup(): void } {
+  ): { cleanup(): void; reset(): void } {
     let scale = 1;
     let tx = 0;
     let ty = 0;
     const apply = () => scene.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
 
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
+    // The zoom maths stays here rather than moving to `boundedZoom`: it works in
+    // SVG transform space, carries its own clamp, and zooms about the pointer,
+    // which is not what a 3Dmol camera does. What is shared is the guard - the
+    // reason a wheel reaches this at all.
+    const zoomAt = (event: WheelEvent) => {
       const box = root.getBoundingClientRect();
       const px = event.clientX - box.left;
       const py = event.clientY - box.top;
@@ -650,7 +664,10 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       scale *= factor;
       apply();
     };
-    root.addEventListener("wheel", onWheel, { passive: false });
+    const guard = guardWheel(root as unknown as HTMLElement, {
+      onZoom: zoomAt,
+      hint: "Click the graph or hold Ctrl to zoom",
+    });
 
     // Deliberately no `setPointerCapture` here, unlike the node drag below. A
     // capture on the root retargets the subsequent `click` to the root as well,
@@ -697,8 +714,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     });
 
     return {
+      reset() {
+        scale = 1;
+        tx = 0;
+        ty = 0;
+        apply();
+      },
       cleanup() {
-        root.removeEventListener("wheel", onWheel);
+        guard.cleanup();
         root.removeEventListener("pointerdown", onDown);
         root.removeEventListener("pointermove", onMove);
         root.removeEventListener("pointerup", onUp);

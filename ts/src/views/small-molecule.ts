@@ -8,6 +8,7 @@
 import { BTN_CSS, buttonGroup, centredMessage, EM_DASH, el, errText, headerStrip, viewerHost } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
+import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import { depictSVG, ensureSDFTerminator, parseCounts, placeDepiction } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
 import type { SmallMoleculeComponentViz } from "../schema/types.js";
@@ -126,6 +127,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
 
     // --- 3D ---
     let viewer: ThreeDmolViewer | null = null;
+    let interaction: (BoundedZoom & Interaction) | null = null;
     let style: string = "stick";
     let spinning = false;
 
@@ -155,6 +157,10 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
       }
     };
     switcher.appendChild(spinBtn);
+
+    const reset = resetControl(() => interaction?.reset());
+    reset.style.marginLeft = "4px";
+    switcher.appendChild(reset);
     right.appendChild(switcher);
 
     host3D.container.appendChild(centredMessage("Loading 3D viewer..."));
@@ -166,6 +172,8 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
         viewer.setStyle({}, SMALL_MOL_SPECS[style]);
         viewer.zoomTo();
         viewer.render();
+        // After zoomTo, so the bound is measured from the opening framing.
+        interaction = viewerInteraction(host3D.container, viewer);
       })
       .catch((e: unknown) => {
         host3D.container.replaceChildren(centredMessage(`3D render failed: ${errText(e)}`, true));
@@ -179,6 +187,8 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
         }
       },
       cleanup() {
+        interaction?.cleanup();
+        interaction = null;
         if (!viewer) return;
         try {
           viewer.spin(false);

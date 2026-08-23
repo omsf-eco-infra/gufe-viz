@@ -193,6 +193,10 @@ export function card(): HTMLDivElement {
 export function viewerHost(): { wrap: HTMLDivElement; container: HTMLDivElement } {
   const wrap = el("div", "flex:1;position:relative;min-height:0;min-width:0;");
   const container = el("div", "position:absolute;inset:0;");
+  // Named so it can be found from outside: it is what the engine renders into
+  // and what the wheel guard is attached to, and neither is reachable by
+  // dispatching at an ancestor.
+  container.dataset.gufeViewer = "";
   wrap.appendChild(container);
   return { wrap, container };
 }

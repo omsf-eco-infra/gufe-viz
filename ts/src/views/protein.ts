@@ -8,6 +8,7 @@
 import { BTN_CSS, buttonGroup, el, errText, SELECT_CSS, viewerHost } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { load3Dmol, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
+import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import {
   applyProteinStyles,
   parsePdbStats,
@@ -46,6 +47,7 @@ export class GufeProtein extends GufeElement<ProteinComponentViz> {
 
     const opts: ProteinOptions = { rep: "cartoon", color: "chain", waters: false, hetero: true };
     let viewer: ThreeDmolViewer | null = null;
+    let interaction: (BoundedZoom & Interaction) | null = null;
     let stats: PdbStats | null = null;
 
     // --- toolbar ---
@@ -103,6 +105,8 @@ export class GufeProtein extends GufeElement<ProteinComponentViz> {
       toggles.appendChild(btn);
     }
 
+    toggles.appendChild(resetControl(() => interaction?.reset()));
+
     const statsEl = el("span", `margin-left:auto;font-size:11px;white-space:nowrap;color:${T.textMuted2};`);
     toolbar.appendChild(statsEl);
 
@@ -157,6 +161,8 @@ export class GufeProtein extends GufeElement<ProteinComponentViz> {
         viewer.zoomTo();
         viewer.spin(opts.spin ? "y" : false);
         viewer.render();
+        // After zoomTo, so the bound is measured from the opening framing.
+        interaction = viewerInteraction(pane.container, viewer);
       })
       .catch((e: unknown) => {
         showStatus(`⚠ Failed to render structure: ${errText(e)}`, "error");
@@ -170,6 +176,8 @@ export class GufeProtein extends GufeElement<ProteinComponentViz> {
         }
       },
       cleanup() {
+        interaction?.cleanup();
+        interaction = null;
         if (!viewer) return;
         try {
           viewer.spin(false);
