@@ -27,8 +27,3 @@ examples/notebooks/.marimo/
 .idea/
 .vscode/
 
-# Working notes, meeting transcripts and generated scratch output. The name says
-# what it is, but the name alone does not stop `git add -A`, and the directory
-# holds private material: unpublished planning documents, and transcripts of
-# meetings with named participants.
-do-not-commit/
