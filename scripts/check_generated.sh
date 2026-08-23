@@ -4,8 +4,14 @@
 # Three things in this repo are generated and checked in:
 #
 #   ts/src/schema/types.ts           from schema/gufe-viz.schema.json
+#   ts/src/shared/atom-colors.ts     from gufe and matplotlib, by gen_atom_colors.py
 #   python/gufe_viz/_assets/*.js     from ts/src/**
 #   examples/*.json                  from real gufe objects, by make_examples.py
+#
+# atom-colors.ts is on that list for the same reason as the rest, plus one of its
+# own: atom colours are mirrored from the libraries that already draw them, never
+# authored here, and a stale mirror is a picture that disagrees with gufe about
+# what a colour means.
 #
 # examples/ is on that list because it is the input to everything else: the same
 # nine payloads feed pytest, vitest, the dropzone and the gallery, and the whole
@@ -28,6 +34,7 @@ cd "$(dirname "$0")/.."
 
 GENERATED=(
   ts/src/schema/types.ts
+  ts/src/shared/atom-colors.ts
   python/gufe_viz/_assets/gufe-viz.js
 )
 # Whole directories, compared file by file so an added or removed fixture is
@@ -55,6 +62,9 @@ python scripts/make_examples.py >/dev/null
 
 echo "==> regenerating TypeScript types"
 npm run --silent types
+
+echo "==> regenerating the mirrored atom colours"
+python scripts/gen_atom_colors.py >/dev/null
 
 echo "==> rebuilding the bundle"
 npm run --silent build
@@ -100,7 +110,7 @@ if (( ${#stale[@]} )); then
     echo
     echo "differ from a fresh build. Run:"
     echo
-    echo "    pixi run examples && pixi run types && pixi run build"
+    echo "    pixi run examples && pixi run types && pixi run atom-colors && pixi run build"
     echo
     echo "and commit the result."
   } >&2

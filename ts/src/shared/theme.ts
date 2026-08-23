@@ -55,20 +55,6 @@ export interface Theme {
   // 3D viewers (3Dmol wants 0x-prefixed colours)
   viewerBg: string;
   canvas2DBg: string;
-  colorCore: string;
-  colorUniqueA: string;
-  colorUniqueB: string;
-  linesMolA: string;
-  linesMolB: string;
-  linesDash: string;
-  overlayMolA: string;
-  overlayMolB: string;
-  rgbCore: [number, number, number];
-  rgbUniqueA: [number, number, number];
-  rgbUniqueB: [number, number, number];
-  chipCore: string;
-  chipUniqueA: string;
-  chipUniqueB: string;
 
   // diff palette (transformation view)
   diffUnchanged: string;
@@ -135,20 +121,6 @@ export const THEMES: { dark: Theme; light: Theme } = {
 
     viewerBg: "0x1a1a2e",
     canvas2DBg: "#ffffff",
-    colorCore: "0xaaaaaa",
-    colorUniqueA: "0xff4d4d",
-    colorUniqueB: "0x4dff88",
-    linesMolA: "0xff8888",
-    linesMolB: "0x88ffaa",
-    linesDash: "0xffee55",
-    overlayMolA: "0xff6666",
-    overlayMolB: "0x66ff99",
-    rgbCore: [0.7, 0.7, 0.7],
-    rgbUniqueA: [1.0, 0.3, 0.3],
-    rgbUniqueB: [0.3, 1.0, 0.5],
-    chipCore: "#aaaaaa",
-    chipUniqueA: "#ff4d4d",
-    chipUniqueB: "#4dff88",
 
     diffUnchanged: "#64748b",
     diffChanged: "#d9a300",
@@ -210,20 +182,6 @@ export const THEMES: { dark: Theme; light: Theme } = {
 
     viewerBg: "0xffffff",
     canvas2DBg: "#ffffff",
-    colorCore: "0x888888",
-    colorUniqueA: "0xd62828",
-    colorUniqueB: "0x2a9d4a",
-    linesMolA: "0xd62828",
-    linesMolB: "0x2a9d4a",
-    linesDash: "0xd9a300",
-    overlayMolA: "0xd62828",
-    overlayMolB: "0x2a9d4a",
-    rgbCore: [0.55, 0.55, 0.55],
-    rgbUniqueA: [0.84, 0.16, 0.16],
-    rgbUniqueB: [0.16, 0.62, 0.29],
-    chipCore: "#888888",
-    chipUniqueA: "#d62828",
-    chipUniqueB: "#2a9d4a",
 
     diffUnchanged: "#94a3b8",
     diffChanged: "#b45309",

@@ -24,6 +24,8 @@ export interface ThreeDmolViewer {
   removeAllSurfaces(): void;
   addSurface(type: unknown, style: object, selection: object): unknown;
   zoomTo(): void;
+  /** Multiply the current zoom. `shared/interact.ts` is what bounds it. */
+  zoom(factor: number): void;
   render(): void;
   resize(): void;
   spin(axis: string | false): void;
@@ -38,6 +40,14 @@ export interface ThreeDmolModule {
 export interface RDKitMol {
   set_new_coords(useCoordGen: boolean): void;
   get_svg(width: number, height: number): string;
+  /**
+   * Optional because it is the newer of the two drawing entry points: an
+   * embedder that pre-seeds an older MinimalLib build has `get_svg` and not
+   * this, so every caller falls back rather than assuming it is there.
+   * `details` is the JSON form of RDKit's drawing options - `atoms`, `bonds`,
+   * `width`, `height`, `legend`.
+   */
+  get_svg_with_highlights?(details: string): string;
   delete(): void;
 }
 

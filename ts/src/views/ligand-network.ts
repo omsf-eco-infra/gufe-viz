@@ -24,6 +24,7 @@ import {
   statChip,
 } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { svg, titled } from "../shared/svg.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG, parseCounts } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
@@ -119,25 +120,6 @@ const FORCE = {
   drift: 0.04,
   tickMultiplier: 2,
 };
-
-const SVG_NS = "http://www.w3.org/2000/svg";
-
-function svg<K extends keyof SVGElementTagNameMap>(
-  tag: K,
-  attrs: Record<string, string | number> = {},
-): SVGElementTagNameMap[K] {
-  const node = document.createElementNS(SVG_NS, tag);
-  for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, String(value));
-  return node;
-}
-
-/** A native SVG tooltip - cheaper and more accessible than a floating div. */
-function titled<E extends SVGElement>(node: E, text: string): E {
-  const title = document.createElementNS(SVG_NS, "title");
-  title.textContent = text;
-  node.appendChild(title);
-  return node;
-}
 
 // --- the score ramp --------------------------------------------------------
 //

@@ -151,3 +151,44 @@ export function placeDepiction(box: HTMLElement, svg: string, size: number): voi
   svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
   svgEl.setAttribute("style", "width:100%;height:100%;max-width:100%;max-height:100%;");
 }
+
+/**
+ * The same depiction, with `atoms` highlighted.
+ *
+ * Kept separate from `depictSVG` and drawn with `removeHs: false` deliberately:
+ * a mapping's indices are indices into the molecule gufe serialized, so
+ * stripping hydrogens first would shift every index above the first one and
+ * highlight the wrong atoms with complete confidence.
+ *
+ * Falls back to an unhighlighted depiction when the RDKit build predates
+ * `get_svg_with_highlights` - a plain picture is worth more than an error.
+ */
+export function depictHighlightedSVG(
+  RDKit: RDKitModule,
+  source: string,
+  size: number,
+  atoms: number[],
+): string | null {
+  let rdmol = null;
+  try {
+    rdmol = RDKit.get_mol(source, JSON.stringify({ removeHs: false }));
+    if (!rdmol) return null;
+    if (!rdmol.get_svg_with_highlights) return rdmol.get_svg(size, size) || null;
+    return (
+      rdmol.get_svg_with_highlights(
+        JSON.stringify({ atoms, width: size, height: size, addAtomIndices: false }),
+      ) || null
+    );
+  } catch (e) {
+    console.warn("[gufe-viz] depictHighlightedSVG threw -", errText(e));
+    return null;
+  } finally {
+    if (rdmol) {
+      try {
+        rdmol.delete();
+      } catch {
+        /* already freed */
+      }
+    }
+  }
+}

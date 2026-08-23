@@ -49,6 +49,10 @@ description = "Regenerate ts/src/schema/types.ts from the JSON Schema."
 cmd = "npm run types"
 depends-on = ["npm-install"]
 
+[tasks.atom-colors]
+description = "Regenerate ts/src/shared/atom-colors.ts by reading gufe and matplotlib."
+cmd = "python scripts/gen_atom_colors.py"
+
 [tasks.examples]
 description = "Rebuild examples/*.json from real gufe objects."
 cmd = "python scripts/make_examples.py"

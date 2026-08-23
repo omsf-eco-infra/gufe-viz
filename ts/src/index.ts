@@ -18,6 +18,19 @@ export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein } from "./views/protein.js";
 export { GufeLigandNetwork, mappingPayloadFor } from "./views/ligand-network.js";
 export { GufeElement, defineElement, type ViewHandle } from "./shared/element.js";
+export { CHROME_OPEN_BY_DEFAULT, chromeMenu, type ChromeMenu, type ChromeMenuOptions } from "./shared/dom.js";
+export { MAPPING_COLORS, MAPPING_RAMP_3D, MAPPING_RAMP_NAME } from "./shared/atom-colors.js";
+export {
+  boundedZoom,
+  DEFAULT_ZOOM_BOUNDS,
+  guardWheel,
+  resetControl,
+  viewerInteraction,
+  wheelFactor,
+  type BoundedZoom,
+  type Interaction,
+  type ZoomBounds,
+} from "./shared/interact.js";
 export { DEBUG_ATTRIBUTE, DEBUG_GLOBAL, debugEnabled, logPayload, payloadJson } from "./shared/debug.js";
 export type * from "./schema/types.js";
 

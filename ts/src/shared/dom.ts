@@ -145,6 +145,8 @@ export interface HeaderStrip extends HTMLDivElement {
   titleEl: HTMLSpanElement;
   subtitleEl: HTMLSpanElement;
   statsEl: HTMLDivElement;
+  /** Where `chromeMenu` puts its button. Empty, and invisible, until it does. */
+  toggleEl: HTMLDivElement;
 }
 
 /** The standard header strip: bold title, muted subtitle, right-aligned stats. */
@@ -160,10 +162,31 @@ export function headerStrip(title: string, subtitle?: string): HeaderStrip {
     "div",
     `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${T.textMuted};`,
   );
+  bar.toggleEl = el("div", "display:flex;align-items:center;margin-left:10px;flex-shrink:0;");
   bar.appendChild(bar.titleEl);
   bar.appendChild(bar.subtitleEl);
   bar.appendChild(bar.statsEl);
+  bar.appendChild(bar.toggleEl);
   return bar;
+}
+
+/** A small pill naming a payload's type - used wherever a view lists others. */
+export function typeBadge(text: string): HTMLSpanElement {
+  return el(
+    "span",
+    "padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;" +
+      `background:${T.badgeBg};color:${T.badgeFg};`,
+    text,
+  );
+}
+
+/** A bordered card: the standard container for anything that is not a viewer. */
+export function card(): HTMLDivElement {
+  return el(
+    "div",
+    "display:flex;flex-direction:column;gap:2px;padding:14px 18px;border-radius:10px;" +
+      `background:${T.cardBg};border:1px solid ${T.cardBorder};`,
+  );
 }
 
 /** A 3D viewer host: an absolutely-filled container inside a flexible box. */
@@ -172,4 +195,112 @@ export function viewerHost(): { wrap: HTMLDivElement; container: HTMLDivElement 
   const container = el("div", "position:absolute;inset:0;");
   wrap.appendChild(container);
   return { wrap, container };
+}
+
+// --- the chrome menu -------------------------------------------------------
+//
+// One hamburger per view: same style, same place, same behaviour, different
+// contents. It exists as a helper rather than as a convention because a
+// convention across nine view files drifts and a helper cannot.
+//
+// Two rules are enforced here rather than left to callers:
+//
+//   1. Toggling changes visibility, never structure. Rebuilding the view would
+//      tear down its handle - which is a 3Dmol viewer and its camera, a force
+//      layout's node positions, and the current selection - so opening a menu
+//      would silently throw all three away.
+//   2. Contents are built on first open, from a factory. A view whose menu
+//      holds a list of several hundred ligands must not pay for it in a
+//      collapsed cell nobody expands.
+
+/**
+ * The state every view's menu starts in.
+ *
+ * Named rather than written as a literal at each call site: this is the single
+ * place a host-derived default would land if the toggle ever stops being purely
+ * local, and today it is the whole cost of having deferred that.
+ */
+export const CHROME_OPEN_BY_DEFAULT = false;
+
+export interface ChromeMenu {
+  /** Put this where the menu's contents belong in the view's own layout. */
+  panel: HTMLDivElement;
+  isOpen(): boolean;
+  setOpen(open: boolean): void;
+}
+
+export interface ChromeMenuOptions {
+  /** Overrides `CHROME_OPEN_BY_DEFAULT`. */
+  open?: boolean;
+  /** Fired after the panel's visibility changes. Views re-lay-out here. */
+  onToggle?(open: boolean): void;
+  /** Accessible name for the button. */
+  label?: string;
+}
+
+/** Three bars, drawn rather than typed, so the glyph is not a Unicode dependency. */
+function hamburgerIcon(): HTMLSpanElement {
+  const icon = el("span", "display:inline-flex;flex-direction:column;gap:2px;justify-content:center;");
+  for (let i = 0; i < 3; i++) {
+    icon.appendChild(el("span", `display:block;width:11px;height:1.5px;border-radius:1px;background:${T.btnFg};`));
+  }
+  return icon;
+}
+
+/**
+ * Attach a collapsible menu to `header`, and hand back the panel to place.
+ *
+ * The button goes into the header's own toggle slot, which is what makes the
+ * control appear in the same position in every view without each view having to
+ * agree about it.
+ */
+export function chromeMenu(
+  header: HeaderStrip,
+  build: () => Node,
+  options: ChromeMenuOptions = {},
+): ChromeMenu {
+  let open = options.open ?? CHROME_OPEN_BY_DEFAULT;
+  let built = false;
+
+  const panel = el("div", "flex-shrink:0;");
+  const button = el("button", `${BTN_CSS}display:inline-flex;align-items:center;gap:6px;padding:4px 8px;`);
+  button.appendChild(hamburgerIcon());
+  button.setAttribute("aria-label", options.label || "Toggle menu");
+
+  const apply = (): void => {
+    // Build once, on the first open, and never again. `replaceChildren` is
+    // deliberately not used afterwards: the contents are live DOM the view may
+    // be holding references into.
+    if (open && !built) {
+      built = true;
+      panel.appendChild(build());
+    }
+    panel.style.display = open ? "" : "none";
+    button.style.background = open ? T.btnBgActive : T.btnBg;
+    button.setAttribute("aria-expanded", String(open));
+  };
+
+  const setOpen = (next: boolean): void => {
+    if (next === open) return;
+    open = next;
+    apply();
+    options.onToggle?.(open);
+  };
+
+  button.onclick = () => setOpen(!open);
+  button.onmouseover = () => {
+    button.style.background = open ? T.btnBgActive : T.btnBgHover;
+  };
+  button.onmouseout = () => {
+    button.style.background = open ? T.btnBgActive : T.btnBg;
+  };
+
+  header.toggleEl.appendChild(button);
+  apply();
+
+  return {
+    panel,
+    isOpen: () => open,
+    setOpen,
+  };
 }
