@@ -33,12 +33,24 @@ import time
 REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "python"))
 
-#: Scaffolds to hang substituents off. Three, so the network has some variety of
-#: size and atom count rather than being one molecule repeated.
-_SCAFFOLDS = ("c1ccccc1{}", "c1ccncc1{}", "C1CCCCC1{}")
+#: Scaffolds, each with two attachment points. Two points rather than one
+#: because the combinations are what make the set large: five rings against
+#: twenty substituents in two positions covers any network size worth measuring
+#: without any single molecule becoming absurd.
+#:
+#: The first slot is a ring branch and the second is a tail, so the branch has
+#: to carry its own parentheses. `_branch` adds them, and omits them entirely
+#: for the empty substituent - `C1CCC()CC1` is not a molecule.
+_SCAFFOLDS = (
+    "c1ccc{}cc1{}",
+    "c1cc{}ncc1{}",
+    "C1CCC{}CC1{}",
+    "c1cc{}sc1{}",
+    "C1CC{}CN1{}",
+)
 
-#: Substituents, combined with the scaffolds to make distinct molecules. Chosen
-#: to vary atom count, which is what varies depiction and payload cost.
+#: Substituents. The empty string is deliberate: it gives the mono-substituted
+#: and bare scaffolds for free rather than needing a second template set.
 _SUBSTITUENTS = (
     "",
     "C",
@@ -64,24 +76,46 @@ _SUBSTITUENTS = (
 
 
 def _smiles(count: int) -> list[str]:
-    """`count` distinct SMILES, by combining scaffolds and substituents.
+    """`count` distinct, drug-sized SMILES.
 
-    Falls back to lengthening an alkyl chain once the combinations run out, so
-    any size can be asked for without the generator quietly returning fewer
-    molecules than requested.
+    Distinctness is checked on RDKit's canonical form rather than on the
+    assembled string, because two different templates can spell the same
+    molecule and a duplicate here would become two nodes sharing one gufe key -
+    which the registry would collapse, silently producing a smaller network than
+    was asked for.
+
+    Raises if the combinations run out. An earlier version instead lengthened an
+    alkyl chain to make up the shortfall, which quietly produced an 874-carbon
+    molecule at n=934: unembeddable in reasonable time, and a payload
+    measurement of nothing real.
     """
+    from rdkit import Chem
+
+    def branch(substituent: str) -> str:
+        return f"({substituent})" if substituent else ""
+
+    seen: set[str] = set()
     out: list[str] = []
     for scaffold in _SCAFFOLDS:
-        for substituent in _SUBSTITUENTS:
-            out.append(scaffold.format(substituent))
-            if len(out) == count:
-                return out
+        for first in _SUBSTITUENTS:
+            for second in _SUBSTITUENTS:
+                smiles = scaffold.format(branch(first), second)
+                mol = Chem.MolFromSmiles(smiles)
+                if mol is None:
+                    continue
+                canonical = Chem.MolToSmiles(mol)
+                if canonical in seen:
+                    continue
+                seen.add(canonical)
+                out.append(smiles)
+                if len(out) == count:
+                    return out
 
-    extra = 1
-    while len(out) < count:
-        out.append(_SCAFFOLDS[len(out) % len(_SCAFFOLDS)].format("C" * extra + "O"))
-        extra += 1
-    return out[:count]
+    raise SystemExit(
+        f"only {len(out)} distinct molecules can be built from "
+        f"{len(_SCAFFOLDS)} scaffolds and {len(_SUBSTITUENTS)} substituents, "
+        f"but {count} were asked for. Add scaffolds or substituents."
+    )
 
 
 def _molecules(count: int, seed: int):
