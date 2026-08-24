@@ -14,20 +14,49 @@ import { T } from "../shared/theme.js";
 
 const DROP_HINT = "Drop a payload JSON anywhere on this page";
 
+/** How long a message about something that worked stays up. */
+export const BANNER_MS = 3000;
+
 export function installDropzone(host: HTMLElement): void {
   const view = mount(host);
   const banner = document.createElement("div");
   banner.style.cssText =
-    "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:1000;pointer-events:none;" +
+    "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:1000;cursor:pointer;" +
     "padding:6px 14px;border-radius:999px;font:12px/1.4 ui-sans-serif,system-ui,sans-serif;" +
+    "transition:opacity .25s ease;" +
     `background:${T.toolbarBg};color:${T.textMuted};border:1px solid ${T.toolbarBorder};`;
   banner.textContent = DROP_HINT;
+  banner.title = "Click to dismiss";
   document.body.appendChild(banner);
 
-  const say = (text: string, isError = false) => {
+  let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const hide = (): void => {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = null;
+    banner.style.opacity = "0";
+    // Nothing under a hidden banner should be unclickable.
+    banner.style.pointerEvents = "none";
+  };
+
+  banner.addEventListener("click", hide);
+
+  /**
+   * Show a message.
+   *
+   * A message about something that worked goes away on its own, because it sits
+   * over the visualization it is describing and has nothing left to say once it
+   * has been read. An error stays, because an error that vanishes before it is
+   * read is worse than one that lingers - and both can be clicked away.
+   */
+  const say = (text: string, isError = false): void => {
+    if (hideTimer) clearTimeout(hideTimer);
     banner.textContent = text;
     banner.style.color = isError ? T.warnFg : T.textMuted;
     banner.style.background = isError ? T.warnBg : T.toolbarBg;
+    banner.style.opacity = "1";
+    banner.style.pointerEvents = "auto";
+    hideTimer = isError ? null : setTimeout(hide, BANNER_MS);
   };
 
   const overlay = document.createElement("div");
@@ -73,6 +102,10 @@ export function installDropzone(host: HTMLElement): void {
   });
 
   // `?file=` - reload-friendly iteration, and how the gallery links here.
+  //
+  // Note the opening hint above is left up rather than timed out: with nothing
+  // loaded the page is blank, and a blank page with no instruction on it is not
+  // a page anyone can use.
   const wanted = new URLSearchParams(location.search).get("file");
   if (wanted) {
     say(`Loading ${wanted}...`);
