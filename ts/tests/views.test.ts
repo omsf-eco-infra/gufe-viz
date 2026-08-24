@@ -42,7 +42,6 @@ describe("<gufe-small-molecule>", () => {
     const text = node.textContent ?? "";
     expect(text).toContain(payload.name as string);
     expect(text).toContain((payload as { smiles: string }).smiles);
-    expect(text).toContain("SmallMoleculeComponent");
 
     const counts = parseCounts((payload as { sdf: string }).sdf)!;
     expect(text).toContain(String(counts.atoms));
@@ -137,7 +136,6 @@ describe("<gufe-ligand-network>", () => {
     // One visible line, one halo and one hit target per edge.
     expect(node.querySelectorAll("svg line")).toHaveLength(payload.edges.length * 3);
     expect(node.textContent).toContain(`${payload.nodes.length}`);
-    expect(node.textContent).toContain("LigandNetwork");
   });
 
   it("runs the force layout", async () => {
@@ -343,7 +341,6 @@ describe("<gufe-solvent>", () => {
     const node = mount("gufe-solvent", payload);
     const text = node.textContent ?? "";
 
-    expect(text).toContain("SolventComponent");
     for (const field of ["smiles", "positive_ion", "negative_ion", "ion_concentration"] as const) {
       expect(text).toContain(String(payload[field]));
     }
@@ -729,7 +726,7 @@ describe("<gufe-transformation>", () => {
   it("names the protocol by its gufe class, which is all a Protocol has", async () => {
     const node = mount("gufe-transformation", readExample("transformation.json"));
     await flush();
-    expect(node.textContent).toContain("Transformation");
+    // The class name is all a Protocol carries, so it is what identifies it.
     expect(node.textContent).toContain("DummyProtocol");
   });
 
@@ -816,16 +813,16 @@ describe("the three PDB types", () => {
     document.body.replaceChildren();
   });
 
-  it.each([
-    ["protein.json", "ProteinComponent"],
-    ["solvated_pdb.json", "SolvatedPDBComponent"],
-    ["protein_membrane.json", "ProteinMembraneComponent"],
-  ])("%s draws and names its gufe class", async (fixture, gufeClass) => {
-    const node = mount("gufe-view", readExample(fixture));
-    await flush();
-    expect(node.querySelector("gufe-protein")).toBeTruthy();
-    expect(node.textContent).toContain(gufeClass);
-  });
+  it.each(["protein.json", "solvated_pdb.json", "protein_membrane.json"])(
+    "%s draws through the protein view, under its own name",
+    async (fixture) => {
+      const payload = readExample(fixture);
+      const node = mount("gufe-view", payload);
+      await flush();
+      expect(node.querySelector("gufe-protein")).toBeTruthy();
+      expect(node.textContent).toContain(payload.name as string);
+    },
+  );
 
   it("opens a solvated system with its waters shown, and a bare protein without", async () => {
     // Hiding the very thing that distinguishes them would make the three
@@ -982,5 +979,51 @@ describe("<gufe-ligand-network> against the framejs prototype", () => {
     hit.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
     hit.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
     expect(Array.from(node.querySelectorAll("div")).some((d) => d.style.opacity === "1")).toBe(false);
+  });
+});
+
+describe("every header", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("names a payload once, not once as prose and again as a class", async () => {
+    // Headers used to carry the gufe class name beside the title, which read as
+    // "Ligand network LigandNetwork" - the same thing twice in two fonts.
+    //
+    // Scoped to the header strip on purpose. A type badge in a *list* of
+    // components says which kind each one is and is worth keeping; the first
+    // version of this test caught those too and was wrong to.
+    const classNames = [
+      "LigandNetwork",
+      "SmallMoleculeComponent",
+      "ProteinComponent",
+      "ChemicalSystem",
+      "Transformation",
+      "AlchemicalNetwork",
+      "SolventComponent",
+      "LigandAtomMapping",
+    ];
+
+    for (const name of exampleNames()) {
+      document.body.replaceChildren();
+      const payload = readExample(name);
+      const node = mount("gufe-view", payload);
+      await flush();
+
+      for (const header of node.querySelectorAll(".gufe-header")) {
+        const text = header.textContent ?? "";
+        for (const className of classNames) {
+          // A payload named after its class is its own business; what must not
+          // come back is the view adding the class name itself.
+          if (String(payload.name ?? "").includes(className)) continue;
+          expect(text, `${name}: header still prints "${className}"`).not.toContain(className);
+        }
+      }
+    }
   });
 });

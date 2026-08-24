@@ -108,7 +108,7 @@ export class GufeSolvent extends GufeElement<SolventComponentViz> {
   }
 
   protected renderView(host: HTMLDivElement, payload: SolventComponentViz): ViewHandle {
-    const bar = headerStrip(payload.name || "Solvent", "SolventComponent");
+    const bar = headerStrip(payload.name || "Solvent");
     bar.statsEl.appendChild(statChip("neutralized", payload.neutralize ? "yes" : "no"));
     bar.statsEl.appendChild(statChip(payload.positive_ion, "", T.diffAdded));
     bar.statsEl.appendChild(statChip(payload.negative_ion, "", T.diffRemoved));

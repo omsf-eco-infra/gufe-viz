@@ -23,7 +23,7 @@ export class GufeUnknownComponent extends GufeElement<UnknownComponentViz> {
   }
 
   protected renderView(host: HTMLDivElement, payload: UnknownComponentViz): ViewHandle {
-    const bar = headerStrip(payload.name || "Unnamed component", "Component");
+    const bar = headerStrip(payload.name || "Unnamed component");
     bar.statsEl.appendChild(typeBadge(payload.gufe_type));
     host.appendChild(bar);
 

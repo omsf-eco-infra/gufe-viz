@@ -25,7 +25,7 @@ export class GufeProtocol extends GufeElement<ProtocolViz> {
   protected renderView(host: HTMLDivElement, payload: ProtocolViz): ViewHandle {
     // A Protocol has no name of its own, so `name` is normally empty and the
     // class name is what identifies it to a reader.
-    const bar = headerStrip(payload.gufe_type || payload.name || "Protocol", "Protocol");
+    const bar = headerStrip(payload.gufe_type || payload.name || "Protocol");
     bar.statsEl.appendChild(typeBadge(payload.gufe_type));
     host.appendChild(bar);
 

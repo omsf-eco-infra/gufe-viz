@@ -184,7 +184,7 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     };
     const protocols = new Set(edges.map(protocolName).filter(Boolean));
 
-    const bar = headerStrip(payload.name || "Alchemical network", "AlchemicalNetwork");
+    const bar = headerStrip(payload.name || "Alchemical network");
     bar.statsEl.appendChild(statChip("systems", String(nodes.length)));
     bar.statsEl.appendChild(statChip("transformations", String(edges.length)));
     if (protocols.size) bar.statsEl.appendChild(statChip("protocol", [...protocols].join(", ")));

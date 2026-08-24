@@ -125,7 +125,7 @@ function $i() {
     return !1;
   }
 }
-const P = $i() ? cr.dark : cr.light;
+const E = $i() ? cr.dark : cr.light;
 function j(e, t, n) {
   const o = document.createElement(e);
   return t && (o.style.cssText = t), n != null && (o.textContent = n), o;
@@ -140,21 +140,21 @@ function ge(e) {
   const n = String(e);
   return n === "[object Object]" ? e.name || "unknown error" : n;
 }
-const nt = (e) => e.toLocaleString("en-US"), Ze = "-", Be = `background:${P.btnBg};color:${P.btnFg};border:1px solid ${P.btnBorder};padding:4px 9px;font-size:11px;font-weight:bold;border-radius:3px;cursor:pointer;font-family:inherit;`, dn = `background:${P.selectBg};color:${P.textPrimary};border:1px solid ${P.selectBorder};border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;font-family:inherit;`;
+const nt = (e) => e.toLocaleString("en-US"), Ze = "-", Be = `background:${E.btnBg};color:${E.btnFg};border:1px solid ${E.btnBorder};padding:4px 9px;font-size:11px;font-weight:bold;border-radius:3px;cursor:pointer;font-family:inherit;`, dn = `background:${E.selectBg};color:${E.textPrimary};border:1px solid ${E.selectBorder};border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;font-family:inherit;`;
 function mn(e, t, n) {
   const o = j("div", "display:flex;gap:4px;"), i = e.map((r) => {
-    const c = j("button", Be, r.label);
-    return c.title = r.title || r.label, c.onmouseover = () => {
-      c.style.background = P.btnBgHover;
-    }, c.onmouseout = () => {
-      c.style.background = t === r.id ? P.btnBgActive : P.btnBg;
-    }, c.onclick = () => {
+    const s = j("button", Be, r.label);
+    return s.title = r.title || r.label, s.onmouseover = () => {
+      s.style.background = E.btnBgHover;
+    }, s.onmouseout = () => {
+      s.style.background = t === r.id ? E.btnBgActive : E.btnBg;
+    }, s.onclick = () => {
       o.setActive(r.id), n(r.id);
-    }, o.appendChild(c), { id: r.id, btn: c };
+    }, o.appendChild(s), { id: r.id, btn: s };
   });
   return o.setActive = (r) => {
-    t = r, i.forEach((c) => {
-      c.btn.style.background = c.id === t ? P.btnBgActive : P.btnBg;
+    t = r, i.forEach((s) => {
+      s.btn.style.background = s.id === t ? E.btnBgActive : E.btnBg;
     });
   }, o.setActive(t), o;
 }
@@ -164,41 +164,41 @@ function ce(e, t, n) {
     j("span", `width:8px;height:8px;border-radius:50%;background:${n};display:inline-block;`)
   );
   const i = j("span");
-  return i.innerHTML = `${Ne(e)} <b style="color:${P.textPrimary};">${Ne(t)}</b>`, o.appendChild(i), o;
+  return i.innerHTML = `${Ne(e)} <b style="color:${E.textPrimary};">${Ne(t)}</b>`, o.appendChild(i), o;
 }
-function qe(e, t) {
+function De(e, t) {
   const n = j("div", "", `⚠ ${t}`);
-  return n.style.cssText = `position:absolute;top:10px;left:50%;transform:translateX(-50%);max-width:90%;z-index:20;padding:6px 14px;border-radius:6px;font-size:12px;background:${P.warnBg};color:${P.warnFg};border:1px solid ${P.warnBorder};`, e.appendChild(n), n;
+  return n.style.cssText = `position:absolute;top:10px;left:50%;transform:translateX(-50%);max-width:90%;z-index:20;padding:6px 14px;border-radius:6px;font-size:12px;background:${E.warnBg};color:${E.warnFg};border:1px solid ${E.warnBorder};`, e.appendChild(n), n;
 }
 function ae(e, t = !1) {
   return j(
     "div",
-    `flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:13px;color:${t ? P.errorFg : P.textMuted2};`,
+    `flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:13px;color:${t ? E.errorFg : E.textMuted2};`,
     e
   );
 }
-function Te(e, t) {
-  const n = j(
+function Te(e) {
+  const t = j(
     "div",
-    `display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:9px 14px;flex-shrink:0;background:${P.toolbarBg};border-bottom:1px solid ${P.toolbarBorder};`
+    `display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:9px 14px;flex-shrink:0;background:${E.toolbarBg};border-bottom:1px solid ${E.toolbarBorder};`
   );
-  return n.titleEl = j("span", `font-weight:700;font-size:15px;color:${P.titleColor};letter-spacing:.02em;`, e), n.subtitleEl = j("span", `font-size:12px;color:${P.textMuted2};`, t || ""), n.statsEl = j(
+  return t.className = "gufe-header", t.titleEl = j("span", `font-weight:700;font-size:15px;color:${E.titleColor};letter-spacing:.02em;`, e), t.statsEl = j(
     "div",
-    `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${P.textMuted};`
-  ), n.toggleEl = j("div", "display:flex;align-items:center;align-self:center;flex-shrink:0;"), n.appendChild(n.toggleEl), n.appendChild(n.titleEl), n.appendChild(n.subtitleEl), n.appendChild(n.statsEl), n;
+    `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${E.textMuted};`
+  ), t.toggleEl = j("div", "display:flex;align-items:center;align-self:center;flex-shrink:0;"), t.appendChild(t.toggleEl), t.appendChild(t.titleEl), t.appendChild(t.statsEl), t;
 }
 function Pe(e, t, n = !1) {
   const o = j("div", "display:flex;gap:12px;align-items:baseline;padding:5px 0;min-width:0;");
   o.appendChild(
     j(
       "span",
-      `flex:0 0 128px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${P.textMuted2};`,
+      `flex:0 0 128px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${E.textMuted2};`,
       e
     )
   );
   const i = j(
     "span",
-    `flex:1;min-width:0;user-select:text;cursor:text;overflow-wrap:anywhere;color:${P.textPrimary};` + (n ? "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;" : "font-size:12px;"),
+    `flex:1;min-width:0;user-select:text;cursor:text;overflow-wrap:anywhere;color:${E.textPrimary};` + (n ? "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;" : "font-size:12px;"),
     t
   );
   return i.title = t, o.appendChild(i), o;
@@ -206,14 +206,14 @@ function Pe(e, t, n = !1) {
 function lt(e) {
   return j(
     "span",
-    `padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;background:${P.badgeBg};color:${P.badgeFg};`,
+    `padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;background:${E.badgeBg};color:${E.badgeFg};`,
     e
   );
 }
 function un() {
   return j(
     "div",
-    `display:flex;flex-direction:column;gap:2px;padding:14px 18px;border-radius:10px;background:${P.cardBg};border:1px solid ${P.cardBorder};`
+    `display:flex;flex-direction:column;gap:2px;padding:14px 18px;border-radius:10px;background:${E.cardBg};border:1px solid ${E.cardBorder};`
   );
 }
 function Xo() {
@@ -224,23 +224,23 @@ const bi = !1;
 function wi() {
   const e = j("span", "display:inline-flex;flex-direction:column;gap:2px;justify-content:center;");
   for (let t = 0; t < 3; t++)
-    e.appendChild(j("span", `display:block;width:11px;height:1.5px;border-radius:1px;background:${P.btnFg};`));
+    e.appendChild(j("span", `display:block;width:11px;height:1.5px;border-radius:1px;background:${E.btnFg};`));
   return e;
 }
 function _i(e, t, n = {}) {
   let o = n.open ?? bi, i = !1;
-  const r = j("div", "flex-shrink:0;"), c = j("button", `${Be}display:inline-flex;align-items:center;gap:6px;padding:4px 8px;`);
-  c.appendChild(wi()), c.setAttribute("aria-label", n.label || "Toggle menu");
-  const s = () => {
-    o && !i && (i = !0, r.appendChild(t())), r.style.display = o ? "" : "none", c.style.background = o ? P.btnBgActive : P.btnBg, c.setAttribute("aria-expanded", String(o));
+  const r = j("div", "flex-shrink:0;"), s = j("button", `${Be}display:inline-flex;align-items:center;gap:6px;padding:4px 8px;`);
+  s.appendChild(wi()), s.setAttribute("aria-label", n.label || "Toggle menu");
+  const a = () => {
+    o && !i && (i = !0, r.appendChild(t())), r.style.display = o ? "" : "none", s.style.background = o ? E.btnBgActive : E.btnBg, s.setAttribute("aria-expanded", String(o));
   }, d = (y) => {
-    y !== o && (o = y, s(), n.onToggle?.(o));
+    y !== o && (o = y, a(), n.onToggle?.(o));
   };
-  return c.onclick = () => d(!o), c.onmouseover = () => {
-    c.style.background = o ? P.btnBgActive : P.btnBgHover;
-  }, c.onmouseout = () => {
-    c.style.background = o ? P.btnBgActive : P.btnBg;
-  }, e.toggleEl.style.marginRight = "2px", e.toggleEl.appendChild(c), s(), {
+  return s.onclick = () => d(!o), s.onmouseover = () => {
+    s.style.background = o ? E.btnBgActive : E.btnBgHover;
+  }, s.onmouseout = () => {
+    s.style.background = o ? E.btnBgActive : E.btnBg;
+  }, e.toggleEl.style.marginRight = "2px", e.toggleEl.appendChild(s), a(), {
     panel: r,
     isOpen: () => o,
     setOpen: d
@@ -272,10 +272,10 @@ function Ai(e) {
 }
 function Ri(e, t, n) {
   if (!Pi(n)) return;
-  const o = Ai(t), i = t?.type, r = `[gufe-viz] ${e}${typeof i == "string" ? ` ${i}` : ""} (${o.length} chars)`, c = typeof console.groupCollapsed == "function";
-  c ? console.groupCollapsed(r) : console.log(r), console.log(o), console.log(t), c && console.groupEnd?.();
+  const o = Ai(t), i = t?.type, r = `[gufe-viz] ${e}${typeof i == "string" ? ` ${i}` : ""} (${o.length} chars)`, s = typeof console.groupCollapsed == "function";
+  s ? console.groupCollapsed(r) : console.log(r), console.log(o), console.log(t), s && console.groupEnd?.();
 }
-const Mi = 150;
+const Fi = 150;
 class Se extends HTMLElement {
   #t = null;
   #e = null;
@@ -300,8 +300,8 @@ class Se extends HTMLElement {
     return this.#t;
   }
   connectedCallback() {
-    this.style.display = "block", this.style.width = this.style.width || "100%", this.style.height = this.style.height || "100%", this.style.background = P.appBg, this.style.color = P.textPrimary, this.style.fontFamily = "'Inter',system-ui,sans-serif", typeof ResizeObserver < "u" && !this.#n && (this.#n = new ResizeObserver(() => {
-      this.#o && clearTimeout(this.#o), this.#o = setTimeout(() => this.#e?.onResize?.(), Mi);
+    this.style.display = "block", this.style.width = this.style.width || "100%", this.style.height = this.style.height || "100%", this.style.background = E.appBg, this.style.color = E.textPrimary, this.style.fontFamily = "'Inter',system-ui,sans-serif", typeof ResizeObserver < "u" && !this.#n && (this.#n = new ResizeObserver(() => {
+      this.#o && clearTimeout(this.#o), this.#o = setTimeout(() => this.#e?.onResize?.(), Fi);
     }), this.#n.observe(this)), this.#a();
   }
   disconnectedCallback() {
@@ -321,7 +321,7 @@ class Se extends HTMLElement {
   #d() {
     return this.#s(), this.#r = j(
       "div",
-      `width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;background:${P.appBg};`
+      `width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;background:${E.appBg};`
     ), this.appendChild(this.#r), this.#r;
   }
   /**
@@ -374,7 +374,7 @@ class Se extends HTMLElement {
 function Ce(e, t) {
   typeof customElements > "u" || customElements.get(e) || customElements.define(e, t);
 }
-function Fi(e) {
+function Mi(e) {
   return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e;
 }
 var ut = { exports: {} }, kn = {}, Re = {}, ze = {}, xn = {}, En = {}, Pn = {}, lr;
@@ -416,35 +416,35 @@ function fn() {
       }
       get str() {
         var u;
-        return (u = this._str) !== null && u !== void 0 ? u : this._str = this._items.reduce((h, C) => `${h}${C}`, "");
+        return (u = this._str) !== null && u !== void 0 ? u : this._str = this._items.reduce((h, S) => `${h}${S}`, "");
       }
       get names() {
         var u;
-        return (u = this._names) !== null && u !== void 0 ? u : this._names = this._items.reduce((h, C) => (C instanceof n && (h[C.str] = (h[C.str] || 0) + 1), h), {});
+        return (u = this._names) !== null && u !== void 0 ? u : this._names = this._items.reduce((h, S) => (S instanceof n && (h[S.str] = (h[S.str] || 0) + 1), h), {});
       }
     }
     e._Code = o, e.nil = new o("");
     function i(g, ...u) {
       const h = [g[0]];
-      let C = 0;
-      for (; C < u.length; )
-        s(h, u[C]), h.push(g[++C]);
+      let S = 0;
+      for (; S < u.length; )
+        a(h, u[S]), h.push(g[++S]);
       return new o(h);
     }
     e._ = i;
     const r = new o("+");
-    function c(g, ...u) {
+    function s(g, ...u) {
       const h = [v(g[0])];
-      let C = 0;
-      for (; C < u.length; )
-        h.push(r), s(h, u[C]), h.push(r, v(g[++C]));
+      let S = 0;
+      for (; S < u.length; )
+        h.push(r), a(h, u[S]), h.push(r, v(g[++S]));
       return d(h), new o(h);
     }
-    e.str = c;
-    function s(g, u) {
-      u instanceof o ? g.push(...u._items) : u instanceof n ? g.push(u) : g.push(S(u));
+    e.str = s;
+    function a(g, u) {
+      u instanceof o ? g.push(...u._items) : u instanceof n ? g.push(u) : g.push(C(u));
     }
-    e.addCodeArg = s;
+    e.addCodeArg = a;
     function d(g) {
       let u = 1;
       for (; u < g.length - 1; ) {
@@ -470,16 +470,16 @@ function fn() {
         return `"${g}${u.slice(1)}`;
     }
     function m(g, u) {
-      return u.emptyStr() ? g : g.emptyStr() ? u : c`${g}${u}`;
+      return u.emptyStr() ? g : g.emptyStr() ? u : s`${g}${u}`;
     }
     e.strConcat = m;
-    function S(g) {
+    function C(g) {
       return typeof g == "number" || typeof g == "boolean" || g === null ? g : v(Array.isArray(g) ? g.join(",") : g);
     }
-    function w(g) {
+    function b(g) {
       return new o(v(g));
     }
-    e.stringify = w;
+    e.stringify = b;
     function v(g) {
       return JSON.stringify(g).replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
     }
@@ -488,12 +488,12 @@ function fn() {
       return typeof g == "string" && e.IDENTIFIER.test(g) ? new o(`.${g}`) : i`[${g}]`;
     }
     e.getProperty = _;
-    function b(g) {
+    function w(g) {
       if (typeof g == "string" && e.IDENTIFIER.test(g))
         return new o(`${g}`);
       throw new Error(`CodeGen: invalid export name: ${g}, use explicit $id name mapping`);
     }
-    e.getEsmExportName = b;
+    e.getEsmExportName = w;
     function f(g) {
       return new o(g.toString());
     }
@@ -533,8 +533,8 @@ function ur() {
         return `${y}${m.index++}`;
       }
       _nameGroup(y) {
-        var m, S;
-        if (!((S = (m = this._parent) === null || m === void 0 ? void 0 : m._prefixes) === null || S === void 0) && S.has(y) || this._prefixes && !this._prefixes.has(y))
+        var m, C;
+        if (!((C = (m = this._parent) === null || m === void 0 ? void 0 : m._prefixes) === null || C === void 0) && C.has(y) || this._prefixes && !this._prefixes.has(y))
           throw new Error(`CodeGen: prefix "${y}" is not allowed in this scope`);
         return this._names[y] = { prefix: y, index: 0 };
       }
@@ -544,15 +544,15 @@ function ur() {
       constructor(y, m) {
         super(m), this.prefix = y;
       }
-      setValue(y, { property: m, itemIndex: S }) {
-        this.value = y, this.scopePath = (0, t._)`.${new t.Name(m)}[${S}]`;
+      setValue(y, { property: m, itemIndex: C }) {
+        this.value = y, this.scopePath = (0, t._)`.${new t.Name(m)}[${C}]`;
       }
     }
     e.ValueScopeName = r;
-    const c = (0, t._)`\n`;
-    class s extends i {
+    const s = (0, t._)`\n`;
+    class a extends i {
       constructor(y) {
-        super(y), this._values = {}, this._scope = y.scope, this.opts = { ...y, _n: y.lines ? c : t.nil };
+        super(y), this._values = {}, this._scope = y.scope, this.opts = { ...y, _n: y.lines ? s : t.nil };
       }
       get() {
         return this._scope;
@@ -561,48 +561,48 @@ function ur() {
         return new r(y, this._newName(y));
       }
       value(y, m) {
-        var S;
+        var C;
         if (m.ref === void 0)
           throw new Error("CodeGen: ref must be passed in value");
-        const w = this.toName(y), { prefix: v } = w, _ = (S = m.key) !== null && S !== void 0 ? S : m.ref;
-        let b = this._values[v];
-        if (b) {
-          const u = b.get(_);
+        const b = this.toName(y), { prefix: v } = b, _ = (C = m.key) !== null && C !== void 0 ? C : m.ref;
+        let w = this._values[v];
+        if (w) {
+          const u = w.get(_);
           if (u)
             return u;
         } else
-          b = this._values[v] = /* @__PURE__ */ new Map();
-        b.set(_, w);
+          w = this._values[v] = /* @__PURE__ */ new Map();
+        w.set(_, b);
         const f = this._scope[v] || (this._scope[v] = []), g = f.length;
-        return f[g] = m.ref, w.setValue(m, { property: v, itemIndex: g }), w;
+        return f[g] = m.ref, b.setValue(m, { property: v, itemIndex: g }), b;
       }
       getValue(y, m) {
-        const S = this._values[y];
-        if (S)
-          return S.get(m);
+        const C = this._values[y];
+        if (C)
+          return C.get(m);
       }
       scopeRefs(y, m = this._values) {
-        return this._reduceValues(m, (S) => {
-          if (S.scopePath === void 0)
-            throw new Error(`CodeGen: name "${S}" has no value`);
-          return (0, t._)`${y}${S.scopePath}`;
+        return this._reduceValues(m, (C) => {
+          if (C.scopePath === void 0)
+            throw new Error(`CodeGen: name "${C}" has no value`);
+          return (0, t._)`${y}${C.scopePath}`;
         });
       }
-      scopeCode(y = this._values, m, S) {
-        return this._reduceValues(y, (w) => {
-          if (w.value === void 0)
-            throw new Error(`CodeGen: name "${w}" has no value`);
-          return w.value.code;
-        }, m, S);
+      scopeCode(y = this._values, m, C) {
+        return this._reduceValues(y, (b) => {
+          if (b.value === void 0)
+            throw new Error(`CodeGen: name "${b}" has no value`);
+          return b.value.code;
+        }, m, C);
       }
-      _reduceValues(y, m, S = {}, w) {
+      _reduceValues(y, m, C = {}, b) {
         let v = t.nil;
         for (const _ in y) {
-          const b = y[_];
-          if (!b)
+          const w = y[_];
+          if (!w)
             continue;
-          const f = S[_] = S[_] || /* @__PURE__ */ new Map();
-          b.forEach((g) => {
+          const f = C[_] = C[_] || /* @__PURE__ */ new Map();
+          w.forEach((g) => {
             if (f.has(g))
               return;
             f.set(g, o.Started);
@@ -610,7 +610,7 @@ function ur() {
             if (u) {
               const h = this.opts.es5 ? e.varKinds.var : e.varKinds.const;
               v = (0, t._)`${v}${h} ${g} = ${u};${this.opts._n}`;
-            } else if (u = w?.(g))
+            } else if (u = b?.(g))
               v = (0, t._)`${v}${u}${this.opts._n}`;
             else
               throw new n(g);
@@ -620,7 +620,7 @@ function ur() {
         return v;
       }
     }
-    e.ValueScope = s;
+    e.ValueScope = a;
   })(An)), An;
 }
 var fr;
@@ -671,45 +671,45 @@ function Q() {
       optimizeNodes() {
         return this;
       }
-      optimizeNames($, k) {
+      optimizeNames($, x) {
         return this;
       }
     }
-    class c extends r {
-      constructor($, k, I) {
-        super(), this.varKind = $, this.name = k, this.rhs = I;
+    class s extends r {
+      constructor($, x, I) {
+        super(), this.varKind = $, this.name = x, this.rhs = I;
       }
-      render({ es5: $, _n: k }) {
-        const I = $ ? n.varKinds.var : this.varKind, H = this.rhs === void 0 ? "" : ` = ${this.rhs}`;
-        return `${I} ${this.name}${H};` + k;
+      render({ es5: $, _n: x }) {
+        const I = $ ? n.varKinds.var : this.varKind, G = this.rhs === void 0 ? "" : ` = ${this.rhs}`;
+        return `${I} ${this.name}${G};` + x;
       }
-      optimizeNames($, k) {
+      optimizeNames($, x) {
         if ($[this.name.str])
-          return this.rhs && (this.rhs = J(this.rhs, $, k)), this;
+          return this.rhs && (this.rhs = J(this.rhs, $, x)), this;
       }
       get names() {
         return this.rhs instanceof t._CodeOrName ? this.rhs.names : {};
       }
     }
-    class s extends r {
-      constructor($, k, I) {
-        super(), this.lhs = $, this.rhs = k, this.sideEffects = I;
+    class a extends r {
+      constructor($, x, I) {
+        super(), this.lhs = $, this.rhs = x, this.sideEffects = I;
       }
       render({ _n: $ }) {
         return `${this.lhs} = ${this.rhs};` + $;
       }
-      optimizeNames($, k) {
+      optimizeNames($, x) {
         if (!(this.lhs instanceof t.Name && !$[this.lhs.str] && !this.sideEffects))
-          return this.rhs = J(this.rhs, $, k), this;
+          return this.rhs = J(this.rhs, $, x), this;
       }
       get names() {
         const $ = this.lhs instanceof t.Name ? {} : { ...this.lhs.names };
         return T($, this.rhs);
       }
     }
-    class d extends s {
-      constructor($, k, I, H) {
-        super($, I, H), this.op = k;
+    class d extends a {
+      constructor($, x, I, G) {
+        super($, I, G), this.op = x;
       }
       render({ _n: $ }) {
         return `${this.lhs} ${this.op}= ${this.rhs};` + $;
@@ -731,7 +731,7 @@ function Q() {
         return `break${this.label ? ` ${this.label}` : ""};` + $;
       }
     }
-    class S extends r {
+    class C extends r {
       constructor($) {
         super(), this.error = $;
       }
@@ -742,7 +742,7 @@ function Q() {
         return this.error.names;
       }
     }
-    class w extends r {
+    class b extends r {
       constructor($) {
         super(), this.code = $;
       }
@@ -752,8 +752,8 @@ function Q() {
       optimizeNodes() {
         return `${this.code}` ? this : void 0;
       }
-      optimizeNames($, k) {
-        return this.code = J(this.code, $, k), this;
+      optimizeNames($, x) {
+        return this.code = J(this.code, $, x), this;
       }
       get names() {
         return this.code instanceof t._CodeOrName ? this.code.names : {};
@@ -764,28 +764,28 @@ function Q() {
         super(), this.nodes = $;
       }
       render($) {
-        return this.nodes.reduce((k, I) => k + I.render($), "");
+        return this.nodes.reduce((x, I) => x + I.render($), "");
       }
       optimizeNodes() {
         const { nodes: $ } = this;
-        let k = $.length;
-        for (; k--; ) {
-          const I = $[k].optimizeNodes();
-          Array.isArray(I) ? $.splice(k, 1, ...I) : I ? $[k] = I : $.splice(k, 1);
+        let x = $.length;
+        for (; x--; ) {
+          const I = $[x].optimizeNodes();
+          Array.isArray(I) ? $.splice(x, 1, ...I) : I ? $[x] = I : $.splice(x, 1);
         }
         return $.length > 0 ? this : void 0;
       }
-      optimizeNames($, k) {
+      optimizeNames($, x) {
         const { nodes: I } = this;
-        let H = I.length;
-        for (; H--; ) {
-          const W = I[H];
-          W.optimizeNames($, k) || (Z($, W.names), I.splice(H, 1));
+        let G = I.length;
+        for (; G--; ) {
+          const W = I[G];
+          W.optimizeNames($, x) || (Z($, W.names), I.splice(G, 1));
         }
         return I.length > 0 ? this : void 0;
       }
       get names() {
-        return this.nodes.reduce(($, k) => A($, k.names), {});
+        return this.nodes.reduce(($, x) => A($, x.names), {});
       }
     }
     class _ extends v {
@@ -793,38 +793,38 @@ function Q() {
         return "{" + $._n + super.render($) + "}" + $._n;
       }
     }
-    class b extends v {
+    class w extends v {
     }
     class f extends _ {
     }
     f.kind = "else";
     class g extends _ {
-      constructor($, k) {
-        super(k), this.condition = $;
+      constructor($, x) {
+        super(x), this.condition = $;
       }
       render($) {
-        let k = `if(${this.condition})` + super.render($);
-        return this.else && (k += "else " + this.else.render($)), k;
+        let x = `if(${this.condition})` + super.render($);
+        return this.else && (x += "else " + this.else.render($)), x;
       }
       optimizeNodes() {
         super.optimizeNodes();
         const $ = this.condition;
         if ($ === !0)
           return this.nodes;
-        let k = this.else;
-        if (k) {
-          const I = k.optimizeNodes();
-          k = this.else = Array.isArray(I) ? new f(I) : I;
+        let x = this.else;
+        if (x) {
+          const I = x.optimizeNodes();
+          x = this.else = Array.isArray(I) ? new f(I) : I;
         }
-        if (k)
-          return $ === !1 ? k instanceof g ? k : k.nodes : this.nodes.length ? this : new g(L($), k instanceof g ? [k] : k.nodes);
+        if (x)
+          return $ === !1 ? x instanceof g ? x : x.nodes : this.nodes.length ? this : new g(L($), x instanceof g ? [x] : x.nodes);
         if (!($ === !1 || !this.nodes.length))
           return this;
       }
-      optimizeNames($, k) {
+      optimizeNames($, x) {
         var I;
-        if (this.else = (I = this.else) === null || I === void 0 ? void 0 : I.optimizeNames($, k), !!(super.optimizeNames($, k) || this.else))
-          return this.condition = J(this.condition, $, k), this;
+        if (this.else = (I = this.else) === null || I === void 0 ? void 0 : I.optimizeNames($, x), !!(super.optimizeNames($, x) || this.else))
+          return this.condition = J(this.condition, $, x), this;
       }
       get names() {
         const $ = super.names;
@@ -842,45 +842,45 @@ function Q() {
       render($) {
         return `for(${this.iteration})` + super.render($);
       }
-      optimizeNames($, k) {
-        if (super.optimizeNames($, k))
-          return this.iteration = J(this.iteration, $, k), this;
+      optimizeNames($, x) {
+        if (super.optimizeNames($, x))
+          return this.iteration = J(this.iteration, $, x), this;
       }
       get names() {
         return A(super.names, this.iteration.names);
       }
     }
-    class C extends u {
-      constructor($, k, I, H) {
-        super(), this.varKind = $, this.name = k, this.from = I, this.to = H;
+    class S extends u {
+      constructor($, x, I, G) {
+        super(), this.varKind = $, this.name = x, this.from = I, this.to = G;
       }
       render($) {
-        const k = $.es5 ? n.varKinds.var : this.varKind, { name: I, from: H, to: W } = this;
-        return `for(${k} ${I}=${H}; ${I}<${W}; ${I}++)` + super.render($);
+        const x = $.es5 ? n.varKinds.var : this.varKind, { name: I, from: G, to: W } = this;
+        return `for(${x} ${I}=${G}; ${I}<${W}; ${I}++)` + super.render($);
       }
       get names() {
         const $ = T(super.names, this.from);
         return T($, this.to);
       }
     }
-    class a extends u {
-      constructor($, k, I, H) {
-        super(), this.loop = $, this.varKind = k, this.name = I, this.iterable = H;
+    class c extends u {
+      constructor($, x, I, G) {
+        super(), this.loop = $, this.varKind = x, this.name = I, this.iterable = G;
       }
       render($) {
         return `for(${this.varKind} ${this.name} ${this.loop} ${this.iterable})` + super.render($);
       }
-      optimizeNames($, k) {
-        if (super.optimizeNames($, k))
-          return this.iterable = J(this.iterable, $, k), this;
+      optimizeNames($, x) {
+        if (super.optimizeNames($, x))
+          return this.iterable = J(this.iterable, $, x), this;
       }
       get names() {
         return A(super.names, this.iterable.names);
       }
     }
     class l extends _ {
-      constructor($, k, I) {
-        super(), this.name = $, this.args = k, this.async = I;
+      constructor($, x, I) {
+        super(), this.name = $, this.args = x, this.async = I;
       }
       render($) {
         return `${this.async ? "async " : ""}function ${this.name}(${this.args})` + super.render($);
@@ -893,25 +893,25 @@ function Q() {
       }
     }
     p.kind = "return";
-    class x extends _ {
+    class k extends _ {
       render($) {
-        let k = "try" + super.render($);
-        return this.catch && (k += this.catch.render($)), this.finally && (k += this.finally.render($)), k;
+        let x = "try" + super.render($);
+        return this.catch && (x += this.catch.render($)), this.finally && (x += this.finally.render($)), x;
       }
       optimizeNodes() {
-        var $, k;
-        return super.optimizeNodes(), ($ = this.catch) === null || $ === void 0 || $.optimizeNodes(), (k = this.finally) === null || k === void 0 || k.optimizeNodes(), this;
+        var $, x;
+        return super.optimizeNodes(), ($ = this.catch) === null || $ === void 0 || $.optimizeNodes(), (x = this.finally) === null || x === void 0 || x.optimizeNodes(), this;
       }
-      optimizeNames($, k) {
-        var I, H;
-        return super.optimizeNames($, k), (I = this.catch) === null || I === void 0 || I.optimizeNames($, k), (H = this.finally) === null || H === void 0 || H.optimizeNames($, k), this;
+      optimizeNames($, x) {
+        var I, G;
+        return super.optimizeNames($, x), (I = this.catch) === null || I === void 0 || I.optimizeNames($, x), (G = this.finally) === null || G === void 0 || G.optimizeNames($, x), this;
       }
       get names() {
         const $ = super.names;
         return this.catch && A($, this.catch.names), this.finally && A($, this.finally.names), $;
       }
     }
-    class E extends _ {
+    class P extends _ {
       constructor($) {
         super(), this.error = $;
       }
@@ -919,7 +919,7 @@ function Q() {
         return `catch(${this.error})` + super.render($);
       }
     }
-    E.kind = "catch";
+    P.kind = "catch";
     class N extends _ {
       render($) {
         return "finally" + super.render($);
@@ -927,9 +927,9 @@ function Q() {
     }
     N.kind = "finally";
     class z {
-      constructor($, k = {}) {
-        this._values = {}, this._blockStarts = [], this._constants = {}, this.opts = { ...k, _n: k.lines ? `
-` : "" }, this._extScope = $, this._scope = new n.Scope({ parent: $ }), this._nodes = [new b()];
+      constructor($, x = {}) {
+        this._values = {}, this._blockStarts = [], this._constants = {}, this.opts = { ...x, _n: x.lines ? `
+` : "" }, this._extScope = $, this._scope = new n.Scope({ parent: $ }), this._nodes = [new w()];
       }
       toString() {
         return this._root.render(this.opts);
@@ -943,12 +943,12 @@ function Q() {
         return this._extScope.name($);
       }
       // reserves unique name in the external scope and assigns value to it
-      scopeValue($, k) {
-        const I = this._extScope.value($, k);
+      scopeValue($, x) {
+        const I = this._extScope.value($, x);
         return (this._values[I.prefix] || (this._values[I.prefix] = /* @__PURE__ */ new Set())).add(I), I;
       }
-      getScopeValue($, k) {
-        return this._extScope.getValue($, k);
+      getScopeValue($, x) {
+        return this._extScope.getValue($, x);
       }
       // return code that assigns values in the external scope to the names that are used internally
       // (same names that were returned by gen.scopeName or gen.scopeValue)
@@ -958,47 +958,47 @@ function Q() {
       scopeCode() {
         return this._extScope.scopeCode(this._values);
       }
-      _def($, k, I, H) {
-        const W = this._scope.toName(k);
-        return I !== void 0 && H && (this._constants[W.str] = I), this._leafNode(new c($, W, I)), W;
+      _def($, x, I, G) {
+        const W = this._scope.toName(x);
+        return I !== void 0 && G && (this._constants[W.str] = I), this._leafNode(new s($, W, I)), W;
       }
       // `const` declaration (`var` in es5 mode)
-      const($, k, I) {
-        return this._def(n.varKinds.const, $, k, I);
+      const($, x, I) {
+        return this._def(n.varKinds.const, $, x, I);
       }
       // `let` declaration with optional assignment (`var` in es5 mode)
-      let($, k, I) {
-        return this._def(n.varKinds.let, $, k, I);
+      let($, x, I) {
+        return this._def(n.varKinds.let, $, x, I);
       }
       // `var` declaration with optional assignment
-      var($, k, I) {
-        return this._def(n.varKinds.var, $, k, I);
+      var($, x, I) {
+        return this._def(n.varKinds.var, $, x, I);
       }
       // assignment code
-      assign($, k, I) {
-        return this._leafNode(new s($, k, I));
+      assign($, x, I) {
+        return this._leafNode(new a($, x, I));
       }
       // `+=` code
-      add($, k) {
-        return this._leafNode(new d($, e.operators.ADD, k));
+      add($, x) {
+        return this._leafNode(new d($, e.operators.ADD, x));
       }
       // appends passed SafeExpr to code or executes Block
       code($) {
-        return typeof $ == "function" ? $() : $ !== t.nil && this._leafNode(new w($)), this;
+        return typeof $ == "function" ? $() : $ !== t.nil && this._leafNode(new b($)), this;
       }
       // returns code for object literal for the passed argument list of key-value pairs
       object(...$) {
-        const k = ["{"];
-        for (const [I, H] of $)
-          k.length > 1 && k.push(","), k.push(I), (I !== H || this.opts.es5) && (k.push(":"), (0, t.addCodeArg)(k, H));
-        return k.push("}"), new t._Code(k);
+        const x = ["{"];
+        for (const [I, G] of $)
+          x.length > 1 && x.push(","), x.push(I), (I !== G || this.opts.es5) && (x.push(":"), (0, t.addCodeArg)(x, G));
+        return x.push("}"), new t._Code(x);
       }
       // `if` clause (or statement if `thenBody` and, optionally, `elseBody` are passed)
-      if($, k, I) {
-        if (this._blockNode(new g($)), k && I)
-          this.code(k).else().code(I).endIf();
-        else if (k)
-          this.code(k).endIf();
+      if($, x, I) {
+        if (this._blockNode(new g($)), x && I)
+          this.code(x).else().code(I).endIf();
+        else if (x)
+          this.code(x).endIf();
         else if (I)
           throw new Error('CodeGen: "else" body without "then" body');
         return this;
@@ -1015,36 +1015,36 @@ function Q() {
       endIf() {
         return this._endBlockNode(g, f);
       }
-      _for($, k) {
-        return this._blockNode($), k && this.code(k).endFor(), this;
+      _for($, x) {
+        return this._blockNode($), x && this.code(x).endFor(), this;
       }
       // a generic `for` clause (or statement if `forBody` is passed)
-      for($, k) {
-        return this._for(new h($), k);
+      for($, x) {
+        return this._for(new h($), x);
       }
       // `for` statement for a range of values
-      forRange($, k, I, H, W = this.opts.es5 ? n.varKinds.var : n.varKinds.let) {
+      forRange($, x, I, G, W = this.opts.es5 ? n.varKinds.var : n.varKinds.let) {
         const oe = this._scope.toName($);
-        return this._for(new C(W, oe, k, I), () => H(oe));
+        return this._for(new S(W, oe, x, I), () => G(oe));
       }
       // `for-of` statement (in es5 mode replace with a normal for loop)
-      forOf($, k, I, H = n.varKinds.const) {
+      forOf($, x, I, G = n.varKinds.const) {
         const W = this._scope.toName($);
         if (this.opts.es5) {
-          const oe = k instanceof t.Name ? k : this.var("_arr", k);
+          const oe = x instanceof t.Name ? x : this.var("_arr", x);
           return this.forRange("_i", 0, (0, t._)`${oe}.length`, (re) => {
             this.var(W, (0, t._)`${oe}[${re}]`), I(W);
           });
         }
-        return this._for(new a("of", H, W, k), () => I(W));
+        return this._for(new c("of", G, W, x), () => I(W));
       }
       // `for-in` statement.
       // With option `ownProperties` replaced with a `for-of` loop for object keys
-      forIn($, k, I, H = this.opts.es5 ? n.varKinds.var : n.varKinds.const) {
+      forIn($, x, I, G = this.opts.es5 ? n.varKinds.var : n.varKinds.const) {
         if (this.opts.ownProperties)
-          return this.forOf($, (0, t._)`Object.keys(${k})`, I);
+          return this.forOf($, (0, t._)`Object.keys(${x})`, I);
         const W = this._scope.toName($);
-        return this._for(new a("in", H, W, k), () => I(W));
+        return this._for(new c("in", G, W, x), () => I(W));
       }
       // end `for` loop
       endFor() {
@@ -1060,43 +1060,43 @@ function Q() {
       }
       // `return` statement
       return($) {
-        const k = new p();
-        if (this._blockNode(k), this.code($), k.nodes.length !== 1)
+        const x = new p();
+        if (this._blockNode(x), this.code($), x.nodes.length !== 1)
           throw new Error('CodeGen: "return" should have one node');
         return this._endBlockNode(p);
       }
       // `try` statement
-      try($, k, I) {
-        if (!k && !I)
+      try($, x, I) {
+        if (!x && !I)
           throw new Error('CodeGen: "try" without "catch" and "finally"');
-        const H = new x();
-        if (this._blockNode(H), this.code($), k) {
+        const G = new k();
+        if (this._blockNode(G), this.code($), x) {
           const W = this.name("e");
-          this._currNode = H.catch = new E(W), k(W);
+          this._currNode = G.catch = new P(W), x(W);
         }
-        return I && (this._currNode = H.finally = new N(), this.code(I)), this._endBlockNode(E, N);
+        return I && (this._currNode = G.finally = new N(), this.code(I)), this._endBlockNode(P, N);
       }
       // `throw` statement
       throw($) {
-        return this._leafNode(new S($));
+        return this._leafNode(new C($));
       }
       // start self-balancing block
-      block($, k) {
-        return this._blockStarts.push(this._nodes.length), $ && this.code($).endBlock(k), this;
+      block($, x) {
+        return this._blockStarts.push(this._nodes.length), $ && this.code($).endBlock(x), this;
       }
       // end the current self-balancing block
       endBlock($) {
-        const k = this._blockStarts.pop();
-        if (k === void 0)
+        const x = this._blockStarts.pop();
+        if (x === void 0)
           throw new Error("CodeGen: not in self-balancing block");
-        const I = this._nodes.length - k;
+        const I = this._nodes.length - x;
         if (I < 0 || $ !== void 0 && I !== $)
           throw new Error(`CodeGen: wrong number of nodes: ${I} vs ${$} expected`);
-        return this._nodes.length = k, this;
+        return this._nodes.length = x, this;
       }
       // `function` heading (or definition if funcBody is passed)
-      func($, k = t.nil, I, H) {
-        return this._blockNode(new l($, k, I)), H && this.code(H).endFunc(), this;
+      func($, x = t.nil, I, G) {
+        return this._blockNode(new l($, x, I)), G && this.code(G).endFunc(), this;
       }
       // end function definition
       endFunc() {
@@ -1112,17 +1112,17 @@ function Q() {
       _blockNode($) {
         this._currNode.nodes.push($), this._nodes.push($);
       }
-      _endBlockNode($, k) {
+      _endBlockNode($, x) {
         const I = this._currNode;
-        if (I instanceof $ || k && I instanceof k)
+        if (I instanceof $ || x && I instanceof x)
           return this._nodes.pop(), this;
-        throw new Error(`CodeGen: not in block "${k ? `${$.kind}/${k.kind}` : $.kind}"`);
+        throw new Error(`CodeGen: not in block "${x ? `${$.kind}/${x.kind}` : $.kind}"`);
       }
       _elseNode($) {
-        const k = this._currNode;
-        if (!(k instanceof g))
+        const x = this._currNode;
+        if (!(x instanceof g))
           throw new Error('CodeGen: "else" without "if"');
-        return this._currNode = k.else = $, this;
+        return this._currNode = x.else = $, this;
       }
       get _root() {
         return this._nodes[0];
@@ -1132,56 +1132,56 @@ function Q() {
         return $[$.length - 1];
       }
       set _currNode($) {
-        const k = this._nodes;
-        k[k.length - 1] = $;
+        const x = this._nodes;
+        x[x.length - 1] = $;
       }
     }
     e.CodeGen = z;
-    function A(F, $) {
-      for (const k in $)
-        F[k] = (F[k] || 0) + ($[k] || 0);
-      return F;
+    function A(M, $) {
+      for (const x in $)
+        M[x] = (M[x] || 0) + ($[x] || 0);
+      return M;
     }
-    function T(F, $) {
-      return $ instanceof t._CodeOrName ? A(F, $.names) : F;
+    function T(M, $) {
+      return $ instanceof t._CodeOrName ? A(M, $.names) : M;
     }
-    function J(F, $, k) {
-      if (F instanceof t.Name)
-        return I(F);
-      if (!H(F))
-        return F;
-      return new t._Code(F._items.reduce((W, oe) => (oe instanceof t.Name && (oe = I(oe)), oe instanceof t._Code ? W.push(...oe._items) : W.push(oe), W), []));
+    function J(M, $, x) {
+      if (M instanceof t.Name)
+        return I(M);
+      if (!G(M))
+        return M;
+      return new t._Code(M._items.reduce((W, oe) => (oe instanceof t.Name && (oe = I(oe)), oe instanceof t._Code ? W.push(...oe._items) : W.push(oe), W), []));
       function I(W) {
-        const oe = k[W.str];
+        const oe = x[W.str];
         return oe === void 0 || $[W.str] !== 1 ? W : (delete $[W.str], oe);
       }
-      function H(W) {
-        return W instanceof t._Code && W._items.some((oe) => oe instanceof t.Name && $[oe.str] === 1 && k[oe.str] !== void 0);
+      function G(W) {
+        return W instanceof t._Code && W._items.some((oe) => oe instanceof t.Name && $[oe.str] === 1 && x[oe.str] !== void 0);
       }
     }
-    function Z(F, $) {
-      for (const k in $)
-        F[k] = (F[k] || 0) - ($[k] || 0);
+    function Z(M, $) {
+      for (const x in $)
+        M[x] = (M[x] || 0) - ($[x] || 0);
     }
-    function L(F) {
-      return typeof F == "boolean" || typeof F == "number" || F === null ? !F : (0, t._)`!${D(F)}`;
+    function L(M) {
+      return typeof M == "boolean" || typeof M == "number" || M === null ? !M : (0, t._)`!${q(M)}`;
     }
     e.not = L;
-    const G = R(e.operators.AND);
-    function U(...F) {
-      return F.reduce(G);
+    const H = R(e.operators.AND);
+    function U(...M) {
+      return M.reduce(H);
     }
     e.and = U;
     const Y = R(e.operators.OR);
-    function V(...F) {
-      return F.reduce(Y);
+    function V(...M) {
+      return M.reduce(Y);
     }
     e.or = V;
-    function R(F) {
-      return ($, k) => $ === t.nil ? k : k === t.nil ? $ : (0, t._)`${D($)} ${F} ${D(k)}`;
+    function R(M) {
+      return ($, x) => $ === t.nil ? x : x === t.nil ? $ : (0, t._)`${q($)} ${M} ${q(x)}`;
     }
-    function D(F) {
-      return F instanceof t.Name ? F : (0, t._)`(${F})`;
+    function q(M) {
+      return M instanceof t.Name ? M : (0, t._)`(${M})`;
     }
   })(En)), En;
 }
@@ -1190,141 +1190,141 @@ function ne() {
   if (pr) return ee;
   pr = 1, Object.defineProperty(ee, "__esModule", { value: !0 }), ee.checkStrictMode = ee.getErrorPath = ee.Type = ee.useFunc = ee.setEvaluated = ee.evaluatedPropsToName = ee.mergeEvaluated = ee.eachItem = ee.unescapeJsonPointer = ee.escapeJsonPointer = ee.escapeFragment = ee.unescapeFragment = ee.schemaRefOrVal = ee.schemaHasRulesButRef = ee.schemaHasRules = ee.checkUnknownRules = ee.alwaysValidSchema = ee.toHash = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ fn();
-  function n(a) {
+  function n(c) {
     const l = {};
-    for (const p of a)
+    for (const p of c)
       l[p] = !0;
     return l;
   }
   ee.toHash = n;
-  function o(a, l) {
-    return typeof l == "boolean" ? l : Object.keys(l).length === 0 ? !0 : (i(a, l), !r(l, a.self.RULES.all));
+  function o(c, l) {
+    return typeof l == "boolean" ? l : Object.keys(l).length === 0 ? !0 : (i(c, l), !r(l, c.self.RULES.all));
   }
   ee.alwaysValidSchema = o;
-  function i(a, l = a.schema) {
-    const { opts: p, self: x } = a;
+  function i(c, l = c.schema) {
+    const { opts: p, self: k } = c;
     if (!p.strictSchema || typeof l == "boolean")
       return;
-    const E = x.RULES.keywords;
+    const P = k.RULES.keywords;
     for (const N in l)
-      E[N] || C(a, `unknown keyword: "${N}"`);
+      P[N] || S(c, `unknown keyword: "${N}"`);
   }
   ee.checkUnknownRules = i;
-  function r(a, l) {
-    if (typeof a == "boolean")
-      return !a;
-    for (const p in a)
+  function r(c, l) {
+    if (typeof c == "boolean")
+      return !c;
+    for (const p in c)
       if (l[p])
         return !0;
     return !1;
   }
   ee.schemaHasRules = r;
-  function c(a, l) {
-    if (typeof a == "boolean")
-      return !a;
-    for (const p in a)
+  function s(c, l) {
+    if (typeof c == "boolean")
+      return !c;
+    for (const p in c)
       if (p !== "$ref" && l.all[p])
         return !0;
     return !1;
   }
-  ee.schemaHasRulesButRef = c;
-  function s({ topSchemaRef: a, schemaPath: l }, p, x, E) {
-    if (!E) {
+  ee.schemaHasRulesButRef = s;
+  function a({ topSchemaRef: c, schemaPath: l }, p, k, P) {
+    if (!P) {
       if (typeof p == "number" || typeof p == "boolean")
         return p;
       if (typeof p == "string")
         return (0, e._)`${p}`;
     }
-    return (0, e._)`${a}${l}${(0, e.getProperty)(x)}`;
+    return (0, e._)`${c}${l}${(0, e.getProperty)(k)}`;
   }
-  ee.schemaRefOrVal = s;
-  function d(a) {
-    return S(decodeURIComponent(a));
+  ee.schemaRefOrVal = a;
+  function d(c) {
+    return C(decodeURIComponent(c));
   }
   ee.unescapeFragment = d;
-  function y(a) {
-    return encodeURIComponent(m(a));
+  function y(c) {
+    return encodeURIComponent(m(c));
   }
   ee.escapeFragment = y;
-  function m(a) {
-    return typeof a == "number" ? `${a}` : a.replace(/~/g, "~0").replace(/\//g, "~1");
+  function m(c) {
+    return typeof c == "number" ? `${c}` : c.replace(/~/g, "~0").replace(/\//g, "~1");
   }
   ee.escapeJsonPointer = m;
-  function S(a) {
-    return a.replace(/~1/g, "/").replace(/~0/g, "~");
+  function C(c) {
+    return c.replace(/~1/g, "/").replace(/~0/g, "~");
   }
-  ee.unescapeJsonPointer = S;
-  function w(a, l) {
-    if (Array.isArray(a))
-      for (const p of a)
+  ee.unescapeJsonPointer = C;
+  function b(c, l) {
+    if (Array.isArray(c))
+      for (const p of c)
         l(p);
     else
-      l(a);
+      l(c);
   }
-  ee.eachItem = w;
-  function v({ mergeNames: a, mergeToName: l, mergeValues: p, resultToName: x }) {
-    return (E, N, z, A) => {
-      const T = z === void 0 ? N : z instanceof e.Name ? (N instanceof e.Name ? a(E, N, z) : l(E, N, z), z) : N instanceof e.Name ? (l(E, z, N), N) : p(N, z);
-      return A === e.Name && !(T instanceof e.Name) ? x(E, T) : T;
+  ee.eachItem = b;
+  function v({ mergeNames: c, mergeToName: l, mergeValues: p, resultToName: k }) {
+    return (P, N, z, A) => {
+      const T = z === void 0 ? N : z instanceof e.Name ? (N instanceof e.Name ? c(P, N, z) : l(P, N, z), z) : N instanceof e.Name ? (l(P, z, N), N) : p(N, z);
+      return A === e.Name && !(T instanceof e.Name) ? k(P, T) : T;
     };
   }
   ee.mergeEvaluated = {
     props: v({
-      mergeNames: (a, l, p) => a.if((0, e._)`${p} !== true && ${l} !== undefined`, () => {
-        a.if((0, e._)`${l} === true`, () => a.assign(p, !0), () => a.assign(p, (0, e._)`${p} || {}`).code((0, e._)`Object.assign(${p}, ${l})`));
+      mergeNames: (c, l, p) => c.if((0, e._)`${p} !== true && ${l} !== undefined`, () => {
+        c.if((0, e._)`${l} === true`, () => c.assign(p, !0), () => c.assign(p, (0, e._)`${p} || {}`).code((0, e._)`Object.assign(${p}, ${l})`));
       }),
-      mergeToName: (a, l, p) => a.if((0, e._)`${p} !== true`, () => {
-        l === !0 ? a.assign(p, !0) : (a.assign(p, (0, e._)`${p} || {}`), b(a, p, l));
+      mergeToName: (c, l, p) => c.if((0, e._)`${p} !== true`, () => {
+        l === !0 ? c.assign(p, !0) : (c.assign(p, (0, e._)`${p} || {}`), w(c, p, l));
       }),
-      mergeValues: (a, l) => a === !0 ? !0 : { ...a, ...l },
+      mergeValues: (c, l) => c === !0 ? !0 : { ...c, ...l },
       resultToName: _
     }),
     items: v({
-      mergeNames: (a, l, p) => a.if((0, e._)`${p} !== true && ${l} !== undefined`, () => a.assign(p, (0, e._)`${l} === true ? true : ${p} > ${l} ? ${p} : ${l}`)),
-      mergeToName: (a, l, p) => a.if((0, e._)`${p} !== true`, () => a.assign(p, l === !0 ? !0 : (0, e._)`${p} > ${l} ? ${p} : ${l}`)),
-      mergeValues: (a, l) => a === !0 ? !0 : Math.max(a, l),
-      resultToName: (a, l) => a.var("items", l)
+      mergeNames: (c, l, p) => c.if((0, e._)`${p} !== true && ${l} !== undefined`, () => c.assign(p, (0, e._)`${l} === true ? true : ${p} > ${l} ? ${p} : ${l}`)),
+      mergeToName: (c, l, p) => c.if((0, e._)`${p} !== true`, () => c.assign(p, l === !0 ? !0 : (0, e._)`${p} > ${l} ? ${p} : ${l}`)),
+      mergeValues: (c, l) => c === !0 ? !0 : Math.max(c, l),
+      resultToName: (c, l) => c.var("items", l)
     })
   };
-  function _(a, l) {
+  function _(c, l) {
     if (l === !0)
-      return a.var("props", !0);
-    const p = a.var("props", (0, e._)`{}`);
-    return l !== void 0 && b(a, p, l), p;
+      return c.var("props", !0);
+    const p = c.var("props", (0, e._)`{}`);
+    return l !== void 0 && w(c, p, l), p;
   }
   ee.evaluatedPropsToName = _;
-  function b(a, l, p) {
-    Object.keys(p).forEach((x) => a.assign((0, e._)`${l}${(0, e.getProperty)(x)}`, !0));
+  function w(c, l, p) {
+    Object.keys(p).forEach((k) => c.assign((0, e._)`${l}${(0, e.getProperty)(k)}`, !0));
   }
-  ee.setEvaluated = b;
+  ee.setEvaluated = w;
   const f = {};
-  function g(a, l) {
-    return a.scopeValue("func", {
+  function g(c, l) {
+    return c.scopeValue("func", {
       ref: l,
       code: f[l.code] || (f[l.code] = new t._Code(l.code))
     });
   }
   ee.useFunc = g;
   var u;
-  (function(a) {
-    a[a.Num = 0] = "Num", a[a.Str = 1] = "Str";
+  (function(c) {
+    c[c.Num = 0] = "Num", c[c.Str = 1] = "Str";
   })(u || (ee.Type = u = {}));
-  function h(a, l, p) {
-    if (a instanceof e.Name) {
-      const x = l === u.Num;
-      return p ? x ? (0, e._)`"[" + ${a} + "]"` : (0, e._)`"['" + ${a} + "']"` : x ? (0, e._)`"/" + ${a}` : (0, e._)`"/" + ${a}.replace(/~/g, "~0").replace(/\\//g, "~1")`;
+  function h(c, l, p) {
+    if (c instanceof e.Name) {
+      const k = l === u.Num;
+      return p ? k ? (0, e._)`"[" + ${c} + "]"` : (0, e._)`"['" + ${c} + "']"` : k ? (0, e._)`"/" + ${c}` : (0, e._)`"/" + ${c}.replace(/~/g, "~0").replace(/\\//g, "~1")`;
     }
-    return p ? (0, e.getProperty)(a).toString() : "/" + m(a);
+    return p ? (0, e.getProperty)(c).toString() : "/" + m(c);
   }
   ee.getErrorPath = h;
-  function C(a, l, p = a.opts.strictSchema) {
+  function S(c, l, p = c.opts.strictSchema) {
     if (p) {
       if (l = `strict mode: ${l}`, p === !0)
         throw new Error(l);
-      a.self.logger.warn(l);
+      c.self.logger.warn(l);
     }
   }
-  return ee.checkStrictMode = C, ee;
+  return ee.checkStrictMode = S, ee;
 }
 var ft = {}, hr;
 function ke() {
@@ -1372,35 +1372,35 @@ function gn() {
       message: ({ keyword: f, schemaType: g }) => g ? (0, t.str)`"${f}" keyword must be ${g} ($data)` : (0, t.str)`"${f}" keyword is invalid ($data)`
     };
     function i(f, g = e.keywordError, u, h) {
-      const { it: C } = f, { gen: a, compositeRule: l, allErrors: p } = C, x = S(f, g, u);
-      h ?? (l || p) ? d(a, x) : y(C, (0, t._)`[${x}]`);
+      const { it: S } = f, { gen: c, compositeRule: l, allErrors: p } = S, k = C(f, g, u);
+      h ?? (l || p) ? d(c, k) : y(S, (0, t._)`[${k}]`);
     }
     e.reportError = i;
     function r(f, g = e.keywordError, u) {
-      const { it: h } = f, { gen: C, compositeRule: a, allErrors: l } = h, p = S(f, g, u);
-      d(C, p), a || l || y(h, o.default.vErrors);
+      const { it: h } = f, { gen: S, compositeRule: c, allErrors: l } = h, p = C(f, g, u);
+      d(S, p), c || l || y(h, o.default.vErrors);
     }
     e.reportExtraError = r;
-    function c(f, g) {
+    function s(f, g) {
       f.assign(o.default.errors, g), f.if((0, t._)`${o.default.vErrors} !== null`, () => f.if(g, () => f.assign((0, t._)`${o.default.vErrors}.length`, g), () => f.assign(o.default.vErrors, null)));
     }
-    e.resetErrorsCount = c;
-    function s({ gen: f, keyword: g, schemaValue: u, data: h, errsCount: C, it: a }) {
-      if (C === void 0)
+    e.resetErrorsCount = s;
+    function a({ gen: f, keyword: g, schemaValue: u, data: h, errsCount: S, it: c }) {
+      if (S === void 0)
         throw new Error("ajv implementation error");
       const l = f.name("err");
-      f.forRange("i", C, o.default.errors, (p) => {
-        f.const(l, (0, t._)`${o.default.vErrors}[${p}]`), f.if((0, t._)`${l}.instancePath === undefined`, () => f.assign((0, t._)`${l}.instancePath`, (0, t.strConcat)(o.default.instancePath, a.errorPath))), f.assign((0, t._)`${l}.schemaPath`, (0, t.str)`${a.errSchemaPath}/${g}`), a.opts.verbose && (f.assign((0, t._)`${l}.schema`, u), f.assign((0, t._)`${l}.data`, h));
+      f.forRange("i", S, o.default.errors, (p) => {
+        f.const(l, (0, t._)`${o.default.vErrors}[${p}]`), f.if((0, t._)`${l}.instancePath === undefined`, () => f.assign((0, t._)`${l}.instancePath`, (0, t.strConcat)(o.default.instancePath, c.errorPath))), f.assign((0, t._)`${l}.schemaPath`, (0, t.str)`${c.errSchemaPath}/${g}`), c.opts.verbose && (f.assign((0, t._)`${l}.schema`, u), f.assign((0, t._)`${l}.data`, h));
       });
     }
-    e.extendErrors = s;
+    e.extendErrors = a;
     function d(f, g) {
       const u = f.const("err", g);
       f.if((0, t._)`${o.default.vErrors} === null`, () => f.assign(o.default.vErrors, (0, t._)`[${u}]`), (0, t._)`${o.default.vErrors}.push(${u})`), f.code((0, t._)`${o.default.errors}++`);
     }
     function y(f, g) {
-      const { gen: u, validateName: h, schemaEnv: C } = f;
-      C.$async ? u.throw((0, t._)`new ${f.ValidationError}(${g})`) : (u.assign((0, t._)`${h}.errors`, g), u.return(!1));
+      const { gen: u, validateName: h, schemaEnv: S } = f;
+      S.$async ? u.throw((0, t._)`new ${f.ValidationError}(${g})`) : (u.assign((0, t._)`${h}.errors`, g), u.return(!1));
     }
     const m = {
       keyword: new t.Name("keyword"),
@@ -1412,28 +1412,28 @@ function gn() {
       schema: new t.Name("schema"),
       parentSchema: new t.Name("parentSchema")
     };
-    function S(f, g, u) {
+    function C(f, g, u) {
       const { createErrors: h } = f.it;
-      return h === !1 ? (0, t._)`{}` : w(f, g, u);
+      return h === !1 ? (0, t._)`{}` : b(f, g, u);
     }
-    function w(f, g, u = {}) {
-      const { gen: h, it: C } = f, a = [
-        v(C, u),
+    function b(f, g, u = {}) {
+      const { gen: h, it: S } = f, c = [
+        v(S, u),
         _(f, u)
       ];
-      return b(f, g, a), h.object(...a);
+      return w(f, g, c), h.object(...c);
     }
     function v({ errorPath: f }, { instancePath: g }) {
       const u = g ? (0, t.str)`${f}${(0, n.getErrorPath)(g, n.Type.Str)}` : f;
       return [o.default.instancePath, (0, t.strConcat)(o.default.instancePath, u)];
     }
     function _({ keyword: f, it: { errSchemaPath: g } }, { schemaPath: u, parentSchema: h }) {
-      let C = h ? g : (0, t.str)`${g}/${f}`;
-      return u && (C = (0, t.str)`${C}${(0, n.getErrorPath)(u, n.Type.Str)}`), [m.schemaPath, C];
+      let S = h ? g : (0, t.str)`${g}/${f}`;
+      return u && (S = (0, t.str)`${S}${(0, n.getErrorPath)(u, n.Type.Str)}`), [m.schemaPath, S];
     }
-    function b(f, { params: g, message: u }, h) {
-      const { keyword: C, data: a, schemaValue: l, it: p } = f, { opts: x, propertyName: E, topSchemaRef: N, schemaPath: z } = p;
-      h.push([m.keyword, C], [m.params, typeof g == "function" ? g(f) : g || (0, t._)`{}`]), x.messages && h.push([m.message, typeof u == "function" ? u(f) : u]), x.verbose && h.push([m.schema, l], [m.parentSchema, (0, t._)`${N}${z}`], [o.default.data, a]), E && h.push([m.propertyName, E]);
+    function w(f, { params: g, message: u }, h) {
+      const { keyword: S, data: c, schemaValue: l, it: p } = f, { opts: k, propertyName: P, topSchemaRef: N, schemaPath: z } = p;
+      h.push([m.keyword, S], [m.params, typeof g == "function" ? g(f) : g || (0, t._)`{}`]), k.messages && h.push([m.message, typeof u == "function" ? u(f) : u]), k.verbose && h.push([m.schema, l], [m.parentSchema, (0, t._)`${N}${z}`], [o.default.data, c]), P && h.push([m.propertyName, P]);
     }
   })(xn)), xn;
 }
@@ -1444,18 +1444,18 @@ function Ni() {
   const e = /* @__PURE__ */ gn(), t = /* @__PURE__ */ Q(), n = /* @__PURE__ */ ke(), o = {
     message: "boolean schema is false"
   };
-  function i(s) {
-    const { gen: d, schema: y, validateName: m } = s;
-    y === !1 ? c(s, !1) : typeof y == "object" && y.$async === !0 ? d.return(n.default.data) : (d.assign((0, t._)`${m}.errors`, null), d.return(!0));
+  function i(a) {
+    const { gen: d, schema: y, validateName: m } = a;
+    y === !1 ? s(a, !1) : typeof y == "object" && y.$async === !0 ? d.return(n.default.data) : (d.assign((0, t._)`${m}.errors`, null), d.return(!0));
   }
   ze.topBoolOrEmptySchema = i;
-  function r(s, d) {
-    const { gen: y, schema: m } = s;
-    m === !1 ? (y.var(d, !1), c(s)) : y.var(d, !0);
+  function r(a, d) {
+    const { gen: y, schema: m } = a;
+    m === !1 ? (y.var(d, !1), s(a)) : y.var(d, !0);
   }
   ze.boolOrEmptySchema = r;
-  function c(s, d) {
-    const { gen: y, data: m } = s, S = {
+  function s(a, d) {
+    const { gen: y, data: m } = a, C = {
       gen: y,
       keyword: "false schema",
       data: m,
@@ -1463,9 +1463,9 @@ function Ni() {
       schemaCode: !1,
       schemaValue: !1,
       params: {},
-      it: s
+      it: a
     };
-    (0, e.reportError)(S, o, void 0, d);
+    (0, e.reportError)(C, o, void 0, d);
   }
   return ze;
 }
@@ -1495,24 +1495,24 @@ function Zo() {
   }
   return Ie.getRules = o, Ie;
 }
-var Me = {}, vr;
+var Fe = {}, vr;
 function Qo() {
-  if (vr) return Me;
-  vr = 1, Object.defineProperty(Me, "__esModule", { value: !0 }), Me.shouldUseRule = Me.shouldUseGroup = Me.schemaHasRulesForType = void 0;
+  if (vr) return Fe;
+  vr = 1, Object.defineProperty(Fe, "__esModule", { value: !0 }), Fe.shouldUseRule = Fe.shouldUseGroup = Fe.schemaHasRulesForType = void 0;
   function e({ schema: o, self: i }, r) {
-    const c = i.RULES.types[r];
-    return c && c !== !0 && t(o, c);
+    const s = i.RULES.types[r];
+    return s && s !== !0 && t(o, s);
   }
-  Me.schemaHasRulesForType = e;
+  Fe.schemaHasRulesForType = e;
   function t(o, i) {
     return i.rules.some((r) => n(o, r));
   }
-  Me.shouldUseGroup = t;
+  Fe.shouldUseGroup = t;
   function n(o, i) {
     var r;
-    return o[i.keyword] !== void 0 || ((r = i.definition.implements) === null || r === void 0 ? void 0 : r.some((c) => o[c] !== void 0));
+    return o[i.keyword] !== void 0 || ((r = i.definition.implements) === null || r === void 0 ? void 0 : r.some((s) => o[s] !== void 0));
   }
-  return Me.shouldUseRule = n, Me;
+  return Fe.shouldUseRule = n, Fe;
 }
 var $r;
 function pn() {
@@ -1523,8 +1523,8 @@ function pn() {
   (function(u) {
     u[u.Correct = 0] = "Correct", u[u.Wrong = 1] = "Wrong";
   })(r || (ue.DataType = r = {}));
-  function c(u) {
-    const h = s(u.type);
+  function s(u) {
+    const h = a(u.type);
     if (h.includes("null")) {
       if (u.nullable === !1)
         throw new Error("type: null contradicts nullable: false");
@@ -1535,67 +1535,67 @@ function pn() {
     }
     return h;
   }
-  ue.getSchemaTypes = c;
-  function s(u) {
+  ue.getSchemaTypes = s;
+  function a(u) {
     const h = Array.isArray(u) ? u : u ? [u] : [];
     if (h.every(e.isJSONType))
       return h;
     throw new Error("type must be JSONType or JSONType[]: " + h.join(","));
   }
-  ue.getJSONTypes = s;
+  ue.getJSONTypes = a;
   function d(u, h) {
-    const { gen: C, data: a, opts: l } = u, p = m(h, l.coerceTypes), x = h.length > 0 && !(p.length === 0 && h.length === 1 && (0, t.schemaHasRulesForType)(u, h[0]));
-    if (x) {
-      const E = _(h, a, l.strictNumbers, r.Wrong);
-      C.if(E, () => {
-        p.length ? S(u, h, p) : f(u);
+    const { gen: S, data: c, opts: l } = u, p = m(h, l.coerceTypes), k = h.length > 0 && !(p.length === 0 && h.length === 1 && (0, t.schemaHasRulesForType)(u, h[0]));
+    if (k) {
+      const P = _(h, c, l.strictNumbers, r.Wrong);
+      S.if(P, () => {
+        p.length ? C(u, h, p) : f(u);
       });
     }
-    return x;
+    return k;
   }
   ue.coerceAndCheckDataType = d;
   const y = /* @__PURE__ */ new Set(["string", "number", "integer", "boolean", "null"]);
   function m(u, h) {
-    return h ? u.filter((C) => y.has(C) || h === "array" && C === "array") : [];
+    return h ? u.filter((S) => y.has(S) || h === "array" && S === "array") : [];
   }
-  function S(u, h, C) {
-    const { gen: a, data: l, opts: p } = u, x = a.let("dataType", (0, o._)`typeof ${l}`), E = a.let("coerced", (0, o._)`undefined`);
-    p.coerceTypes === "array" && a.if((0, o._)`${x} == 'object' && Array.isArray(${l}) && ${l}.length == 1`, () => a.assign(l, (0, o._)`${l}[0]`).assign(x, (0, o._)`typeof ${l}`).if(_(h, l, p.strictNumbers), () => a.assign(E, l))), a.if((0, o._)`${E} !== undefined`);
-    for (const z of C)
+  function C(u, h, S) {
+    const { gen: c, data: l, opts: p } = u, k = c.let("dataType", (0, o._)`typeof ${l}`), P = c.let("coerced", (0, o._)`undefined`);
+    p.coerceTypes === "array" && c.if((0, o._)`${k} == 'object' && Array.isArray(${l}) && ${l}.length == 1`, () => c.assign(l, (0, o._)`${l}[0]`).assign(k, (0, o._)`typeof ${l}`).if(_(h, l, p.strictNumbers), () => c.assign(P, l))), c.if((0, o._)`${P} !== undefined`);
+    for (const z of S)
       (y.has(z) || z === "array" && p.coerceTypes === "array") && N(z);
-    a.else(), f(u), a.endIf(), a.if((0, o._)`${E} !== undefined`, () => {
-      a.assign(l, E), w(u, E);
+    c.else(), f(u), c.endIf(), c.if((0, o._)`${P} !== undefined`, () => {
+      c.assign(l, P), b(u, P);
     });
     function N(z) {
       switch (z) {
         case "string":
-          a.elseIf((0, o._)`${x} == "number" || ${x} == "boolean"`).assign(E, (0, o._)`"" + ${l}`).elseIf((0, o._)`${l} === null`).assign(E, (0, o._)`""`);
+          c.elseIf((0, o._)`${k} == "number" || ${k} == "boolean"`).assign(P, (0, o._)`"" + ${l}`).elseIf((0, o._)`${l} === null`).assign(P, (0, o._)`""`);
           return;
         case "number":
-          a.elseIf((0, o._)`${x} == "boolean" || ${l} === null
-              || (${x} == "string" && ${l} && ${l} == +${l})`).assign(E, (0, o._)`+${l}`);
+          c.elseIf((0, o._)`${k} == "boolean" || ${l} === null
+              || (${k} == "string" && ${l} && ${l} == +${l})`).assign(P, (0, o._)`+${l}`);
           return;
         case "integer":
-          a.elseIf((0, o._)`${x} === "boolean" || ${l} === null
-              || (${x} === "string" && ${l} && ${l} == +${l} && !(${l} % 1))`).assign(E, (0, o._)`+${l}`);
+          c.elseIf((0, o._)`${k} === "boolean" || ${l} === null
+              || (${k} === "string" && ${l} && ${l} == +${l} && !(${l} % 1))`).assign(P, (0, o._)`+${l}`);
           return;
         case "boolean":
-          a.elseIf((0, o._)`${l} === "false" || ${l} === 0 || ${l} === null`).assign(E, !1).elseIf((0, o._)`${l} === "true" || ${l} === 1`).assign(E, !0);
+          c.elseIf((0, o._)`${l} === "false" || ${l} === 0 || ${l} === null`).assign(P, !1).elseIf((0, o._)`${l} === "true" || ${l} === 1`).assign(P, !0);
           return;
         case "null":
-          a.elseIf((0, o._)`${l} === "" || ${l} === 0 || ${l} === false`), a.assign(E, null);
+          c.elseIf((0, o._)`${l} === "" || ${l} === 0 || ${l} === false`), c.assign(P, null);
           return;
         case "array":
-          a.elseIf((0, o._)`${x} === "string" || ${x} === "number"
-              || ${x} === "boolean" || ${l} === null`).assign(E, (0, o._)`[${l}]`);
+          c.elseIf((0, o._)`${k} === "string" || ${k} === "number"
+              || ${k} === "boolean" || ${l} === null`).assign(P, (0, o._)`[${l}]`);
       }
     }
   }
-  function w({ gen: u, parentData: h, parentDataProperty: C }, a) {
-    u.if((0, o._)`${h} !== undefined`, () => u.assign((0, o._)`${h}[${C}]`, a));
+  function b({ gen: u, parentData: h, parentDataProperty: S }, c) {
+    u.if((0, o._)`${h} !== undefined`, () => u.assign((0, o._)`${h}[${S}]`, c));
   }
-  function v(u, h, C, a = r.Correct) {
-    const l = a === r.Correct ? o.operators.EQ : o.operators.NEQ;
+  function v(u, h, S, c = r.Correct) {
+    const l = c === r.Correct ? o.operators.EQ : o.operators.NEQ;
     let p;
     switch (u) {
       case "null":
@@ -1607,55 +1607,55 @@ function pn() {
         p = (0, o._)`${h} && typeof ${h} == "object" && !Array.isArray(${h})`;
         break;
       case "integer":
-        p = x((0, o._)`!(${h} % 1) && !isNaN(${h})`);
+        p = k((0, o._)`!(${h} % 1) && !isNaN(${h})`);
         break;
       case "number":
-        p = x();
+        p = k();
         break;
       default:
         return (0, o._)`typeof ${h} ${l} ${u}`;
     }
-    return a === r.Correct ? p : (0, o.not)(p);
-    function x(E = o.nil) {
-      return (0, o.and)((0, o._)`typeof ${h} == "number"`, E, C ? (0, o._)`isFinite(${h})` : o.nil);
+    return c === r.Correct ? p : (0, o.not)(p);
+    function k(P = o.nil) {
+      return (0, o.and)((0, o._)`typeof ${h} == "number"`, P, S ? (0, o._)`isFinite(${h})` : o.nil);
     }
   }
   ue.checkDataType = v;
-  function _(u, h, C, a) {
+  function _(u, h, S, c) {
     if (u.length === 1)
-      return v(u[0], h, C, a);
+      return v(u[0], h, S, c);
     let l;
     const p = (0, i.toHash)(u);
     if (p.array && p.object) {
-      const x = (0, o._)`typeof ${h} != "object"`;
-      l = p.null ? x : (0, o._)`!${h} || ${x}`, delete p.null, delete p.array, delete p.object;
+      const k = (0, o._)`typeof ${h} != "object"`;
+      l = p.null ? k : (0, o._)`!${h} || ${k}`, delete p.null, delete p.array, delete p.object;
     } else
       l = o.nil;
     p.number && delete p.integer;
-    for (const x in p)
-      l = (0, o.and)(l, v(x, h, C, a));
+    for (const k in p)
+      l = (0, o.and)(l, v(k, h, S, c));
     return l;
   }
   ue.checkDataTypes = _;
-  const b = {
+  const w = {
     message: ({ schema: u }) => `must be ${u}`,
     params: ({ schema: u, schemaValue: h }) => typeof u == "string" ? (0, o._)`{type: ${u}}` : (0, o._)`{type: ${h}}`
   };
   function f(u) {
     const h = g(u);
-    (0, n.reportError)(h, b);
+    (0, n.reportError)(h, w);
   }
   ue.reportTypeError = f;
   function g(u) {
-    const { gen: h, data: C, schema: a } = u, l = (0, i.schemaRefOrVal)(u, a, "type");
+    const { gen: h, data: S, schema: c } = u, l = (0, i.schemaRefOrVal)(u, c, "type");
     return {
       gen: h,
       keyword: "type",
-      data: C,
-      schema: a.type,
+      data: S,
+      schema: c.type,
       schemaCode: l,
       schemaValue: l,
-      parentSchema: a,
+      parentSchema: c,
       params: {},
       it: u
     };
@@ -1668,24 +1668,24 @@ function ji() {
   br = 1, Object.defineProperty(rt, "__esModule", { value: !0 }), rt.assignDefaults = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne();
   function n(i, r) {
-    const { properties: c, items: s } = i.schema;
-    if (r === "object" && c)
-      for (const d in c)
-        o(i, d, c[d].default);
-    else r === "array" && Array.isArray(s) && s.forEach((d, y) => o(i, y, d.default));
+    const { properties: s, items: a } = i.schema;
+    if (r === "object" && s)
+      for (const d in s)
+        o(i, d, s[d].default);
+    else r === "array" && Array.isArray(a) && a.forEach((d, y) => o(i, y, d.default));
   }
   rt.assignDefaults = n;
-  function o(i, r, c) {
-    const { gen: s, compositeRule: d, data: y, opts: m } = i;
-    if (c === void 0)
+  function o(i, r, s) {
+    const { gen: a, compositeRule: d, data: y, opts: m } = i;
+    if (s === void 0)
       return;
-    const S = (0, e._)`${y}${(0, e.getProperty)(r)}`;
+    const C = (0, e._)`${y}${(0, e.getProperty)(r)}`;
     if (d) {
-      (0, t.checkStrictMode)(i, `default is ignored for: ${S}`);
+      (0, t.checkStrictMode)(i, `default is ignored for: ${C}`);
       return;
     }
-    let w = (0, e._)`${S} === undefined`;
-    m.useDefaults === "empty" && (w = (0, e._)`${w} || ${S} === null || ${S} === ""`), s.if(w, (0, e._)`${S} = ${(0, e.stringify)(c)}`);
+    let b = (0, e._)`${C} === undefined`;
+    m.useDefaults === "empty" && (b = (0, e._)`${b} || ${C} === null || ${C} === ""`), a.if(b, (0, e._)`${C} = ${(0, e.stringify)(s)}`);
   }
   return rt;
 }
@@ -1695,106 +1695,106 @@ function xe() {
   wr = 1, Object.defineProperty(se, "__esModule", { value: !0 }), se.validateUnion = se.validateArray = se.usePattern = se.callValidateCode = se.schemaProperties = se.allSchemaProperties = se.noPropertyInData = se.propertyInData = se.isOwnProperty = se.hasPropFunc = se.reportMissingProp = se.checkMissingProp = se.checkReportMissingProp = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne(), n = /* @__PURE__ */ ke(), o = /* @__PURE__ */ ne();
   function i(u, h) {
-    const { gen: C, data: a, it: l } = u;
-    C.if(m(C, a, h, l.opts.ownProperties), () => {
+    const { gen: S, data: c, it: l } = u;
+    S.if(m(S, c, h, l.opts.ownProperties), () => {
       u.setParams({ missingProperty: (0, e._)`${h}` }, !0), u.error();
     });
   }
   se.checkReportMissingProp = i;
-  function r({ gen: u, data: h, it: { opts: C } }, a, l) {
-    return (0, e.or)(...a.map((p) => (0, e.and)(m(u, h, p, C.ownProperties), (0, e._)`${l} = ${p}`)));
+  function r({ gen: u, data: h, it: { opts: S } }, c, l) {
+    return (0, e.or)(...c.map((p) => (0, e.and)(m(u, h, p, S.ownProperties), (0, e._)`${l} = ${p}`)));
   }
   se.checkMissingProp = r;
-  function c(u, h) {
+  function s(u, h) {
     u.setParams({ missingProperty: h }, !0), u.error();
   }
-  se.reportMissingProp = c;
-  function s(u) {
+  se.reportMissingProp = s;
+  function a(u) {
     return u.scopeValue("func", {
       // eslint-disable-next-line @typescript-eslint/unbound-method
       ref: Object.prototype.hasOwnProperty,
       code: (0, e._)`Object.prototype.hasOwnProperty`
     });
   }
-  se.hasPropFunc = s;
-  function d(u, h, C) {
-    return (0, e._)`${s(u)}.call(${h}, ${C})`;
+  se.hasPropFunc = a;
+  function d(u, h, S) {
+    return (0, e._)`${a(u)}.call(${h}, ${S})`;
   }
   se.isOwnProperty = d;
-  function y(u, h, C, a) {
-    const l = (0, e._)`${h}${(0, e.getProperty)(C)} !== undefined`;
-    return a ? (0, e._)`${l} && ${d(u, h, C)}` : l;
+  function y(u, h, S, c) {
+    const l = (0, e._)`${h}${(0, e.getProperty)(S)} !== undefined`;
+    return c ? (0, e._)`${l} && ${d(u, h, S)}` : l;
   }
   se.propertyInData = y;
-  function m(u, h, C, a) {
-    const l = (0, e._)`${h}${(0, e.getProperty)(C)} === undefined`;
-    return a ? (0, e.or)(l, (0, e.not)(d(u, h, C))) : l;
+  function m(u, h, S, c) {
+    const l = (0, e._)`${h}${(0, e.getProperty)(S)} === undefined`;
+    return c ? (0, e.or)(l, (0, e.not)(d(u, h, S))) : l;
   }
   se.noPropertyInData = m;
-  function S(u) {
+  function C(u) {
     return u ? Object.keys(u).filter((h) => h !== "__proto__") : [];
   }
-  se.allSchemaProperties = S;
-  function w(u, h) {
-    return S(h).filter((C) => !(0, t.alwaysValidSchema)(u, h[C]));
+  se.allSchemaProperties = C;
+  function b(u, h) {
+    return C(h).filter((S) => !(0, t.alwaysValidSchema)(u, h[S]));
   }
-  se.schemaProperties = w;
-  function v({ schemaCode: u, data: h, it: { gen: C, topSchemaRef: a, schemaPath: l, errorPath: p }, it: x }, E, N, z) {
-    const A = z ? (0, e._)`${u}, ${h}, ${a}${l}` : h, T = [
+  se.schemaProperties = b;
+  function v({ schemaCode: u, data: h, it: { gen: S, topSchemaRef: c, schemaPath: l, errorPath: p }, it: k }, P, N, z) {
+    const A = z ? (0, e._)`${u}, ${h}, ${c}${l}` : h, T = [
       [n.default.instancePath, (0, e.strConcat)(n.default.instancePath, p)],
-      [n.default.parentData, x.parentData],
-      [n.default.parentDataProperty, x.parentDataProperty],
+      [n.default.parentData, k.parentData],
+      [n.default.parentDataProperty, k.parentDataProperty],
       [n.default.rootData, n.default.rootData]
     ];
-    x.opts.dynamicRef && T.push([n.default.dynamicAnchors, n.default.dynamicAnchors]);
-    const J = (0, e._)`${A}, ${C.object(...T)}`;
-    return N !== e.nil ? (0, e._)`${E}.call(${N}, ${J})` : (0, e._)`${E}(${J})`;
+    k.opts.dynamicRef && T.push([n.default.dynamicAnchors, n.default.dynamicAnchors]);
+    const J = (0, e._)`${A}, ${S.object(...T)}`;
+    return N !== e.nil ? (0, e._)`${P}.call(${N}, ${J})` : (0, e._)`${P}(${J})`;
   }
   se.callValidateCode = v;
   const _ = (0, e._)`new RegExp`;
-  function b({ gen: u, it: { opts: h } }, C) {
-    const a = h.unicodeRegExp ? "u" : "", { regExp: l } = h.code, p = l(C, a);
+  function w({ gen: u, it: { opts: h } }, S) {
+    const c = h.unicodeRegExp ? "u" : "", { regExp: l } = h.code, p = l(S, c);
     return u.scopeValue("pattern", {
       key: p.toString(),
       ref: p,
-      code: (0, e._)`${l.code === "new RegExp" ? _ : (0, o.useFunc)(u, l)}(${C}, ${a})`
+      code: (0, e._)`${l.code === "new RegExp" ? _ : (0, o.useFunc)(u, l)}(${S}, ${c})`
     });
   }
-  se.usePattern = b;
+  se.usePattern = w;
   function f(u) {
-    const { gen: h, data: C, keyword: a, it: l } = u, p = h.name("valid");
+    const { gen: h, data: S, keyword: c, it: l } = u, p = h.name("valid");
     if (l.allErrors) {
-      const E = h.let("valid", !0);
-      return x(() => h.assign(E, !1)), E;
+      const P = h.let("valid", !0);
+      return k(() => h.assign(P, !1)), P;
     }
-    return h.var(p, !0), x(() => h.break()), p;
-    function x(E) {
-      const N = h.const("len", (0, e._)`${C}.length`);
+    return h.var(p, !0), k(() => h.break()), p;
+    function k(P) {
+      const N = h.const("len", (0, e._)`${S}.length`);
       h.forRange("i", 0, N, (z) => {
         u.subschema({
-          keyword: a,
+          keyword: c,
           dataProp: z,
           dataPropType: t.Type.Num
-        }, p), h.if((0, e.not)(p), E);
+        }, p), h.if((0, e.not)(p), P);
       });
     }
   }
   se.validateArray = f;
   function g(u) {
-    const { gen: h, schema: C, keyword: a, it: l } = u;
-    if (!Array.isArray(C))
+    const { gen: h, schema: S, keyword: c, it: l } = u;
+    if (!Array.isArray(S))
       throw new Error("ajv implementation error");
-    if (C.some((N) => (0, t.alwaysValidSchema)(l, N)) && !l.opts.unevaluated)
+    if (S.some((N) => (0, t.alwaysValidSchema)(l, N)) && !l.opts.unevaluated)
       return;
-    const x = h.let("valid", !1), E = h.name("_valid");
-    h.block(() => C.forEach((N, z) => {
+    const k = h.let("valid", !1), P = h.name("_valid");
+    h.block(() => S.forEach((N, z) => {
       const A = u.subschema({
-        keyword: a,
+        keyword: c,
         schemaProp: z,
         compositeRule: !0
-      }, E);
-      h.assign(x, (0, e._)`${x} || ${E}`), u.mergeValidEvaluated(A, E) || h.if((0, e.not)(x));
-    })), u.result(x, () => u.reset(), () => u.error(!0));
+      }, P);
+      h.assign(k, (0, e._)`${k} || ${P}`), u.mergeValidEvaluated(A, P) || h.if((0, e.not)(k));
+    })), u.result(k, () => u.reset(), () => u.error(!0));
   }
   return se.validateUnion = g, se;
 }
@@ -1803,145 +1803,145 @@ function Oi() {
   if (_r) return we;
   _r = 1, Object.defineProperty(we, "__esModule", { value: !0 }), we.validateKeywordUsage = we.validSchemaType = we.funcKeywordCode = we.macroKeywordCode = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ke(), n = /* @__PURE__ */ xe(), o = /* @__PURE__ */ gn();
-  function i(w, v) {
-    const { gen: _, keyword: b, schema: f, parentSchema: g, it: u } = w, h = v.macro.call(u.self, f, g, u), C = y(_, b, h);
+  function i(b, v) {
+    const { gen: _, keyword: w, schema: f, parentSchema: g, it: u } = b, h = v.macro.call(u.self, f, g, u), S = y(_, w, h);
     u.opts.validateSchema !== !1 && u.self.validateSchema(h, !0);
-    const a = _.name("valid");
-    w.subschema({
+    const c = _.name("valid");
+    b.subschema({
       schema: h,
       schemaPath: e.nil,
-      errSchemaPath: `${u.errSchemaPath}/${b}`,
-      topSchemaRef: C,
+      errSchemaPath: `${u.errSchemaPath}/${w}`,
+      topSchemaRef: S,
       compositeRule: !0
-    }, a), w.pass(a, () => w.error(!0));
+    }, c), b.pass(c, () => b.error(!0));
   }
   we.macroKeywordCode = i;
-  function r(w, v) {
+  function r(b, v) {
     var _;
-    const { gen: b, keyword: f, schema: g, parentSchema: u, $data: h, it: C } = w;
-    d(C, v);
-    const a = !h && v.compile ? v.compile.call(C.self, g, u, C) : v.validate, l = y(b, f, a), p = b.let("valid");
-    w.block$data(p, x), w.ok((_ = v.valid) !== null && _ !== void 0 ? _ : p);
-    function x() {
+    const { gen: w, keyword: f, schema: g, parentSchema: u, $data: h, it: S } = b;
+    d(S, v);
+    const c = !h && v.compile ? v.compile.call(S.self, g, u, S) : v.validate, l = y(w, f, c), p = w.let("valid");
+    b.block$data(p, k), b.ok((_ = v.valid) !== null && _ !== void 0 ? _ : p);
+    function k() {
       if (v.errors === !1)
-        z(), v.modifying && c(w), A(() => w.error());
+        z(), v.modifying && s(b), A(() => b.error());
       else {
-        const T = v.async ? E() : N();
-        v.modifying && c(w), A(() => s(w, T));
+        const T = v.async ? P() : N();
+        v.modifying && s(b), A(() => a(b, T));
       }
     }
-    function E() {
-      const T = b.let("ruleErrs", null);
-      return b.try(() => z((0, e._)`await `), (J) => b.assign(p, !1).if((0, e._)`${J} instanceof ${C.ValidationError}`, () => b.assign(T, (0, e._)`${J}.errors`), () => b.throw(J))), T;
+    function P() {
+      const T = w.let("ruleErrs", null);
+      return w.try(() => z((0, e._)`await `), (J) => w.assign(p, !1).if((0, e._)`${J} instanceof ${S.ValidationError}`, () => w.assign(T, (0, e._)`${J}.errors`), () => w.throw(J))), T;
     }
     function N() {
       const T = (0, e._)`${l}.errors`;
-      return b.assign(T, null), z(e.nil), T;
+      return w.assign(T, null), z(e.nil), T;
     }
     function z(T = v.async ? (0, e._)`await ` : e.nil) {
-      const J = C.opts.passContext ? t.default.this : t.default.self, Z = !("compile" in v && !h || v.schema === !1);
-      b.assign(p, (0, e._)`${T}${(0, n.callValidateCode)(w, l, J, Z)}`, v.modifying);
+      const J = S.opts.passContext ? t.default.this : t.default.self, Z = !("compile" in v && !h || v.schema === !1);
+      w.assign(p, (0, e._)`${T}${(0, n.callValidateCode)(b, l, J, Z)}`, v.modifying);
     }
     function A(T) {
       var J;
-      b.if((0, e.not)((J = v.valid) !== null && J !== void 0 ? J : p), T);
+      w.if((0, e.not)((J = v.valid) !== null && J !== void 0 ? J : p), T);
     }
   }
   we.funcKeywordCode = r;
-  function c(w) {
-    const { gen: v, data: _, it: b } = w;
-    v.if(b.parentData, () => v.assign(_, (0, e._)`${b.parentData}[${b.parentDataProperty}]`));
+  function s(b) {
+    const { gen: v, data: _, it: w } = b;
+    v.if(w.parentData, () => v.assign(_, (0, e._)`${w.parentData}[${w.parentDataProperty}]`));
   }
-  function s(w, v) {
-    const { gen: _ } = w;
+  function a(b, v) {
+    const { gen: _ } = b;
     _.if((0, e._)`Array.isArray(${v})`, () => {
-      _.assign(t.default.vErrors, (0, e._)`${t.default.vErrors} === null ? ${v} : ${t.default.vErrors}.concat(${v})`).assign(t.default.errors, (0, e._)`${t.default.vErrors}.length`), (0, o.extendErrors)(w);
-    }, () => w.error());
+      _.assign(t.default.vErrors, (0, e._)`${t.default.vErrors} === null ? ${v} : ${t.default.vErrors}.concat(${v})`).assign(t.default.errors, (0, e._)`${t.default.vErrors}.length`), (0, o.extendErrors)(b);
+    }, () => b.error());
   }
-  function d({ schemaEnv: w }, v) {
-    if (v.async && !w.$async)
+  function d({ schemaEnv: b }, v) {
+    if (v.async && !b.$async)
       throw new Error("async keyword in sync schema");
   }
-  function y(w, v, _) {
+  function y(b, v, _) {
     if (_ === void 0)
       throw new Error(`keyword "${v}" failed to compile`);
-    return w.scopeValue("keyword", typeof _ == "function" ? { ref: _ } : { ref: _, code: (0, e.stringify)(_) });
+    return b.scopeValue("keyword", typeof _ == "function" ? { ref: _ } : { ref: _, code: (0, e.stringify)(_) });
   }
-  function m(w, v, _ = !1) {
-    return !v.length || v.some((b) => b === "array" ? Array.isArray(w) : b === "object" ? w && typeof w == "object" && !Array.isArray(w) : typeof w == b || _ && typeof w > "u");
+  function m(b, v, _ = !1) {
+    return !v.length || v.some((w) => w === "array" ? Array.isArray(b) : w === "object" ? b && typeof b == "object" && !Array.isArray(b) : typeof b == w || _ && typeof b > "u");
   }
   we.validSchemaType = m;
-  function S({ schema: w, opts: v, self: _, errSchemaPath: b }, f, g) {
+  function C({ schema: b, opts: v, self: _, errSchemaPath: w }, f, g) {
     if (Array.isArray(f.keyword) ? !f.keyword.includes(g) : f.keyword !== g)
       throw new Error("ajv implementation error");
     const u = f.dependencies;
-    if (u?.some((h) => !Object.prototype.hasOwnProperty.call(w, h)))
+    if (u?.some((h) => !Object.prototype.hasOwnProperty.call(b, h)))
       throw new Error(`parent schema must have dependencies of ${g}: ${u.join(",")}`);
-    if (f.validateSchema && !f.validateSchema(w[g])) {
-      const C = `keyword "${g}" value is invalid at path "${b}": ` + _.errorsText(f.validateSchema.errors);
+    if (f.validateSchema && !f.validateSchema(b[g])) {
+      const S = `keyword "${g}" value is invalid at path "${w}": ` + _.errorsText(f.validateSchema.errors);
       if (v.validateSchema === "log")
-        _.logger.error(C);
+        _.logger.error(S);
       else
-        throw new Error(C);
+        throw new Error(S);
     }
   }
-  return we.validateKeywordUsage = S, we;
+  return we.validateKeywordUsage = C, we;
 }
-var Fe = {}, Sr;
+var Me = {}, Sr;
 function Ti() {
-  if (Sr) return Fe;
-  Sr = 1, Object.defineProperty(Fe, "__esModule", { value: !0 }), Fe.extendSubschemaMode = Fe.extendSubschemaData = Fe.getSubschema = void 0;
+  if (Sr) return Me;
+  Sr = 1, Object.defineProperty(Me, "__esModule", { value: !0 }), Me.extendSubschemaMode = Me.extendSubschemaData = Me.getSubschema = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne();
-  function n(r, { keyword: c, schemaProp: s, schema: d, schemaPath: y, errSchemaPath: m, topSchemaRef: S }) {
-    if (c !== void 0 && d !== void 0)
+  function n(r, { keyword: s, schemaProp: a, schema: d, schemaPath: y, errSchemaPath: m, topSchemaRef: C }) {
+    if (s !== void 0 && d !== void 0)
       throw new Error('both "keyword" and "schema" passed, only one allowed');
-    if (c !== void 0) {
-      const w = r.schema[c];
-      return s === void 0 ? {
-        schema: w,
-        schemaPath: (0, e._)`${r.schemaPath}${(0, e.getProperty)(c)}`,
-        errSchemaPath: `${r.errSchemaPath}/${c}`
+    if (s !== void 0) {
+      const b = r.schema[s];
+      return a === void 0 ? {
+        schema: b,
+        schemaPath: (0, e._)`${r.schemaPath}${(0, e.getProperty)(s)}`,
+        errSchemaPath: `${r.errSchemaPath}/${s}`
       } : {
-        schema: w[s],
-        schemaPath: (0, e._)`${r.schemaPath}${(0, e.getProperty)(c)}${(0, e.getProperty)(s)}`,
-        errSchemaPath: `${r.errSchemaPath}/${c}/${(0, t.escapeFragment)(s)}`
+        schema: b[a],
+        schemaPath: (0, e._)`${r.schemaPath}${(0, e.getProperty)(s)}${(0, e.getProperty)(a)}`,
+        errSchemaPath: `${r.errSchemaPath}/${s}/${(0, t.escapeFragment)(a)}`
       };
     }
     if (d !== void 0) {
-      if (y === void 0 || m === void 0 || S === void 0)
+      if (y === void 0 || m === void 0 || C === void 0)
         throw new Error('"schemaPath", "errSchemaPath" and "topSchemaRef" are required with "schema"');
       return {
         schema: d,
         schemaPath: y,
-        topSchemaRef: S,
+        topSchemaRef: C,
         errSchemaPath: m
       };
     }
     throw new Error('either "keyword" or "schema" must be passed');
   }
-  Fe.getSubschema = n;
-  function o(r, c, { dataProp: s, dataPropType: d, data: y, dataTypes: m, propertyName: S }) {
-    if (y !== void 0 && s !== void 0)
+  Me.getSubschema = n;
+  function o(r, s, { dataProp: a, dataPropType: d, data: y, dataTypes: m, propertyName: C }) {
+    if (y !== void 0 && a !== void 0)
       throw new Error('both "data" and "dataProp" passed, only one allowed');
-    const { gen: w } = c;
-    if (s !== void 0) {
-      const { errorPath: _, dataPathArr: b, opts: f } = c, g = w.let("data", (0, e._)`${c.data}${(0, e.getProperty)(s)}`, !0);
-      v(g), r.errorPath = (0, e.str)`${_}${(0, t.getErrorPath)(s, d, f.jsPropertySyntax)}`, r.parentDataProperty = (0, e._)`${s}`, r.dataPathArr = [...b, r.parentDataProperty];
+    const { gen: b } = s;
+    if (a !== void 0) {
+      const { errorPath: _, dataPathArr: w, opts: f } = s, g = b.let("data", (0, e._)`${s.data}${(0, e.getProperty)(a)}`, !0);
+      v(g), r.errorPath = (0, e.str)`${_}${(0, t.getErrorPath)(a, d, f.jsPropertySyntax)}`, r.parentDataProperty = (0, e._)`${a}`, r.dataPathArr = [...w, r.parentDataProperty];
     }
     if (y !== void 0) {
-      const _ = y instanceof e.Name ? y : w.let("data", y, !0);
-      v(_), S !== void 0 && (r.propertyName = S);
+      const _ = y instanceof e.Name ? y : b.let("data", y, !0);
+      v(_), C !== void 0 && (r.propertyName = C);
     }
     m && (r.dataTypes = m);
     function v(_) {
-      r.data = _, r.dataLevel = c.dataLevel + 1, r.dataTypes = [], c.definedProperties = /* @__PURE__ */ new Set(), r.parentData = c.data, r.dataNames = [...c.dataNames, _];
+      r.data = _, r.dataLevel = s.dataLevel + 1, r.dataTypes = [], s.definedProperties = /* @__PURE__ */ new Set(), r.parentData = s.data, r.dataNames = [...s.dataNames, _];
     }
   }
-  Fe.extendSubschemaData = o;
-  function i(r, { jtdDiscriminator: c, jtdMetadata: s, compositeRule: d, createErrors: y, allErrors: m }) {
-    d !== void 0 && (r.compositeRule = d), y !== void 0 && (r.createErrors = y), m !== void 0 && (r.allErrors = m), r.jtdDiscriminator = c, r.jtdMetadata = s;
+  Me.extendSubschemaData = o;
+  function i(r, { jtdDiscriminator: s, jtdMetadata: a, compositeRule: d, createErrors: y, allErrors: m }) {
+    d !== void 0 && (r.compositeRule = d), y !== void 0 && (r.createErrors = y), m !== void 0 && (r.allErrors = m), r.jtdDiscriminator = s, r.jtdMetadata = a;
   }
-  return Fe.extendSubschemaMode = i, Fe;
+  return Me.extendSubschemaMode = i, Me;
 }
 var fe = {}, Rn, Cr;
 function ei() {
@@ -1963,24 +1963,24 @@ function ei() {
       for (i = o; i-- !== 0; )
         if (!Object.prototype.hasOwnProperty.call(n, r[i])) return !1;
       for (i = o; i-- !== 0; ) {
-        var c = r[i];
-        if (!e(t[c], n[c])) return !1;
+        var s = r[i];
+        if (!e(t[s], n[s])) return !1;
       }
       return !0;
     }
     return t !== t && n !== n;
   }), Rn;
 }
-var Mn = { exports: {} }, kr;
+var Fn = { exports: {} }, kr;
 function zi() {
-  if (kr) return Mn.exports;
+  if (kr) return Fn.exports;
   kr = 1;
-  var e = Mn.exports = function(o, i, r) {
+  var e = Fn.exports = function(o, i, r) {
     typeof i == "function" && (r = i, i = {}), r = i.cb || r;
-    var c = typeof r == "function" ? r : r.pre || function() {
-    }, s = r.post || function() {
+    var s = typeof r == "function" ? r : r.pre || function() {
+    }, a = r.post || function() {
     };
-    t(i, c, s, o, "", o);
+    t(i, s, a, o, "", o);
   };
   e.keywords = {
     additionalItems: !0,
@@ -2023,28 +2023,28 @@ function zi() {
     maxProperties: !0,
     minProperties: !0
   };
-  function t(o, i, r, c, s, d, y, m, S, w) {
-    if (c && typeof c == "object" && !Array.isArray(c)) {
-      i(c, s, d, y, m, S, w);
-      for (var v in c) {
-        var _ = c[v];
+  function t(o, i, r, s, a, d, y, m, C, b) {
+    if (s && typeof s == "object" && !Array.isArray(s)) {
+      i(s, a, d, y, m, C, b);
+      for (var v in s) {
+        var _ = s[v];
         if (Array.isArray(_)) {
           if (v in e.arrayKeywords)
-            for (var b = 0; b < _.length; b++)
-              t(o, i, r, _[b], s + "/" + v + "/" + b, d, s, v, c, b);
+            for (var w = 0; w < _.length; w++)
+              t(o, i, r, _[w], a + "/" + v + "/" + w, d, a, v, s, w);
         } else if (v in e.propsKeywords) {
           if (_ && typeof _ == "object")
             for (var f in _)
-              t(o, i, r, _[f], s + "/" + v + "/" + n(f), d, s, v, c, f);
-        } else (v in e.keywords || o.allKeys && !(v in e.skipKeywords)) && t(o, i, r, _, s + "/" + v, d, s, v, c);
+              t(o, i, r, _[f], a + "/" + v + "/" + n(f), d, a, v, s, f);
+        } else (v in e.keywords || o.allKeys && !(v in e.skipKeywords)) && t(o, i, r, _, a + "/" + v, d, a, v, s);
       }
-      r(c, s, d, y, m, S, w);
+      r(s, a, d, y, m, C, b);
     }
   }
   function n(o) {
     return o.replace(/~/g, "~0").replace(/\//g, "~1");
   }
-  return Mn.exports;
+  return Fn.exports;
 }
 var xr;
 function yn() {
@@ -2068,8 +2068,8 @@ function yn() {
     "enum",
     "const"
   ]);
-  function i(b, f = !0) {
-    return typeof b == "boolean" ? !0 : f === !0 ? !c(b) : f ? s(b) <= f : !1;
+  function i(w, f = !0) {
+    return typeof w == "boolean" ? !0 : f === !0 ? !s(w) : f ? a(w) <= f : !1;
   }
   fe.inlineRef = i;
   const r = /* @__PURE__ */ new Set([
@@ -2079,65 +2079,65 @@ function yn() {
     "$dynamicRef",
     "$dynamicAnchor"
   ]);
-  function c(b) {
-    for (const f in b) {
+  function s(w) {
+    for (const f in w) {
       if (r.has(f))
         return !0;
-      const g = b[f];
-      if (Array.isArray(g) && g.some(c) || typeof g == "object" && c(g))
+      const g = w[f];
+      if (Array.isArray(g) && g.some(s) || typeof g == "object" && s(g))
         return !0;
     }
     return !1;
   }
-  function s(b) {
+  function a(w) {
     let f = 0;
-    for (const g in b) {
+    for (const g in w) {
       if (g === "$ref")
         return 1 / 0;
-      if (f++, !o.has(g) && (typeof b[g] == "object" && (0, e.eachItem)(b[g], (u) => f += s(u)), f === 1 / 0))
+      if (f++, !o.has(g) && (typeof w[g] == "object" && (0, e.eachItem)(w[g], (u) => f += a(u)), f === 1 / 0))
         return 1 / 0;
     }
     return f;
   }
-  function d(b, f = "", g) {
-    g !== !1 && (f = S(f));
-    const u = b.parse(f);
-    return y(b, u);
+  function d(w, f = "", g) {
+    g !== !1 && (f = C(f));
+    const u = w.parse(f);
+    return y(w, u);
   }
   fe.getFullPath = d;
-  function y(b, f) {
-    return b.serialize(f).split("#")[0] + "#";
+  function y(w, f) {
+    return w.serialize(f).split("#")[0] + "#";
   }
   fe._getFullPath = y;
   const m = /#\/?$/;
-  function S(b) {
-    return b ? b.replace(m, "") : "";
+  function C(w) {
+    return w ? w.replace(m, "") : "";
   }
-  fe.normalizeId = S;
-  function w(b, f, g) {
-    return g = S(g), b.resolve(f, g);
+  fe.normalizeId = C;
+  function b(w, f, g) {
+    return g = C(g), w.resolve(f, g);
   }
-  fe.resolveUrl = w;
+  fe.resolveUrl = b;
   const v = /^[a-z_][-a-z0-9._]*$/i;
-  function _(b, f) {
-    if (typeof b == "boolean")
+  function _(w, f) {
+    if (typeof w == "boolean")
       return {};
-    const { schemaId: g, uriResolver: u } = this.opts, h = S(b[g] || f), C = { "": h }, a = d(u, h, !1), l = {}, p = /* @__PURE__ */ new Set();
-    return n(b, { allKeys: !0 }, (N, z, A, T) => {
+    const { schemaId: g, uriResolver: u } = this.opts, h = C(w[g] || f), S = { "": h }, c = d(u, h, !1), l = {}, p = /* @__PURE__ */ new Set();
+    return n(w, { allKeys: !0 }, (N, z, A, T) => {
       if (T === void 0)
         return;
-      const J = a + z;
-      let Z = C[T];
-      typeof N[g] == "string" && (Z = L.call(this, N[g])), G.call(this, N.$anchor), G.call(this, N.$dynamicAnchor), C[z] = Z;
+      const J = c + z;
+      let Z = S[T];
+      typeof N[g] == "string" && (Z = L.call(this, N[g])), H.call(this, N.$anchor), H.call(this, N.$dynamicAnchor), S[z] = Z;
       function L(U) {
         const Y = this.opts.uriResolver.resolve;
-        if (U = S(Z ? Y(Z, U) : U), p.has(U))
-          throw E(U);
+        if (U = C(Z ? Y(Z, U) : U), p.has(U))
+          throw P(U);
         p.add(U);
         let V = this.refs[U];
-        return typeof V == "string" && (V = this.refs[V]), typeof V == "object" ? x(N, V.schema, U) : U !== S(J) && (U[0] === "#" ? (x(N, l[U], U), l[U] = N) : this.refs[U] = J), U;
+        return typeof V == "string" && (V = this.refs[V]), typeof V == "object" ? k(N, V.schema, U) : U !== C(J) && (U[0] === "#" ? (k(N, l[U], U), l[U] = N) : this.refs[U] = J), U;
       }
-      function G(U) {
+      function H(U) {
         if (typeof U == "string") {
           if (!v.test(U))
             throw new Error(`invalid anchor "${U}"`);
@@ -2145,11 +2145,11 @@ function yn() {
         }
       }
     }), l;
-    function x(N, z, A) {
+    function k(N, z, A) {
       if (z !== void 0 && !t(N, z))
-        throw E(A);
+        throw P(A);
     }
-    function E(N) {
+    function P(N) {
       return new Error(`reference "${N}" resolves to more than one schema`);
     }
   }
@@ -2159,173 +2159,173 @@ var Er;
 function vn() {
   if (Er) return Re;
   Er = 1, Object.defineProperty(Re, "__esModule", { value: !0 }), Re.getData = Re.KeywordCxt = Re.validateFunctionCode = void 0;
-  const e = /* @__PURE__ */ Ni(), t = /* @__PURE__ */ pn(), n = /* @__PURE__ */ Qo(), o = /* @__PURE__ */ pn(), i = /* @__PURE__ */ ji(), r = /* @__PURE__ */ Oi(), c = /* @__PURE__ */ Ti(), s = /* @__PURE__ */ Q(), d = /* @__PURE__ */ ke(), y = /* @__PURE__ */ yn(), m = /* @__PURE__ */ ne(), S = /* @__PURE__ */ gn();
-  function w(M) {
-    if (a(M) && (p(M), C(M))) {
-      f(M);
+  const e = /* @__PURE__ */ Ni(), t = /* @__PURE__ */ pn(), n = /* @__PURE__ */ Qo(), o = /* @__PURE__ */ pn(), i = /* @__PURE__ */ ji(), r = /* @__PURE__ */ Oi(), s = /* @__PURE__ */ Ti(), a = /* @__PURE__ */ Q(), d = /* @__PURE__ */ ke(), y = /* @__PURE__ */ yn(), m = /* @__PURE__ */ ne(), C = /* @__PURE__ */ gn();
+  function b(F) {
+    if (c(F) && (p(F), S(F))) {
+      f(F);
       return;
     }
-    v(M, () => (0, e.topBoolOrEmptySchema)(M));
+    v(F, () => (0, e.topBoolOrEmptySchema)(F));
   }
-  Re.validateFunctionCode = w;
-  function v({ gen: M, validateName: O, schema: B, schemaEnv: K, opts: X }, te) {
-    X.code.es5 ? M.func(O, (0, s._)`${d.default.data}, ${d.default.valCxt}`, K.$async, () => {
-      M.code((0, s._)`"use strict"; ${u(B, X)}`), b(M, X), M.code(te);
-    }) : M.func(O, (0, s._)`${d.default.data}, ${_(X)}`, K.$async, () => M.code(u(B, X)).code(te));
+  Re.validateFunctionCode = b;
+  function v({ gen: F, validateName: O, schema: B, schemaEnv: K, opts: X }, te) {
+    X.code.es5 ? F.func(O, (0, a._)`${d.default.data}, ${d.default.valCxt}`, K.$async, () => {
+      F.code((0, a._)`"use strict"; ${u(B, X)}`), w(F, X), F.code(te);
+    }) : F.func(O, (0, a._)`${d.default.data}, ${_(X)}`, K.$async, () => F.code(u(B, X)).code(te));
   }
-  function _(M) {
-    return (0, s._)`{${d.default.instancePath}="", ${d.default.parentData}, ${d.default.parentDataProperty}, ${d.default.rootData}=${d.default.data}${M.dynamicRef ? (0, s._)`, ${d.default.dynamicAnchors}={}` : s.nil}}={}`;
+  function _(F) {
+    return (0, a._)`{${d.default.instancePath}="", ${d.default.parentData}, ${d.default.parentDataProperty}, ${d.default.rootData}=${d.default.data}${F.dynamicRef ? (0, a._)`, ${d.default.dynamicAnchors}={}` : a.nil}}={}`;
   }
-  function b(M, O) {
-    M.if(d.default.valCxt, () => {
-      M.var(d.default.instancePath, (0, s._)`${d.default.valCxt}.${d.default.instancePath}`), M.var(d.default.parentData, (0, s._)`${d.default.valCxt}.${d.default.parentData}`), M.var(d.default.parentDataProperty, (0, s._)`${d.default.valCxt}.${d.default.parentDataProperty}`), M.var(d.default.rootData, (0, s._)`${d.default.valCxt}.${d.default.rootData}`), O.dynamicRef && M.var(d.default.dynamicAnchors, (0, s._)`${d.default.valCxt}.${d.default.dynamicAnchors}`);
+  function w(F, O) {
+    F.if(d.default.valCxt, () => {
+      F.var(d.default.instancePath, (0, a._)`${d.default.valCxt}.${d.default.instancePath}`), F.var(d.default.parentData, (0, a._)`${d.default.valCxt}.${d.default.parentData}`), F.var(d.default.parentDataProperty, (0, a._)`${d.default.valCxt}.${d.default.parentDataProperty}`), F.var(d.default.rootData, (0, a._)`${d.default.valCxt}.${d.default.rootData}`), O.dynamicRef && F.var(d.default.dynamicAnchors, (0, a._)`${d.default.valCxt}.${d.default.dynamicAnchors}`);
     }, () => {
-      M.var(d.default.instancePath, (0, s._)`""`), M.var(d.default.parentData, (0, s._)`undefined`), M.var(d.default.parentDataProperty, (0, s._)`undefined`), M.var(d.default.rootData, d.default.data), O.dynamicRef && M.var(d.default.dynamicAnchors, (0, s._)`{}`);
+      F.var(d.default.instancePath, (0, a._)`""`), F.var(d.default.parentData, (0, a._)`undefined`), F.var(d.default.parentDataProperty, (0, a._)`undefined`), F.var(d.default.rootData, d.default.data), O.dynamicRef && F.var(d.default.dynamicAnchors, (0, a._)`{}`);
     });
   }
-  function f(M) {
-    const { schema: O, opts: B, gen: K } = M;
-    v(M, () => {
-      B.$comment && O.$comment && T(M), N(M), K.let(d.default.vErrors, null), K.let(d.default.errors, 0), B.unevaluated && g(M), x(M), J(M);
+  function f(F) {
+    const { schema: O, opts: B, gen: K } = F;
+    v(F, () => {
+      B.$comment && O.$comment && T(F), N(F), K.let(d.default.vErrors, null), K.let(d.default.errors, 0), B.unevaluated && g(F), k(F), J(F);
     });
   }
-  function g(M) {
-    const { gen: O, validateName: B } = M;
-    M.evaluated = O.const("evaluated", (0, s._)`${B}.evaluated`), O.if((0, s._)`${M.evaluated}.dynamicProps`, () => O.assign((0, s._)`${M.evaluated}.props`, (0, s._)`undefined`)), O.if((0, s._)`${M.evaluated}.dynamicItems`, () => O.assign((0, s._)`${M.evaluated}.items`, (0, s._)`undefined`));
+  function g(F) {
+    const { gen: O, validateName: B } = F;
+    F.evaluated = O.const("evaluated", (0, a._)`${B}.evaluated`), O.if((0, a._)`${F.evaluated}.dynamicProps`, () => O.assign((0, a._)`${F.evaluated}.props`, (0, a._)`undefined`)), O.if((0, a._)`${F.evaluated}.dynamicItems`, () => O.assign((0, a._)`${F.evaluated}.items`, (0, a._)`undefined`));
   }
-  function u(M, O) {
-    const B = typeof M == "object" && M[O.schemaId];
-    return B && (O.code.source || O.code.process) ? (0, s._)`/*# sourceURL=${B} */` : s.nil;
+  function u(F, O) {
+    const B = typeof F == "object" && F[O.schemaId];
+    return B && (O.code.source || O.code.process) ? (0, a._)`/*# sourceURL=${B} */` : a.nil;
   }
-  function h(M, O) {
-    if (a(M) && (p(M), C(M))) {
-      l(M, O);
+  function h(F, O) {
+    if (c(F) && (p(F), S(F))) {
+      l(F, O);
       return;
     }
-    (0, e.boolOrEmptySchema)(M, O);
+    (0, e.boolOrEmptySchema)(F, O);
   }
-  function C({ schema: M, self: O }) {
-    if (typeof M == "boolean")
-      return !M;
-    for (const B in M)
+  function S({ schema: F, self: O }) {
+    if (typeof F == "boolean")
+      return !F;
+    for (const B in F)
       if (O.RULES.all[B])
         return !0;
     return !1;
   }
-  function a(M) {
-    return typeof M.schema != "boolean";
+  function c(F) {
+    return typeof F.schema != "boolean";
   }
-  function l(M, O) {
-    const { schema: B, gen: K, opts: X } = M;
-    X.$comment && B.$comment && T(M), z(M), A(M);
+  function l(F, O) {
+    const { schema: B, gen: K, opts: X } = F;
+    X.$comment && B.$comment && T(F), z(F), A(F);
     const te = K.const("_errs", d.default.errors);
-    x(M, te), K.var(O, (0, s._)`${te} === ${d.default.errors}`);
+    k(F, te), K.var(O, (0, a._)`${te} === ${d.default.errors}`);
   }
-  function p(M) {
-    (0, m.checkUnknownRules)(M), E(M);
+  function p(F) {
+    (0, m.checkUnknownRules)(F), P(F);
   }
-  function x(M, O) {
-    if (M.opts.jtd)
-      return L(M, [], !1, O);
-    const B = (0, t.getSchemaTypes)(M.schema), K = (0, t.coerceAndCheckDataType)(M, B);
-    L(M, B, !K, O);
+  function k(F, O) {
+    if (F.opts.jtd)
+      return L(F, [], !1, O);
+    const B = (0, t.getSchemaTypes)(F.schema), K = (0, t.coerceAndCheckDataType)(F, B);
+    L(F, B, !K, O);
   }
-  function E(M) {
-    const { schema: O, errSchemaPath: B, opts: K, self: X } = M;
+  function P(F) {
+    const { schema: O, errSchemaPath: B, opts: K, self: X } = F;
     O.$ref && K.ignoreKeywordsWithRef && (0, m.schemaHasRulesButRef)(O, X.RULES) && X.logger.warn(`$ref: keywords ignored in schema at path "${B}"`);
   }
-  function N(M) {
-    const { schema: O, opts: B } = M;
-    O.default !== void 0 && B.useDefaults && B.strictSchema && (0, m.checkStrictMode)(M, "default is ignored in the schema root");
+  function N(F) {
+    const { schema: O, opts: B } = F;
+    O.default !== void 0 && B.useDefaults && B.strictSchema && (0, m.checkStrictMode)(F, "default is ignored in the schema root");
   }
-  function z(M) {
-    const O = M.schema[M.opts.schemaId];
-    O && (M.baseId = (0, y.resolveUrl)(M.opts.uriResolver, M.baseId, O));
+  function z(F) {
+    const O = F.schema[F.opts.schemaId];
+    O && (F.baseId = (0, y.resolveUrl)(F.opts.uriResolver, F.baseId, O));
   }
-  function A(M) {
-    if (M.schema.$async && !M.schemaEnv.$async)
+  function A(F) {
+    if (F.schema.$async && !F.schemaEnv.$async)
       throw new Error("async schema in sync schema");
   }
-  function T({ gen: M, schemaEnv: O, schema: B, errSchemaPath: K, opts: X }) {
+  function T({ gen: F, schemaEnv: O, schema: B, errSchemaPath: K, opts: X }) {
     const te = B.$comment;
     if (X.$comment === !0)
-      M.code((0, s._)`${d.default.self}.logger.log(${te})`);
+      F.code((0, a._)`${d.default.self}.logger.log(${te})`);
     else if (typeof X.$comment == "function") {
-      const le = (0, s.str)`${K}/$comment`, be = M.scopeValue("root", { ref: O.root });
-      M.code((0, s._)`${d.default.self}.opts.$comment(${te}, ${le}, ${be}.schema)`);
+      const le = (0, a.str)`${K}/$comment`, be = F.scopeValue("root", { ref: O.root });
+      F.code((0, a._)`${d.default.self}.opts.$comment(${te}, ${le}, ${be}.schema)`);
     }
   }
-  function J(M) {
-    const { gen: O, schemaEnv: B, validateName: K, ValidationError: X, opts: te } = M;
-    B.$async ? O.if((0, s._)`${d.default.errors} === 0`, () => O.return(d.default.data), () => O.throw((0, s._)`new ${X}(${d.default.vErrors})`)) : (O.assign((0, s._)`${K}.errors`, d.default.vErrors), te.unevaluated && Z(M), O.return((0, s._)`${d.default.errors} === 0`));
+  function J(F) {
+    const { gen: O, schemaEnv: B, validateName: K, ValidationError: X, opts: te } = F;
+    B.$async ? O.if((0, a._)`${d.default.errors} === 0`, () => O.return(d.default.data), () => O.throw((0, a._)`new ${X}(${d.default.vErrors})`)) : (O.assign((0, a._)`${K}.errors`, d.default.vErrors), te.unevaluated && Z(F), O.return((0, a._)`${d.default.errors} === 0`));
   }
-  function Z({ gen: M, evaluated: O, props: B, items: K }) {
-    B instanceof s.Name && M.assign((0, s._)`${O}.props`, B), K instanceof s.Name && M.assign((0, s._)`${O}.items`, K);
+  function Z({ gen: F, evaluated: O, props: B, items: K }) {
+    B instanceof a.Name && F.assign((0, a._)`${O}.props`, B), K instanceof a.Name && F.assign((0, a._)`${O}.items`, K);
   }
-  function L(M, O, B, K) {
-    const { gen: X, schema: te, data: le, allErrors: be, opts: he, self: me } = M, { RULES: de } = me;
+  function L(F, O, B, K) {
+    const { gen: X, schema: te, data: le, allErrors: be, opts: he, self: me } = F, { RULES: de } = me;
     if (te.$ref && (he.ignoreKeywordsWithRef || !(0, m.schemaHasRulesButRef)(te, de))) {
-      X.block(() => H(M, "$ref", de.all.$ref.definition));
+      X.block(() => G(F, "$ref", de.all.$ref.definition));
       return;
     }
-    he.jtd || U(M, O), X.block(() => {
+    he.jtd || U(F, O), X.block(() => {
       for (const ve of de.rules)
         Ue(ve);
       Ue(de.post);
     });
     function Ue(ve) {
-      (0, n.shouldUseGroup)(te, ve) && (ve.type ? (X.if((0, o.checkDataType)(ve.type, le, he.strictNumbers)), G(M, ve), O.length === 1 && O[0] === ve.type && B && (X.else(), (0, o.reportTypeError)(M)), X.endIf()) : G(M, ve), be || X.if((0, s._)`${d.default.errors} === ${K || 0}`));
+      (0, n.shouldUseGroup)(te, ve) && (ve.type ? (X.if((0, o.checkDataType)(ve.type, le, he.strictNumbers)), H(F, ve), O.length === 1 && O[0] === ve.type && B && (X.else(), (0, o.reportTypeError)(F)), X.endIf()) : H(F, ve), be || X.if((0, a._)`${d.default.errors} === ${K || 0}`));
     }
   }
-  function G(M, O) {
-    const { gen: B, schema: K, opts: { useDefaults: X } } = M;
-    X && (0, i.assignDefaults)(M, O.type), B.block(() => {
+  function H(F, O) {
+    const { gen: B, schema: K, opts: { useDefaults: X } } = F;
+    X && (0, i.assignDefaults)(F, O.type), B.block(() => {
       for (const te of O.rules)
-        (0, n.shouldUseRule)(K, te) && H(M, te.keyword, te.definition, O.type);
+        (0, n.shouldUseRule)(K, te) && G(F, te.keyword, te.definition, O.type);
     });
   }
-  function U(M, O) {
-    M.schemaEnv.meta || !M.opts.strictTypes || (Y(M, O), M.opts.allowUnionTypes || V(M, O), R(M, M.dataTypes));
+  function U(F, O) {
+    F.schemaEnv.meta || !F.opts.strictTypes || (Y(F, O), F.opts.allowUnionTypes || V(F, O), R(F, F.dataTypes));
   }
-  function Y(M, O) {
+  function Y(F, O) {
     if (O.length) {
-      if (!M.dataTypes.length) {
-        M.dataTypes = O;
+      if (!F.dataTypes.length) {
+        F.dataTypes = O;
         return;
       }
       O.forEach((B) => {
-        F(M.dataTypes, B) || k(M, `type "${B}" not allowed by context "${M.dataTypes.join(",")}"`);
-      }), $(M, O);
+        M(F.dataTypes, B) || x(F, `type "${B}" not allowed by context "${F.dataTypes.join(",")}"`);
+      }), $(F, O);
     }
   }
-  function V(M, O) {
-    O.length > 1 && !(O.length === 2 && O.includes("null")) && k(M, "use allowUnionTypes to allow union type keyword");
+  function V(F, O) {
+    O.length > 1 && !(O.length === 2 && O.includes("null")) && x(F, "use allowUnionTypes to allow union type keyword");
   }
-  function R(M, O) {
-    const B = M.self.RULES.all;
+  function R(F, O) {
+    const B = F.self.RULES.all;
     for (const K in B) {
       const X = B[K];
-      if (typeof X == "object" && (0, n.shouldUseRule)(M.schema, X)) {
+      if (typeof X == "object" && (0, n.shouldUseRule)(F.schema, X)) {
         const { type: te } = X.definition;
-        te.length && !te.some((le) => D(O, le)) && k(M, `missing type "${te.join(",")}" for keyword "${K}"`);
+        te.length && !te.some((le) => q(O, le)) && x(F, `missing type "${te.join(",")}" for keyword "${K}"`);
       }
     }
   }
-  function D(M, O) {
-    return M.includes(O) || O === "number" && M.includes("integer");
+  function q(F, O) {
+    return F.includes(O) || O === "number" && F.includes("integer");
   }
-  function F(M, O) {
-    return M.includes(O) || O === "integer" && M.includes("number");
+  function M(F, O) {
+    return F.includes(O) || O === "integer" && F.includes("number");
   }
-  function $(M, O) {
+  function $(F, O) {
     const B = [];
-    for (const K of M.dataTypes)
-      F(O, K) ? B.push(K) : O.includes("integer") && K === "number" && B.push("integer");
-    M.dataTypes = B;
+    for (const K of F.dataTypes)
+      M(O, K) ? B.push(K) : O.includes("integer") && K === "number" && B.push("integer");
+    F.dataTypes = B;
   }
-  function k(M, O) {
-    const B = M.schemaEnv.baseId + M.errSchemaPath;
-    O += ` at "${B}" (strictTypes)`, (0, m.checkStrictMode)(M, O, M.opts.strictTypes);
+  function x(F, O) {
+    const B = F.schemaEnv.baseId + F.errSchemaPath;
+    O += ` at "${B}" (strictTypes)`, (0, m.checkStrictMode)(F, O, F.opts.strictTypes);
   }
   class I {
     constructor(O, B, K) {
@@ -2336,13 +2336,13 @@ function vn() {
       ("code" in B ? B.trackErrors : B.errors !== !1) && (this.errsCount = O.gen.const("_errs", d.default.errors));
     }
     result(O, B, K) {
-      this.failResult((0, s.not)(O), B, K);
+      this.failResult((0, a.not)(O), B, K);
     }
     failResult(O, B, K) {
       this.gen.if(O), K ? K() : this.error(), B ? (this.gen.else(), B(), this.allErrors && this.gen.endIf()) : this.allErrors ? this.gen.endIf() : this.gen.else();
     }
     pass(O, B) {
-      this.failResult((0, s.not)(O), void 0, B);
+      this.failResult((0, a.not)(O), void 0, B);
     }
     fail(O) {
       if (O === void 0) {
@@ -2355,7 +2355,7 @@ function vn() {
       if (!this.$data)
         return this.fail(O);
       const { schemaCode: B } = this;
-      this.fail((0, s._)`${B} !== undefined && (${(0, s.or)(this.invalid$data(), O)})`);
+      this.fail((0, a._)`${B} !== undefined && (${(0, a.or)(this.invalid$data(), O)})`);
     }
     error(O, B, K) {
       if (B) {
@@ -2365,15 +2365,15 @@ function vn() {
       this._error(O, K);
     }
     _error(O, B) {
-      (O ? S.reportExtraError : S.reportError)(this, this.def.error, B);
+      (O ? C.reportExtraError : C.reportError)(this, this.def.error, B);
     }
     $dataError() {
-      (0, S.reportError)(this, this.def.$dataError || S.keyword$DataError);
+      (0, C.reportError)(this, this.def.$dataError || C.keyword$DataError);
     }
     reset() {
       if (this.errsCount === void 0)
         throw new Error('add "trackErrors" to keyword definition');
-      (0, S.resetErrorsCount)(this.gen, this.errsCount);
+      (0, C.resetErrorsCount)(this.gen, this.errsCount);
     }
     ok(O) {
       this.allErrors || this.gen.if(O);
@@ -2381,40 +2381,40 @@ function vn() {
     setParams(O, B) {
       B ? Object.assign(this.params, O) : this.params = O;
     }
-    block$data(O, B, K = s.nil) {
+    block$data(O, B, K = a.nil) {
       this.gen.block(() => {
         this.check$data(O, K), B();
       });
     }
-    check$data(O = s.nil, B = s.nil) {
+    check$data(O = a.nil, B = a.nil) {
       if (!this.$data)
         return;
       const { gen: K, schemaCode: X, schemaType: te, def: le } = this;
-      K.if((0, s.or)((0, s._)`${X} === undefined`, B)), O !== s.nil && K.assign(O, !0), (te.length || le.validateSchema) && (K.elseIf(this.invalid$data()), this.$dataError(), O !== s.nil && K.assign(O, !1)), K.else();
+      K.if((0, a.or)((0, a._)`${X} === undefined`, B)), O !== a.nil && K.assign(O, !0), (te.length || le.validateSchema) && (K.elseIf(this.invalid$data()), this.$dataError(), O !== a.nil && K.assign(O, !1)), K.else();
     }
     invalid$data() {
       const { gen: O, schemaCode: B, schemaType: K, def: X, it: te } = this;
-      return (0, s.or)(le(), be());
+      return (0, a.or)(le(), be());
       function le() {
         if (K.length) {
-          if (!(B instanceof s.Name))
+          if (!(B instanceof a.Name))
             throw new Error("ajv implementation error");
           const he = Array.isArray(K) ? K : [K];
-          return (0, s._)`${(0, o.checkDataTypes)(he, B, te.opts.strictNumbers, o.DataType.Wrong)}`;
+          return (0, a._)`${(0, o.checkDataTypes)(he, B, te.opts.strictNumbers, o.DataType.Wrong)}`;
         }
-        return s.nil;
+        return a.nil;
       }
       function be() {
         if (X.validateSchema) {
           const he = O.scopeValue("validate$data", { ref: X.validateSchema });
-          return (0, s._)`!${he}(${B})`;
+          return (0, a._)`!${he}(${B})`;
         }
-        return s.nil;
+        return a.nil;
       }
     }
     subschema(O, B) {
-      const K = (0, c.getSubschema)(this.it, O);
-      (0, c.extendSubschemaData)(K, this.it, O), (0, c.extendSubschemaMode)(K, O);
+      const K = (0, s.getSubschema)(this.it, O);
+      (0, s.extendSubschemaData)(K, this.it, O), (0, s.extendSubschemaMode)(K, O);
       const X = { ...this.it, ...K, items: void 0, props: void 0 };
       return h(X, B), X;
     }
@@ -2425,27 +2425,27 @@ function vn() {
     mergeValidEvaluated(O, B) {
       const { it: K, gen: X } = this;
       if (K.opts.unevaluated && (K.props !== !0 || K.items !== !0))
-        return X.if(B, () => this.mergeEvaluated(O, s.Name)), !0;
+        return X.if(B, () => this.mergeEvaluated(O, a.Name)), !0;
     }
   }
   Re.KeywordCxt = I;
-  function H(M, O, B, K) {
-    const X = new I(M, B, O);
+  function G(F, O, B, K) {
+    const X = new I(F, B, O);
     "code" in B ? B.code(X, K) : X.$data && B.validate ? (0, r.funcKeywordCode)(X, B) : "macro" in B ? (0, r.macroKeywordCode)(X, B) : (B.compile || B.validate) && (0, r.funcKeywordCode)(X, B);
   }
   const W = /^\/(?:[^~]|~0|~1)*$/, oe = /^([0-9]+)(#|\/(?:[^~]|~0|~1)*)?$/;
-  function re(M, { dataLevel: O, dataNames: B, dataPathArr: K }) {
+  function re(F, { dataLevel: O, dataNames: B, dataPathArr: K }) {
     let X, te;
-    if (M === "")
+    if (F === "")
       return d.default.rootData;
-    if (M[0] === "/") {
-      if (!W.test(M))
-        throw new Error(`Invalid JSON-pointer: ${M}`);
-      X = M, te = d.default.rootData;
+    if (F[0] === "/") {
+      if (!W.test(F))
+        throw new Error(`Invalid JSON-pointer: ${F}`);
+      X = F, te = d.default.rootData;
     } else {
-      const me = oe.exec(M);
+      const me = oe.exec(F);
       if (!me)
-        throw new Error(`Invalid JSON-pointer: ${M}`);
+        throw new Error(`Invalid JSON-pointer: ${F}`);
       const de = +me[1];
       if (X = me[2], X === "#") {
         if (de >= O)
@@ -2460,7 +2460,7 @@ function vn() {
     let le = te;
     const be = X.split("/");
     for (const me of be)
-      me && (te = (0, s._)`${te}${(0, s.getProperty)((0, m.unescapeJsonPointer)(me))}`, le = (0, s._)`${le} && ${te}`);
+      me && (te = (0, a._)`${te}${(0, a.getProperty)((0, m.unescapeJsonPointer)(me))}`, le = (0, a._)`${le} && ${te}`);
     return le;
     function he(me, de) {
       return `Cannot access ${me} ${de} levels up, current level is ${O}`;
@@ -2485,8 +2485,8 @@ function $n() {
   Ar = 1, Object.defineProperty(ht, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ yn();
   class t extends Error {
-    constructor(o, i, r, c) {
-      super(c || `can't resolve reference ${r} from id ${i}`), this.missingRef = (0, e.resolveUrl)(o, i, r), this.missingSchema = (0, e.normalizeId)((0, e.getFullPath)(o, this.missingRef));
+    constructor(o, i, r, s) {
+      super(s || `can't resolve reference ${r} from id ${i}`), this.missingRef = (0, e.resolveUrl)(o, i, r), this.missingSchema = (0, e.normalizeId)((0, e.getFullPath)(o, this.missingRef));
     }
   }
   return ht.default = t, ht;
@@ -2496,7 +2496,7 @@ function bn() {
   if (Rr) return ye;
   Rr = 1, Object.defineProperty(ye, "__esModule", { value: !0 }), ye.resolveSchema = ye.getCompilingSchema = ye.resolveRef = ye.compileSchema = ye.SchemaEnv = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ Kn(), n = /* @__PURE__ */ ke(), o = /* @__PURE__ */ yn(), i = /* @__PURE__ */ ne(), r = /* @__PURE__ */ vn();
-  class c {
+  class s {
     constructor(g) {
       var u;
       this.refs = {}, this.dynamicAnchors = {};
@@ -2504,20 +2504,20 @@ function bn() {
       typeof g.schema == "object" && (h = g.schema), this.schema = g.schema, this.schemaId = g.schemaId, this.root = g.root || this, this.baseId = (u = g.baseId) !== null && u !== void 0 ? u : (0, o.normalizeId)(h?.[g.schemaId || "$id"]), this.schemaPath = g.schemaPath, this.localRefs = g.localRefs, this.meta = g.meta, this.$async = h?.$async, this.refs = {};
     }
   }
-  ye.SchemaEnv = c;
-  function s(f) {
+  ye.SchemaEnv = s;
+  function a(f) {
     const g = m.call(this, f);
     if (g)
       return g;
-    const u = (0, o.getFullPath)(this.opts.uriResolver, f.root.baseId), { es5: h, lines: C } = this.opts.code, { ownProperties: a } = this.opts, l = new e.CodeGen(this.scope, { es5: h, lines: C, ownProperties: a });
+    const u = (0, o.getFullPath)(this.opts.uriResolver, f.root.baseId), { es5: h, lines: S } = this.opts.code, { ownProperties: c } = this.opts, l = new e.CodeGen(this.scope, { es5: h, lines: S, ownProperties: c });
     let p;
     f.$async && (p = l.scopeValue("Error", {
       ref: t.default,
       code: (0, e._)`require("ajv/dist/runtime/validation_error").default`
     }));
-    const x = l.scopeName("validate");
-    f.validateName = x;
-    const E = {
+    const k = l.scopeName("validate");
+    f.validateName = k;
+    const P = {
       gen: l,
       allErrors: this.opts.allErrors,
       data: n.default.data,
@@ -2530,7 +2530,7 @@ function bn() {
       dataTypes: [],
       definedProperties: /* @__PURE__ */ new Set(),
       topSchemaRef: l.scopeValue("schema", this.opts.code.source === !0 ? { ref: f.schema, code: (0, e.stringify)(f.schema) } : { ref: f.schema }),
-      validateName: x,
+      validateName: k,
       ValidationError: p,
       schema: f.schema,
       schemaEnv: f,
@@ -2544,12 +2544,12 @@ function bn() {
     };
     let N;
     try {
-      this._compilations.add(f), (0, r.validateFunctionCode)(E), l.optimize(this.opts.code.optimize);
+      this._compilations.add(f), (0, r.validateFunctionCode)(P), l.optimize(this.opts.code.optimize);
       const z = l.toString();
       N = `${l.scopeRefs(n.default.scope)}return ${z}`, this.opts.code.process && (N = this.opts.code.process(N, f));
       const T = new Function(`${n.default.self}`, `${n.default.scope}`, N)(this, this.scope.get());
-      if (this.scope.value(x, { ref: T }), T.errors = null, T.schema = f.schema, T.schemaEnv = f, f.$async && (T.$async = !0), this.opts.code.source === !0 && (T.source = { validateName: x, validateCode: z, scopeValues: l._values }), this.opts.unevaluated) {
-        const { props: J, items: Z } = E;
+      if (this.scope.value(k, { ref: T }), T.errors = null, T.schema = f.schema, T.schemaEnv = f, f.$async && (T.$async = !0), this.opts.code.source === !0 && (T.source = { validateName: k, validateCode: z, scopeValues: l._values }), this.opts.unevaluated) {
+        const { props: J, items: Z } = P;
         T.evaluated = {
           props: J instanceof e.Name ? void 0 : J,
           items: Z instanceof e.Name ? void 0 : Z,
@@ -2564,35 +2564,35 @@ function bn() {
       this._compilations.delete(f);
     }
   }
-  ye.compileSchema = s;
+  ye.compileSchema = a;
   function d(f, g, u) {
     var h;
     u = (0, o.resolveUrl)(this.opts.uriResolver, g, u);
-    const C = f.refs[u];
-    if (C)
-      return C;
-    let a = w.call(this, f, u);
-    if (a === void 0) {
+    const S = f.refs[u];
+    if (S)
+      return S;
+    let c = b.call(this, f, u);
+    if (c === void 0) {
       const l = (h = f.localRefs) === null || h === void 0 ? void 0 : h[u], { schemaId: p } = this.opts;
-      l && (a = new c({ schema: l, schemaId: p, root: f, baseId: g }));
+      l && (c = new s({ schema: l, schemaId: p, root: f, baseId: g }));
     }
-    if (a !== void 0)
-      return f.refs[u] = y.call(this, a);
+    if (c !== void 0)
+      return f.refs[u] = y.call(this, c);
   }
   ye.resolveRef = d;
   function y(f) {
-    return (0, o.inlineRef)(f.schema, this.opts.inlineRefs) ? f.schema : f.validate ? f : s.call(this, f);
+    return (0, o.inlineRef)(f.schema, this.opts.inlineRefs) ? f.schema : f.validate ? f : a.call(this, f);
   }
   function m(f) {
     for (const g of this._compilations)
-      if (S(g, f))
+      if (C(g, f))
         return g;
   }
   ye.getCompilingSchema = m;
-  function S(f, g) {
+  function C(f, g) {
     return f.schema === g.schema && f.root === g.root && f.baseId === g.baseId;
   }
-  function w(f, g) {
+  function b(f, g) {
     let u;
     for (; typeof (u = this.refs[g]) == "string"; )
       g = u;
@@ -2600,20 +2600,20 @@ function bn() {
   }
   function v(f, g) {
     const u = this.opts.uriResolver.parse(g), h = (0, o._getFullPath)(this.opts.uriResolver, u);
-    let C = (0, o.getFullPath)(this.opts.uriResolver, f.baseId, void 0);
-    if (Object.keys(f.schema).length > 0 && h === C)
-      return b.call(this, u, f);
-    const a = (0, o.normalizeId)(h), l = this.refs[a] || this.schemas[a];
+    let S = (0, o.getFullPath)(this.opts.uriResolver, f.baseId, void 0);
+    if (Object.keys(f.schema).length > 0 && h === S)
+      return w.call(this, u, f);
+    const c = (0, o.normalizeId)(h), l = this.refs[c] || this.schemas[c];
     if (typeof l == "string") {
       const p = v.call(this, f, l);
-      return typeof p?.schema != "object" ? void 0 : b.call(this, u, p);
+      return typeof p?.schema != "object" ? void 0 : w.call(this, u, p);
     }
     if (typeof l?.schema == "object") {
-      if (l.validate || s.call(this, l), a === (0, o.normalizeId)(g)) {
-        const { schema: p } = l, { schemaId: x } = this.opts, E = p[x];
-        return E && (C = (0, o.resolveUrl)(this.opts.uriResolver, C, E)), new c({ schema: p, schemaId: x, root: f, baseId: C });
+      if (l.validate || a.call(this, l), c === (0, o.normalizeId)(g)) {
+        const { schema: p } = l, { schemaId: k } = this.opts, P = p[k];
+        return P && (S = (0, o.resolveUrl)(this.opts.uriResolver, S, P)), new s({ schema: p, schemaId: k, root: f, baseId: S });
       }
-      return b.call(this, u, l);
+      return w.call(this, u, l);
     }
   }
   ye.resolveSchema = v;
@@ -2624,125 +2624,125 @@ function bn() {
     "dependencies",
     "definitions"
   ]);
-  function b(f, { baseId: g, schema: u, root: h }) {
-    var C;
-    if (((C = f.fragment) === null || C === void 0 ? void 0 : C[0]) !== "/")
+  function w(f, { baseId: g, schema: u, root: h }) {
+    var S;
+    if (((S = f.fragment) === null || S === void 0 ? void 0 : S[0]) !== "/")
       return;
     for (const p of f.fragment.slice(1).split("/")) {
       if (typeof u == "boolean")
         return;
-      const x = u[(0, i.unescapeFragment)(p)];
-      if (x === void 0)
+      const k = u[(0, i.unescapeFragment)(p)];
+      if (k === void 0)
         return;
-      u = x;
-      const E = typeof u == "object" && u[this.opts.schemaId];
-      !_.has(p) && E && (g = (0, o.resolveUrl)(this.opts.uriResolver, g, E));
+      u = k;
+      const P = typeof u == "object" && u[this.opts.schemaId];
+      !_.has(p) && P && (g = (0, o.resolveUrl)(this.opts.uriResolver, g, P));
     }
-    let a;
+    let c;
     if (typeof u != "boolean" && u.$ref && !(0, i.schemaHasRulesButRef)(u, this.RULES)) {
       const p = (0, o.resolveUrl)(this.opts.uriResolver, g, u.$ref);
-      a = v.call(this, h, p);
+      c = v.call(this, h, p);
     }
     const { schemaId: l } = this.opts;
-    if (a = a || new c({ schema: u, schemaId: l, root: h, baseId: g }), a.schema !== a.root.schema)
-      return a;
+    if (c = c || new s({ schema: u, schemaId: l, root: h, baseId: g }), c.schema !== c.root.schema)
+      return c;
   }
   return ye;
 }
-const Ii = "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#", Di = "Meta-schema for $data reference (JSON AnySchema extension proposal)", qi = "object", Vi = ["$data"], Bi = { $data: { type: "string", anyOf: [{ format: "relative-json-pointer" }, { format: "json-pointer" }] } }, Li = !1, Ui = {
+const Ii = "https://raw.githubusercontent.com/ajv-validator/ajv/master/lib/refs/data.json#", qi = "Meta-schema for $data reference (JSON AnySchema extension proposal)", Di = "object", Vi = ["$data"], Bi = { $data: { type: "string", anyOf: [{ format: "relative-json-pointer" }, { format: "json-pointer" }] } }, Li = !1, Ui = {
   $id: Ii,
-  description: Di,
-  type: qi,
+  description: qi,
+  type: Di,
   required: Vi,
   properties: Bi,
   additionalProperties: Li
 };
-var mt = {}, ot = { exports: {} }, Fn, Mr;
+var mt = {}, ot = { exports: {} }, Mn, Fr;
 function ti() {
-  if (Mr) return Fn;
-  Mr = 1;
+  if (Fr) return Mn;
+  Fr = 1;
   const e = RegExp.prototype.test.bind(/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu), t = RegExp.prototype.test.bind(/^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)$/u), n = RegExp.prototype.test.bind(/^[\da-f]{2}$/iu), o = RegExp.prototype.test.bind(/^[\da-z\-._~]$/iu), i = RegExp.prototype.test.bind(/^[\da-z\-._~!$&'()*+,;=:@/]$/iu);
-  function r(a) {
-    let l = "", p = 0, x = 0;
-    for (x = 0; x < a.length; x++)
-      if (p = a[x].charCodeAt(0), p !== 48) {
+  function r(c) {
+    let l = "", p = 0, k = 0;
+    for (k = 0; k < c.length; k++)
+      if (p = c[k].charCodeAt(0), p !== 48) {
         if (!(p >= 48 && p <= 57 || p >= 65 && p <= 70 || p >= 97 && p <= 102))
           return "";
-        l += a[x];
+        l += c[k];
         break;
       }
-    for (x += 1; x < a.length; x++) {
-      if (p = a[x].charCodeAt(0), !(p >= 48 && p <= 57 || p >= 65 && p <= 70 || p >= 97 && p <= 102))
+    for (k += 1; k < c.length; k++) {
+      if (p = c[k].charCodeAt(0), !(p >= 48 && p <= 57 || p >= 65 && p <= 70 || p >= 97 && p <= 102))
         return "";
-      l += a[x];
+      l += c[k];
     }
     return l;
   }
-  const c = RegExp.prototype.test.bind(/[^!"$&'()*+,\-.;=_`a-z{}~]/u);
-  function s(a) {
-    return a.length = 0, !0;
+  const s = RegExp.prototype.test.bind(/[^!"$&'()*+,\-.;=_`a-z{}~]/u);
+  function a(c) {
+    return c.length = 0, !0;
   }
-  function d(a, l, p) {
-    if (a.length) {
-      const x = r(a);
-      if (x !== "")
-        l.push(x);
+  function d(c, l, p) {
+    if (c.length) {
+      const k = r(c);
+      if (k !== "")
+        l.push(k);
       else
         return p.error = !0, !1;
-      a.length = 0;
+      c.length = 0;
     }
     return !0;
   }
-  function y(a) {
+  function y(c) {
     let l = 0;
-    const p = { error: !1, address: "", zone: "" }, x = [], E = [];
+    const p = { error: !1, address: "", zone: "" }, k = [], P = [];
     let N = !1, z = !1, A = d;
-    for (let T = 0; T < a.length; T++) {
-      const J = a[T];
+    for (let T = 0; T < c.length; T++) {
+      const J = c[T];
       if (!(J === "[" || J === "]"))
         if (J === ":") {
-          if (N === !0 && (z = !0), !A(E, x, p))
+          if (N === !0 && (z = !0), !A(P, k, p))
             break;
           if (++l > 7) {
             p.error = !0;
             break;
           }
-          T > 0 && a[T - 1] === ":" && (N = !0), x.push(":");
+          T > 0 && c[T - 1] === ":" && (N = !0), k.push(":");
           continue;
         } else if (J === "%") {
-          if (!A(E, x, p))
+          if (!A(P, k, p))
             break;
-          A = s;
+          A = a;
         } else {
-          E.push(J);
+          P.push(J);
           continue;
         }
     }
-    return E.length && (A === s ? p.zone = E.join("") : z ? x.push(E.join("")) : x.push(r(E))), p.address = x.join(""), p;
+    return P.length && (A === a ? p.zone = P.join("") : z ? k.push(P.join("")) : k.push(r(P))), p.address = k.join(""), p;
   }
-  function m(a) {
-    if (S(a, ":") < 2)
-      return { host: a, isIPV6: !1 };
-    const l = y(a);
+  function m(c) {
+    if (C(c, ":") < 2)
+      return { host: c, isIPV6: !1 };
+    const l = y(c);
     if (l.error)
-      return { host: a, isIPV6: !1 };
+      return { host: c, isIPV6: !1 };
     {
-      let p = l.address, x = l.address;
-      return l.zone && (p += "%" + l.zone, x += "%25" + l.zone), { host: p, isIPV6: !0, escapedHost: x };
+      let p = l.address, k = l.address;
+      return l.zone && (p += "%" + l.zone, k += "%25" + l.zone), { host: p, isIPV6: !0, escapedHost: k };
     }
   }
-  function S(a, l) {
+  function C(c, l) {
     let p = 0;
-    for (let x = 0; x < a.length; x++)
-      a[x] === l && p++;
+    for (let k = 0; k < c.length; k++)
+      c[k] === l && p++;
     return p;
   }
-  function w(a) {
-    let l = a;
+  function b(c) {
+    let l = c;
     const p = [];
-    let x = -1, E = 0;
-    for (; E = l.length; ) {
-      if (E === 1) {
+    let k = -1, P = 0;
+    for (; P = l.length; ) {
+      if (P === 1) {
         if (l === ".")
           break;
         if (l === "/") {
@@ -2752,7 +2752,7 @@ function ti() {
           p.push(l);
           break;
         }
-      } else if (E === 2) {
+      } else if (P === 2) {
         if (l[0] === ".") {
           if (l[1] === ".")
             break;
@@ -2764,7 +2764,7 @@ function ti() {
           p.push("/");
           break;
         }
-      } else if (E === 3 && l === "/..") {
+      } else if (P === 3 && l === "/..") {
         p.length !== 0 && p.pop(), p.push("/");
         break;
       }
@@ -2787,95 +2787,95 @@ function ti() {
           continue;
         }
       }
-      if ((x = l.indexOf("/", 1)) === -1) {
+      if ((k = l.indexOf("/", 1)) === -1) {
         p.push(l);
         break;
       } else
-        p.push(l.slice(0, x)), l = l.slice(x);
+        p.push(l.slice(0, k)), l = l.slice(k);
     }
     return p.join("");
   }
-  const v = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" }, _ = /[@/?#:]/g, b = /[@/?#]/g;
-  function f(a, l) {
-    const p = l ? b : _;
-    return p.lastIndex = 0, a.replace(p, (x) => v[x]);
+  const v = { "@": "%40", "/": "%2F", "?": "%3F", "#": "%23", ":": "%3A" }, _ = /[@/?#:]/g, w = /[@/?#]/g;
+  function f(c, l) {
+    const p = l ? w : _;
+    return p.lastIndex = 0, c.replace(p, (k) => v[k]);
   }
-  function g(a, l = !1) {
-    if (a.indexOf("%") === -1)
-      return a;
+  function g(c, l = !1) {
+    if (c.indexOf("%") === -1)
+      return c;
     let p = "";
-    for (let x = 0; x < a.length; x++) {
-      if (a[x] === "%" && x + 2 < a.length) {
-        const E = a.slice(x + 1, x + 3);
-        if (n(E)) {
-          const N = E.toUpperCase(), z = String.fromCharCode(parseInt(N, 16));
-          l && o(z) ? p += z : p += "%" + N, x += 2;
+    for (let k = 0; k < c.length; k++) {
+      if (c[k] === "%" && k + 2 < c.length) {
+        const P = c.slice(k + 1, k + 3);
+        if (n(P)) {
+          const N = P.toUpperCase(), z = String.fromCharCode(parseInt(N, 16));
+          l && o(z) ? p += z : p += "%" + N, k += 2;
           continue;
         }
       }
-      p += a[x];
+      p += c[k];
     }
     return p;
   }
-  function u(a) {
+  function u(c) {
     let l = "";
-    for (let p = 0; p < a.length; p++) {
-      if (a[p] === "%" && p + 2 < a.length) {
-        const x = a.slice(p + 1, p + 3);
-        if (n(x)) {
-          const E = x.toUpperCase(), N = String.fromCharCode(parseInt(E, 16));
-          N !== "." && o(N) ? l += N : l += "%" + E, p += 2;
+    for (let p = 0; p < c.length; p++) {
+      if (c[p] === "%" && p + 2 < c.length) {
+        const k = c.slice(p + 1, p + 3);
+        if (n(k)) {
+          const P = k.toUpperCase(), N = String.fromCharCode(parseInt(P, 16));
+          N !== "." && o(N) ? l += N : l += "%" + P, p += 2;
           continue;
         }
       }
-      i(a[p]) ? l += a[p] : l += escape(a[p]);
+      i(c[p]) ? l += c[p] : l += escape(c[p]);
     }
     return l;
   }
-  function h(a) {
+  function h(c) {
     let l = "";
-    for (let p = 0; p < a.length; p++) {
-      if (a[p] === "%" && p + 2 < a.length) {
-        const x = a.slice(p + 1, p + 3);
-        if (n(x)) {
-          l += "%" + x.toUpperCase(), p += 2;
+    for (let p = 0; p < c.length; p++) {
+      if (c[p] === "%" && p + 2 < c.length) {
+        const k = c.slice(p + 1, p + 3);
+        if (n(k)) {
+          l += "%" + k.toUpperCase(), p += 2;
           continue;
         }
       }
-      l += escape(a[p]);
+      l += escape(c[p]);
     }
     return l;
   }
-  function C(a) {
+  function S(c) {
     const l = [];
-    if (a.userinfo !== void 0 && (l.push(a.userinfo), l.push("@")), a.host !== void 0) {
-      let p = unescape(a.host);
+    if (c.userinfo !== void 0 && (l.push(c.userinfo), l.push("@")), c.host !== void 0) {
+      let p = unescape(c.host);
       if (!t(p)) {
-        const x = m(p);
-        x.isIPV6 === !0 ? p = `[${x.escapedHost}]` : p = f(p, !1);
+        const k = m(p);
+        k.isIPV6 === !0 ? p = `[${k.escapedHost}]` : p = f(p, !1);
       }
       l.push(p);
     }
-    return (typeof a.port == "number" || typeof a.port == "string") && (l.push(":"), l.push(String(a.port))), l.length ? l.join("") : void 0;
+    return (typeof c.port == "number" || typeof c.port == "string") && (l.push(":"), l.push(String(c.port))), l.length ? l.join("") : void 0;
   }
-  return Fn = {
-    nonSimpleDomain: c,
-    recomposeAuthority: C,
+  return Mn = {
+    nonSimpleDomain: s,
+    recomposeAuthority: S,
     reescapeHostDelimiters: f,
     normalizePercentEncoding: g,
     normalizePathEncoding: u,
     escapePreservingEscapes: h,
-    removeDotSegments: w,
+    removeDotSegments: b,
     isIPv4: t,
     isUUID: e,
     normalizeIPv6: m,
     stringArrayToHexStripped: r
-  }, Fn;
+  }, Mn;
 }
-var Nn, Fr;
+var Nn, Mr;
 function Ki() {
-  if (Fr) return Nn;
-  Fr = 1;
+  if (Mr) return Nn;
+  Mr = 1;
   const { isUUID: e } = ti(), t = /([\da-z][\d\-a-z]{0,31}):((?:[\w!$'()*+,\-.:;=@]|%[\da-f]{2})+)/iu, n = (
     /** @type {const} */
     [
@@ -2887,60 +2887,60 @@ function Ki() {
       "urn:uuid"
     ]
   );
-  function o(a) {
+  function o(c) {
     return n.indexOf(
       /** @type {*} */
-      a
+      c
     ) !== -1;
   }
-  function i(a) {
-    return a.secure === !0 ? !0 : a.secure === !1 ? !1 : a.scheme ? a.scheme.length === 3 && (a.scheme[0] === "w" || a.scheme[0] === "W") && (a.scheme[1] === "s" || a.scheme[1] === "S") && (a.scheme[2] === "s" || a.scheme[2] === "S") : !1;
+  function i(c) {
+    return c.secure === !0 ? !0 : c.secure === !1 ? !1 : c.scheme ? c.scheme.length === 3 && (c.scheme[0] === "w" || c.scheme[0] === "W") && (c.scheme[1] === "s" || c.scheme[1] === "S") && (c.scheme[2] === "s" || c.scheme[2] === "S") : !1;
   }
-  function r(a) {
-    return a.host || (a.error = a.error || "HTTP URIs must have a host."), a;
+  function r(c) {
+    return c.host || (c.error = c.error || "HTTP URIs must have a host."), c;
   }
-  function c(a) {
-    const l = String(a.scheme).toLowerCase() === "https";
-    return (a.port === (l ? 443 : 80) || a.port === "") && (a.port = void 0), a.path || (a.path = "/"), a;
+  function s(c) {
+    const l = String(c.scheme).toLowerCase() === "https";
+    return (c.port === (l ? 443 : 80) || c.port === "") && (c.port = void 0), c.path || (c.path = "/"), c;
   }
-  function s(a) {
-    return a.secure = i(a), a.resourceName = (a.path || "/") + (a.query ? "?" + a.query : ""), a.path = void 0, a.query = void 0, a;
+  function a(c) {
+    return c.secure = i(c), c.resourceName = (c.path || "/") + (c.query ? "?" + c.query : ""), c.path = void 0, c.query = void 0, c;
   }
-  function d(a) {
-    if ((a.port === (i(a) ? 443 : 80) || a.port === "") && (a.port = void 0), typeof a.secure == "boolean" && (a.scheme = a.secure ? "wss" : "ws", a.secure = void 0), a.resourceName) {
-      const [l, p] = a.resourceName.split("?");
-      a.path = l && l !== "/" ? l : void 0, a.query = p, a.resourceName = void 0;
+  function d(c) {
+    if ((c.port === (i(c) ? 443 : 80) || c.port === "") && (c.port = void 0), typeof c.secure == "boolean" && (c.scheme = c.secure ? "wss" : "ws", c.secure = void 0), c.resourceName) {
+      const [l, p] = c.resourceName.split("?");
+      c.path = l && l !== "/" ? l : void 0, c.query = p, c.resourceName = void 0;
     }
-    return a.fragment = void 0, a;
+    return c.fragment = void 0, c;
   }
-  function y(a, l) {
-    if (!a.path)
-      return a.error = "URN can not be parsed", a;
-    const p = a.path.match(t);
+  function y(c, l) {
+    if (!c.path)
+      return c.error = "URN can not be parsed", c;
+    const p = c.path.match(t);
     if (p) {
-      const x = l.scheme || a.scheme || "urn";
-      a.nid = p[1].toLowerCase(), a.nss = p[2];
-      const E = `${x}:${l.nid || a.nid}`, N = C(E);
-      a.path = void 0, N && (a = N.parse(a, l));
+      const k = l.scheme || c.scheme || "urn";
+      c.nid = p[1].toLowerCase(), c.nss = p[2];
+      const P = `${k}:${l.nid || c.nid}`, N = S(P);
+      c.path = void 0, N && (c = N.parse(c, l));
     } else
-      a.error = a.error || "URN can not be parsed.";
-    return a;
+      c.error = c.error || "URN can not be parsed.";
+    return c;
   }
-  function m(a, l) {
-    if (a.nid === void 0)
+  function m(c, l) {
+    if (c.nid === void 0)
       throw new Error("URN without nid cannot be serialized");
-    const p = l.scheme || a.scheme || "urn", x = a.nid.toLowerCase(), E = `${p}:${l.nid || x}`, N = C(E);
-    N && (a = N.serialize(a, l));
-    const z = a, A = a.nss;
-    return z.path = `${x || l.nid}:${A}`, l.skipEscape = !0, z;
+    const p = l.scheme || c.scheme || "urn", k = c.nid.toLowerCase(), P = `${p}:${l.nid || k}`, N = S(P);
+    N && (c = N.serialize(c, l));
+    const z = c, A = c.nss;
+    return z.path = `${k || l.nid}:${A}`, l.skipEscape = !0, z;
   }
-  function S(a, l) {
-    const p = a;
+  function C(c, l) {
+    const p = c;
     return p.uuid = p.nss, p.nss = void 0, !l.tolerant && (!p.uuid || !e(p.uuid)) && (p.error = p.error || "UUID is not valid."), p;
   }
-  function w(a) {
-    const l = a;
-    return l.nss = (a.uuid || "").toLowerCase(), l;
+  function b(c) {
+    const l = c;
+    return l.nss = (c.uuid || "").toLowerCase(), l;
   }
   const v = (
     /** @type {SchemeHandler} */
@@ -2948,7 +2948,7 @@ function Ki() {
       scheme: "http",
       domainHost: !0,
       parse: r,
-      serialize: c
+      serialize: s
     }
   ), _ = (
     /** @type {SchemeHandler} */
@@ -2956,30 +2956,30 @@ function Ki() {
       scheme: "https",
       domainHost: v.domainHost,
       parse: r,
-      serialize: c
+      serialize: s
     }
-  ), b = (
+  ), w = (
     /** @type {SchemeHandler} */
     {
       scheme: "ws",
       domainHost: !0,
-      parse: s,
+      parse: a,
       serialize: d
     }
   ), f = (
     /** @type {SchemeHandler} */
     {
       scheme: "wss",
-      domainHost: b.domainHost,
-      parse: b.parse,
-      serialize: b.serialize
+      domainHost: w.domainHost,
+      parse: w.parse,
+      serialize: w.serialize
     }
   ), h = (
     /** @type {Record<SchemeName, SchemeHandler>} */
     {
       http: v,
       https: _,
-      ws: b,
+      ws: w,
       wss: f,
       urn: (
         /** @type {SchemeHandler} */
@@ -2994,67 +2994,67 @@ function Ki() {
         /** @type {SchemeHandler} */
         {
           scheme: "urn:uuid",
-          parse: S,
-          serialize: w,
+          parse: C,
+          serialize: b,
           skipNormalize: !0
         }
       )
     }
   );
   Object.setPrototypeOf(h, null);
-  function C(a) {
-    return a && (h[
+  function S(c) {
+    return c && (h[
       /** @type {SchemeName} */
-      a
+      c
     ] || h[
       /** @type {SchemeName} */
-      a.toLowerCase()
+      c.toLowerCase()
     ]) || void 0;
   }
   return Nn = {
     wsIsSecure: i,
     SCHEMES: h,
     isValidSchemeName: o,
-    getSchemeHandler: C
+    getSchemeHandler: S
   }, Nn;
 }
 var Nr;
-function Gi() {
+function Hi() {
   if (Nr) return ot.exports;
   Nr = 1;
-  const { normalizeIPv6: e, removeDotSegments: t, recomposeAuthority: n, normalizePercentEncoding: o, normalizePathEncoding: i, escapePreservingEscapes: r, reescapeHostDelimiters: c, isIPv4: s, nonSimpleDomain: d } = ti(), { SCHEMES: y, getSchemeHandler: m } = Ki();
-  function S(E, N) {
-    return typeof E == "string" ? E = /** @type {T} */
-    a(E, N) : typeof E == "object" && (E = /** @type {T} */
-    C(b(E, N), N)), E;
+  const { normalizeIPv6: e, removeDotSegments: t, recomposeAuthority: n, normalizePercentEncoding: o, normalizePathEncoding: i, escapePreservingEscapes: r, reescapeHostDelimiters: s, isIPv4: a, nonSimpleDomain: d } = ti(), { SCHEMES: y, getSchemeHandler: m } = Ki();
+  function C(P, N) {
+    return typeof P == "string" ? P = /** @type {T} */
+    c(P, N) : typeof P == "object" && (P = /** @type {T} */
+    S(w(P, N), N)), P;
   }
-  function w(E, N, z) {
-    const A = z ? Object.assign({ scheme: "null" }, z) : { scheme: "null" }, T = v(C(E, A), C(N, A), A, !0);
-    return A.skipEscape = !0, b(T, A);
+  function b(P, N, z) {
+    const A = z ? Object.assign({ scheme: "null" }, z) : { scheme: "null" }, T = v(S(P, A), S(N, A), A, !0);
+    return A.skipEscape = !0, w(T, A);
   }
-  function v(E, N, z, A) {
+  function v(P, N, z, A) {
     const T = {};
-    return A || (E = C(b(E, z), z), N = C(b(N, z), z)), z = z || {}, !z.tolerant && N.scheme ? (T.scheme = N.scheme, T.userinfo = N.userinfo, T.host = N.host, T.port = N.port, T.path = t(N.path || ""), T.query = N.query) : (N.userinfo !== void 0 || N.host !== void 0 || N.port !== void 0 ? (T.userinfo = N.userinfo, T.host = N.host, T.port = N.port, T.path = t(N.path || ""), T.query = N.query) : (N.path ? (N.path[0] === "/" ? T.path = t(N.path) : ((E.userinfo !== void 0 || E.host !== void 0 || E.port !== void 0) && !E.path ? T.path = "/" + N.path : E.path ? T.path = E.path.slice(0, E.path.lastIndexOf("/") + 1) + N.path : T.path = N.path, T.path = t(T.path)), T.query = N.query) : (T.path = E.path, N.query !== void 0 ? T.query = N.query : T.query = E.query), T.userinfo = E.userinfo, T.host = E.host, T.port = E.port), T.scheme = E.scheme), T.fragment = N.fragment, T;
+    return A || (P = S(w(P, z), z), N = S(w(N, z), z)), z = z || {}, !z.tolerant && N.scheme ? (T.scheme = N.scheme, T.userinfo = N.userinfo, T.host = N.host, T.port = N.port, T.path = t(N.path || ""), T.query = N.query) : (N.userinfo !== void 0 || N.host !== void 0 || N.port !== void 0 ? (T.userinfo = N.userinfo, T.host = N.host, T.port = N.port, T.path = t(N.path || ""), T.query = N.query) : (N.path ? (N.path[0] === "/" ? T.path = t(N.path) : ((P.userinfo !== void 0 || P.host !== void 0 || P.port !== void 0) && !P.path ? T.path = "/" + N.path : P.path ? T.path = P.path.slice(0, P.path.lastIndexOf("/") + 1) + N.path : T.path = N.path, T.path = t(T.path)), T.query = N.query) : (T.path = P.path, N.query !== void 0 ? T.query = N.query : T.query = P.query), T.userinfo = P.userinfo, T.host = P.host, T.port = P.port), T.scheme = P.scheme), T.fragment = N.fragment, T;
   }
-  function _(E, N, z) {
-    const A = p(E, z), T = p(N, z);
+  function _(P, N, z) {
+    const A = p(P, z), T = p(N, z);
     return A !== void 0 && T !== void 0 && A.toLowerCase() === T.toLowerCase();
   }
-  function b(E, N) {
+  function w(P, N) {
     const z = {
-      host: E.host,
-      scheme: E.scheme,
-      userinfo: E.userinfo,
-      port: E.port,
-      path: E.path,
-      query: E.query,
-      nid: E.nid,
-      nss: E.nss,
-      uuid: E.uuid,
-      fragment: E.fragment,
-      reference: E.reference,
-      resourceName: E.resourceName,
-      secure: E.secure,
+      host: P.host,
+      scheme: P.scheme,
+      userinfo: P.userinfo,
+      port: P.port,
+      path: P.path,
+      query: P.query,
+      nid: P.nid,
+      nss: P.nss,
+      uuid: P.uuid,
+      fragment: P.fragment,
+      reference: P.reference,
+      resourceName: P.resourceName,
+      secure: P.secure,
       error: ""
     }, A = Object.assign({}, N), T = [], J = m(A.scheme || z.scheme);
     J && J.serialize && J.serialize(z, A), z.path !== void 0 && (A.skipEscape ? z.path = o(z.path) : (z.path = r(z.path), z.scheme !== void 0 && (z.path = z.path.split("%3A").join(":")))), A.reference !== "suffix" && z.scheme && T.push(z.scheme, ":");
@@ -3066,13 +3066,13 @@ function Gi() {
     return z.query !== void 0 && T.push("?", z.query), z.fragment !== void 0 && T.push("#", z.fragment), T.join("");
   }
   const f = /^(?:([^#/:?]+):)?(?:\/\/((?:([^#/?@]*)@)?(\[[^#/?\]]+\]|[^#/:?]*)(?::(\d*))?))?([^#?]*)(?:\?([^#]*))?(?:#((?:.|[\n\r])*))?/u, g = /^(?:[^#/:?]+:)?\/\/([^/?#]*)/;
-  function u(E, N) {
-    if (N[2] !== void 0 && E.path && E.path[0] !== "/")
+  function u(P, N) {
+    if (N[2] !== void 0 && P.path && P.path[0] !== "/")
       return 'URI path must start with "/" when authority is present.';
-    if (typeof E.port == "number" && (E.port < 0 || E.port > 65535))
+    if (typeof P.port == "number" && (P.port < 0 || P.port > 65535))
       return "URI port is malformed.";
   }
-  function h(E, N) {
+  function h(P, N) {
     const z = Object.assign({}, N), A = {
       scheme: void 0,
       userinfo: void 0,
@@ -3083,15 +3083,15 @@ function Gi() {
       fragment: void 0
     };
     let T = !1, J = !1;
-    z.reference === "suffix" && (z.scheme ? E = z.scheme + ":" + E : E = "//" + E);
-    const Z = E.match(g);
+    z.reference === "suffix" && (z.scheme ? P = z.scheme + ":" + P : P = "//" + P);
+    const Z = P.match(g);
     Z !== null && Z[1].indexOf("\\") !== -1 && (A.error = "URI authority must not contain a literal backslash.", T = !0);
-    const L = E.match(f);
+    const L = P.match(f);
     if (L) {
       A.scheme = L[1], A.userinfo = L[3], A.host = L[4], A.port = parseInt(L[5], 10), A.path = L[6] || "", A.query = L[7], A.fragment = L[8], isNaN(A.port) && (A.port = L[5]);
-      const G = u(A, L);
-      if (G !== void 0 && (A.error = A.error || G, T = !0), A.host)
-        if (s(A.host) === !1) {
+      const H = u(A, L);
+      if (H !== void 0 && (A.error = A.error || H, T = !0), A.host)
+        if (a(A.host) === !1) {
           const V = e(A.host);
           A.host = V.host.toLowerCase(), J = V.isIPV6;
         } else
@@ -3104,7 +3104,7 @@ function Gi() {
         } catch (Y) {
           A.error = A.error || "Host's domain name can not be converted to ASCII: " + Y;
         }
-      if ((!U || U && !U.skipNormalize) && (E.indexOf("%") !== -1 && (A.scheme !== void 0 && (A.scheme = unescape(A.scheme)), A.host !== void 0 && (A.host = c(unescape(A.host), J))), A.path && (A.path = i(A.path)), A.fragment))
+      if ((!U || U && !U.skipNormalize) && (P.indexOf("%") !== -1 && (A.scheme !== void 0 && (A.scheme = unescape(A.scheme)), A.host !== void 0 && (A.host = s(unescape(A.host), J))), A.path && (A.path = i(A.path)), A.fragment))
         try {
           A.fragment = encodeURI(decodeURIComponent(A.fragment));
         } catch {
@@ -3115,43 +3115,43 @@ function Gi() {
       A.error = A.error || "URI can not be parsed.";
     return { parsed: A, malformedAuthorityOrPort: T };
   }
-  function C(E, N) {
-    return h(E, N).parsed;
+  function S(P, N) {
+    return h(P, N).parsed;
   }
-  function a(E, N) {
-    return l(E, N).normalized;
+  function c(P, N) {
+    return l(P, N).normalized;
   }
-  function l(E, N) {
-    const { parsed: z, malformedAuthorityOrPort: A } = h(E, N);
+  function l(P, N) {
+    const { parsed: z, malformedAuthorityOrPort: A } = h(P, N);
     return {
-      normalized: A ? E : b(z, N),
+      normalized: A ? P : w(z, N),
       malformedAuthorityOrPort: A
     };
   }
-  function p(E, N) {
-    if (typeof E == "string") {
-      const { normalized: z, malformedAuthorityOrPort: A } = l(E, N);
+  function p(P, N) {
+    if (typeof P == "string") {
+      const { normalized: z, malformedAuthorityOrPort: A } = l(P, N);
       return A ? void 0 : z;
     }
-    if (typeof E == "object")
-      return b(E, N);
+    if (typeof P == "object")
+      return w(P, N);
   }
-  const x = {
+  const k = {
     SCHEMES: y,
-    normalize: S,
-    resolve: w,
+    normalize: C,
+    resolve: b,
     resolveComponent: v,
     equal: _,
-    serialize: b,
-    parse: C
+    serialize: w,
+    parse: S
   };
-  return ot.exports = x, ot.exports.default = x, ot.exports.fastUri = x, ot.exports;
+  return ot.exports = k, ot.exports.default = k, ot.exports.fastUri = k, ot.exports;
 }
 var jr;
-function Hi() {
+function Gi() {
   if (jr) return mt;
   jr = 1, Object.defineProperty(mt, "__esModule", { value: !0 });
-  const e = Gi();
+  const e = Hi();
   return e.code = 'require("ajv/dist/runtime/uri").default', mt.default = e, mt;
 }
 var Or;
@@ -3176,9 +3176,9 @@ function Ji() {
     } }), Object.defineProperty(e, "CodeGen", { enumerable: !0, get: function() {
       return n.CodeGen;
     } });
-    const o = /* @__PURE__ */ Kn(), i = /* @__PURE__ */ $n(), r = /* @__PURE__ */ Zo(), c = /* @__PURE__ */ bn(), s = /* @__PURE__ */ Q(), d = /* @__PURE__ */ yn(), y = /* @__PURE__ */ pn(), m = /* @__PURE__ */ ne(), S = Ui, w = /* @__PURE__ */ Hi(), v = (V, R) => new RegExp(V, R);
+    const o = /* @__PURE__ */ Kn(), i = /* @__PURE__ */ $n(), r = /* @__PURE__ */ Zo(), s = /* @__PURE__ */ bn(), a = /* @__PURE__ */ Q(), d = /* @__PURE__ */ yn(), y = /* @__PURE__ */ pn(), m = /* @__PURE__ */ ne(), C = Ui, b = /* @__PURE__ */ Gi(), v = (V, R) => new RegExp(V, R);
     v.code = "new RegExp";
-    const _ = ["removeAdditional", "useDefaults", "coerceTypes"], b = /* @__PURE__ */ new Set([
+    const _ = ["removeAdditional", "useDefaults", "coerceTypes"], w = /* @__PURE__ */ new Set([
       "validate",
       "serialize",
       "parse",
@@ -3214,13 +3214,13 @@ function Ji() {
       unicode: '"minLength"/"maxLength" account for unicode characters by default.'
     }, u = 200;
     function h(V) {
-      var R, D, F, $, k, I, H, W, oe, re, M, O, B, K, X, te, le, be, he, me, de, Ue, ve, _n, Sn;
-      const tt = V.strict, Cn = (R = V.code) === null || R === void 0 ? void 0 : R.optimize, sr = Cn === !0 || Cn === void 0 ? 1 : Cn || 0, ar = (F = (D = V.code) === null || D === void 0 ? void 0 : D.regExp) !== null && F !== void 0 ? F : v, vi = ($ = V.uriResolver) !== null && $ !== void 0 ? $ : w.default;
+      var R, q, M, $, x, I, G, W, oe, re, F, O, B, K, X, te, le, be, he, me, de, Ue, ve, _n, Sn;
+      const tt = V.strict, Cn = (R = V.code) === null || R === void 0 ? void 0 : R.optimize, sr = Cn === !0 || Cn === void 0 ? 1 : Cn || 0, ar = (M = (q = V.code) === null || q === void 0 ? void 0 : q.regExp) !== null && M !== void 0 ? M : v, vi = ($ = V.uriResolver) !== null && $ !== void 0 ? $ : b.default;
       return {
-        strictSchema: (I = (k = V.strictSchema) !== null && k !== void 0 ? k : tt) !== null && I !== void 0 ? I : !0,
-        strictNumbers: (W = (H = V.strictNumbers) !== null && H !== void 0 ? H : tt) !== null && W !== void 0 ? W : !0,
+        strictSchema: (I = (x = V.strictSchema) !== null && x !== void 0 ? x : tt) !== null && I !== void 0 ? I : !0,
+        strictNumbers: (W = (G = V.strictNumbers) !== null && G !== void 0 ? G : tt) !== null && W !== void 0 ? W : !0,
         strictTypes: (re = (oe = V.strictTypes) !== null && oe !== void 0 ? oe : tt) !== null && re !== void 0 ? re : "log",
-        strictTuples: (O = (M = V.strictTuples) !== null && M !== void 0 ? M : tt) !== null && O !== void 0 ? O : "log",
+        strictTuples: (O = (F = V.strictTuples) !== null && F !== void 0 ? F : tt) !== null && O !== void 0 ? O : "log",
         strictRequired: (K = (B = V.strictRequired) !== null && B !== void 0 ? B : tt) !== null && K !== void 0 ? K : !1,
         code: V.code ? { ...V.code, optimize: sr, regExp: ar } : { optimize: sr, regExp: ar },
         loopRequired: (X = V.loopRequired) !== null && X !== void 0 ? X : u,
@@ -3237,133 +3237,133 @@ function Ji() {
         uriResolver: vi
       };
     }
-    class C {
+    class S {
       constructor(R = {}) {
         this.schemas = {}, this.refs = {}, this.formats = /* @__PURE__ */ Object.create(null), this._compilations = /* @__PURE__ */ new Set(), this._loading = {}, this._cache = /* @__PURE__ */ new Map(), R = this.opts = { ...R, ...h(R) };
-        const { es5: D, lines: F } = this.opts.code;
-        this.scope = new s.ValueScope({ scope: {}, prefixes: b, es5: D, lines: F }), this.logger = A(R.logger);
+        const { es5: q, lines: M } = this.opts.code;
+        this.scope = new a.ValueScope({ scope: {}, prefixes: w, es5: q, lines: M }), this.logger = A(R.logger);
         const $ = R.validateFormats;
-        R.validateFormats = !1, this.RULES = (0, r.getRules)(), a.call(this, f, R, "NOT SUPPORTED"), a.call(this, g, R, "DEPRECATED", "warn"), this._metaOpts = N.call(this), R.formats && x.call(this), this._addVocabularies(), this._addDefaultMetaSchema(), R.keywords && E.call(this, R.keywords), typeof R.meta == "object" && this.addMetaSchema(R.meta), p.call(this), R.validateFormats = $;
+        R.validateFormats = !1, this.RULES = (0, r.getRules)(), c.call(this, f, R, "NOT SUPPORTED"), c.call(this, g, R, "DEPRECATED", "warn"), this._metaOpts = N.call(this), R.formats && k.call(this), this._addVocabularies(), this._addDefaultMetaSchema(), R.keywords && P.call(this, R.keywords), typeof R.meta == "object" && this.addMetaSchema(R.meta), p.call(this), R.validateFormats = $;
       }
       _addVocabularies() {
         this.addKeyword("$async");
       }
       _addDefaultMetaSchema() {
-        const { $data: R, meta: D, schemaId: F } = this.opts;
-        let $ = S;
-        F === "id" && ($ = { ...S }, $.id = $.$id, delete $.$id), D && R && this.addMetaSchema($, $[F], !1);
+        const { $data: R, meta: q, schemaId: M } = this.opts;
+        let $ = C;
+        M === "id" && ($ = { ...C }, $.id = $.$id, delete $.$id), q && R && this.addMetaSchema($, $[M], !1);
       }
       defaultMeta() {
-        const { meta: R, schemaId: D } = this.opts;
-        return this.opts.defaultMeta = typeof R == "object" ? R[D] || R : void 0;
+        const { meta: R, schemaId: q } = this.opts;
+        return this.opts.defaultMeta = typeof R == "object" ? R[q] || R : void 0;
       }
-      validate(R, D) {
-        let F;
+      validate(R, q) {
+        let M;
         if (typeof R == "string") {
-          if (F = this.getSchema(R), !F)
+          if (M = this.getSchema(R), !M)
             throw new Error(`no schema with key or ref "${R}"`);
         } else
-          F = this.compile(R);
-        const $ = F(D);
-        return "$async" in F || (this.errors = F.errors), $;
+          M = this.compile(R);
+        const $ = M(q);
+        return "$async" in M || (this.errors = M.errors), $;
       }
-      compile(R, D) {
-        const F = this._addSchema(R, D);
-        return F.validate || this._compileSchemaEnv(F);
+      compile(R, q) {
+        const M = this._addSchema(R, q);
+        return M.validate || this._compileSchemaEnv(M);
       }
-      compileAsync(R, D) {
+      compileAsync(R, q) {
         if (typeof this.opts.loadSchema != "function")
           throw new Error("options.loadSchema should be a function");
-        const { loadSchema: F } = this.opts;
-        return $.call(this, R, D);
-        async function $(re, M) {
-          await k.call(this, re.$schema);
-          const O = this._addSchema(re, M);
+        const { loadSchema: M } = this.opts;
+        return $.call(this, R, q);
+        async function $(re, F) {
+          await x.call(this, re.$schema);
+          const O = this._addSchema(re, F);
           return O.validate || I.call(this, O);
         }
-        async function k(re) {
+        async function x(re) {
           re && !this.getSchema(re) && await $.call(this, { $ref: re }, !0);
         }
         async function I(re) {
           try {
             return this._compileSchemaEnv(re);
-          } catch (M) {
-            if (!(M instanceof i.default))
-              throw M;
-            return H.call(this, M), await W.call(this, M.missingSchema), I.call(this, re);
+          } catch (F) {
+            if (!(F instanceof i.default))
+              throw F;
+            return G.call(this, F), await W.call(this, F.missingSchema), I.call(this, re);
           }
         }
-        function H({ missingSchema: re, missingRef: M }) {
+        function G({ missingSchema: re, missingRef: F }) {
           if (this.refs[re])
-            throw new Error(`AnySchema ${re} is loaded but ${M} cannot be resolved`);
+            throw new Error(`AnySchema ${re} is loaded but ${F} cannot be resolved`);
         }
         async function W(re) {
-          const M = await oe.call(this, re);
-          this.refs[re] || await k.call(this, M.$schema), this.refs[re] || this.addSchema(M, re, D);
+          const F = await oe.call(this, re);
+          this.refs[re] || await x.call(this, F.$schema), this.refs[re] || this.addSchema(F, re, q);
         }
         async function oe(re) {
-          const M = this._loading[re];
-          if (M)
-            return M;
+          const F = this._loading[re];
+          if (F)
+            return F;
           try {
-            return await (this._loading[re] = F(re));
+            return await (this._loading[re] = M(re));
           } finally {
             delete this._loading[re];
           }
         }
       }
       // Adds schema to the instance
-      addSchema(R, D, F, $ = this.opts.validateSchema) {
+      addSchema(R, q, M, $ = this.opts.validateSchema) {
         if (Array.isArray(R)) {
           for (const I of R)
-            this.addSchema(I, void 0, F, $);
+            this.addSchema(I, void 0, M, $);
           return this;
         }
-        let k;
+        let x;
         if (typeof R == "object") {
           const { schemaId: I } = this.opts;
-          if (k = R[I], k !== void 0 && typeof k != "string")
+          if (x = R[I], x !== void 0 && typeof x != "string")
             throw new Error(`schema ${I} must be string`);
         }
-        return D = (0, d.normalizeId)(D || k), this._checkUnique(D), this.schemas[D] = this._addSchema(R, F, D, $, !0), this;
+        return q = (0, d.normalizeId)(q || x), this._checkUnique(q), this.schemas[q] = this._addSchema(R, M, q, $, !0), this;
       }
       // Add schema that will be used to validate other schemas
       // options in META_IGNORE_OPTIONS are alway set to false
-      addMetaSchema(R, D, F = this.opts.validateSchema) {
-        return this.addSchema(R, D, !0, F), this;
+      addMetaSchema(R, q, M = this.opts.validateSchema) {
+        return this.addSchema(R, q, !0, M), this;
       }
       //  Validate schema against its meta-schema
-      validateSchema(R, D) {
+      validateSchema(R, q) {
         if (typeof R == "boolean")
           return !0;
-        let F;
-        if (F = R.$schema, F !== void 0 && typeof F != "string")
+        let M;
+        if (M = R.$schema, M !== void 0 && typeof M != "string")
           throw new Error("$schema must be a string");
-        if (F = F || this.opts.defaultMeta || this.defaultMeta(), !F)
+        if (M = M || this.opts.defaultMeta || this.defaultMeta(), !M)
           return this.logger.warn("meta-schema not available"), this.errors = null, !0;
-        const $ = this.validate(F, R);
-        if (!$ && D) {
-          const k = "schema is invalid: " + this.errorsText();
+        const $ = this.validate(M, R);
+        if (!$ && q) {
+          const x = "schema is invalid: " + this.errorsText();
           if (this.opts.validateSchema === "log")
-            this.logger.error(k);
+            this.logger.error(x);
           else
-            throw new Error(k);
+            throw new Error(x);
         }
         return $;
       }
       // Get compiled schema by `key` or `ref`.
       // (`key` that was passed to `addSchema` or full schema reference - `schema.$id` or resolved id)
       getSchema(R) {
-        let D;
-        for (; typeof (D = l.call(this, R)) == "string"; )
-          R = D;
-        if (D === void 0) {
-          const { schemaId: F } = this.opts, $ = new c.SchemaEnv({ schema: {}, schemaId: F });
-          if (D = c.resolveSchema.call(this, $, R), !D)
+        let q;
+        for (; typeof (q = l.call(this, R)) == "string"; )
+          R = q;
+        if (q === void 0) {
+          const { schemaId: M } = this.opts, $ = new s.SchemaEnv({ schema: {}, schemaId: M });
+          if (q = s.resolveSchema.call(this, $, R), !q)
             return;
-          this.refs[R] = D;
+          this.refs[R] = q;
         }
-        return D.validate || this._compileSchemaEnv(D);
+        return q.validate || this._compileSchemaEnv(q);
       }
       // Remove cached schema(s).
       // If no parameter is passed all schemas but meta-schemas are removed.
@@ -3376,14 +3376,14 @@ function Ji() {
           case "undefined":
             return this._removeAllSchemas(this.schemas), this._removeAllSchemas(this.refs), this._cache.clear(), this;
           case "string": {
-            const D = l.call(this, R);
-            return typeof D == "object" && this._cache.delete(D.schema), delete this.schemas[R], delete this.refs[R], this;
+            const q = l.call(this, R);
+            return typeof q == "object" && this._cache.delete(q.schema), delete this.schemas[R], delete this.refs[R], this;
           }
           case "object": {
-            const D = R;
-            this._cache.delete(D);
-            let F = R[this.opts.schemaId];
-            return F && (F = (0, d.normalizeId)(F), delete this.schemas[F], delete this.refs[F]), this;
+            const q = R;
+            this._cache.delete(q);
+            let M = R[this.opts.schemaId];
+            return M && (M = (0, d.normalizeId)(M), delete this.schemas[M], delete this.refs[M]), this;
           }
           default:
             throw new Error("ajv.removeSchema: invalid parameter");
@@ -3391,79 +3391,79 @@ function Ji() {
       }
       // add "vocabulary" - a collection of keywords
       addVocabulary(R) {
-        for (const D of R)
-          this.addKeyword(D);
+        for (const q of R)
+          this.addKeyword(q);
         return this;
       }
-      addKeyword(R, D) {
-        let F;
+      addKeyword(R, q) {
+        let M;
         if (typeof R == "string")
-          F = R, typeof D == "object" && (this.logger.warn("these parameters are deprecated, see docs for addKeyword"), D.keyword = F);
-        else if (typeof R == "object" && D === void 0) {
-          if (D = R, F = D.keyword, Array.isArray(F) && !F.length)
+          M = R, typeof q == "object" && (this.logger.warn("these parameters are deprecated, see docs for addKeyword"), q.keyword = M);
+        else if (typeof R == "object" && q === void 0) {
+          if (q = R, M = q.keyword, Array.isArray(M) && !M.length)
             throw new Error("addKeywords: keyword must be string or non-empty array");
         } else
           throw new Error("invalid addKeywords parameters");
-        if (J.call(this, F, D), !D)
-          return (0, m.eachItem)(F, (k) => Z.call(this, k)), this;
-        G.call(this, D);
+        if (J.call(this, M, q), !q)
+          return (0, m.eachItem)(M, (x) => Z.call(this, x)), this;
+        H.call(this, q);
         const $ = {
-          ...D,
-          type: (0, y.getJSONTypes)(D.type),
-          schemaType: (0, y.getJSONTypes)(D.schemaType)
+          ...q,
+          type: (0, y.getJSONTypes)(q.type),
+          schemaType: (0, y.getJSONTypes)(q.schemaType)
         };
-        return (0, m.eachItem)(F, $.type.length === 0 ? (k) => Z.call(this, k, $) : (k) => $.type.forEach((I) => Z.call(this, k, $, I))), this;
+        return (0, m.eachItem)(M, $.type.length === 0 ? (x) => Z.call(this, x, $) : (x) => $.type.forEach((I) => Z.call(this, x, $, I))), this;
       }
       getKeyword(R) {
-        const D = this.RULES.all[R];
-        return typeof D == "object" ? D.definition : !!D;
+        const q = this.RULES.all[R];
+        return typeof q == "object" ? q.definition : !!q;
       }
       // Remove keyword
       removeKeyword(R) {
-        const { RULES: D } = this;
-        delete D.keywords[R], delete D.all[R];
-        for (const F of D.rules) {
-          const $ = F.rules.findIndex((k) => k.keyword === R);
-          $ >= 0 && F.rules.splice($, 1);
+        const { RULES: q } = this;
+        delete q.keywords[R], delete q.all[R];
+        for (const M of q.rules) {
+          const $ = M.rules.findIndex((x) => x.keyword === R);
+          $ >= 0 && M.rules.splice($, 1);
         }
         return this;
       }
       // Add format
-      addFormat(R, D) {
-        return typeof D == "string" && (D = new RegExp(D)), this.formats[R] = D, this;
+      addFormat(R, q) {
+        return typeof q == "string" && (q = new RegExp(q)), this.formats[R] = q, this;
       }
-      errorsText(R = this.errors, { separator: D = ", ", dataVar: F = "data" } = {}) {
-        return !R || R.length === 0 ? "No errors" : R.map(($) => `${F}${$.instancePath} ${$.message}`).reduce(($, k) => $ + D + k);
+      errorsText(R = this.errors, { separator: q = ", ", dataVar: M = "data" } = {}) {
+        return !R || R.length === 0 ? "No errors" : R.map(($) => `${M}${$.instancePath} ${$.message}`).reduce(($, x) => $ + q + x);
       }
-      $dataMetaSchema(R, D) {
-        const F = this.RULES.all;
+      $dataMetaSchema(R, q) {
+        const M = this.RULES.all;
         R = JSON.parse(JSON.stringify(R));
-        for (const $ of D) {
-          const k = $.split("/").slice(1);
+        for (const $ of q) {
+          const x = $.split("/").slice(1);
           let I = R;
-          for (const H of k)
-            I = I[H];
-          for (const H in F) {
-            const W = F[H];
+          for (const G of x)
+            I = I[G];
+          for (const G in M) {
+            const W = M[G];
             if (typeof W != "object")
               continue;
-            const { $data: oe } = W.definition, re = I[H];
-            oe && re && (I[H] = Y(re));
+            const { $data: oe } = W.definition, re = I[G];
+            oe && re && (I[G] = Y(re));
           }
         }
         return R;
       }
-      _removeAllSchemas(R, D) {
-        for (const F in R) {
-          const $ = R[F];
-          (!D || D.test(F)) && (typeof $ == "string" ? delete R[F] : $ && !$.meta && (this._cache.delete($.schema), delete R[F]));
+      _removeAllSchemas(R, q) {
+        for (const M in R) {
+          const $ = R[M];
+          (!q || q.test(M)) && (typeof $ == "string" ? delete R[M] : $ && !$.meta && (this._cache.delete($.schema), delete R[M]));
         }
       }
-      _addSchema(R, D, F, $ = this.opts.validateSchema, k = this.opts.addUsedSchema) {
+      _addSchema(R, q, M, $ = this.opts.validateSchema, x = this.opts.addUsedSchema) {
         let I;
-        const { schemaId: H } = this.opts;
+        const { schemaId: G } = this.opts;
         if (typeof R == "object")
-          I = R[H];
+          I = R[G];
         else {
           if (this.opts.jtd)
             throw new Error("schema must be object");
@@ -3473,34 +3473,34 @@ function Ji() {
         let W = this._cache.get(R);
         if (W !== void 0)
           return W;
-        F = (0, d.normalizeId)(I || F);
-        const oe = d.getSchemaRefs.call(this, R, F);
-        return W = new c.SchemaEnv({ schema: R, schemaId: H, meta: D, baseId: F, localRefs: oe }), this._cache.set(W.schema, W), k && !F.startsWith("#") && (F && this._checkUnique(F), this.refs[F] = W), $ && this.validateSchema(R, !0), W;
+        M = (0, d.normalizeId)(I || M);
+        const oe = d.getSchemaRefs.call(this, R, M);
+        return W = new s.SchemaEnv({ schema: R, schemaId: G, meta: q, baseId: M, localRefs: oe }), this._cache.set(W.schema, W), x && !M.startsWith("#") && (M && this._checkUnique(M), this.refs[M] = W), $ && this.validateSchema(R, !0), W;
       }
       _checkUnique(R) {
         if (this.schemas[R] || this.refs[R])
           throw new Error(`schema with key or id "${R}" already exists`);
       }
       _compileSchemaEnv(R) {
-        if (R.meta ? this._compileMetaSchema(R) : c.compileSchema.call(this, R), !R.validate)
+        if (R.meta ? this._compileMetaSchema(R) : s.compileSchema.call(this, R), !R.validate)
           throw new Error("ajv implementation error");
         return R.validate;
       }
       _compileMetaSchema(R) {
-        const D = this.opts;
+        const q = this.opts;
         this.opts = this._metaOpts;
         try {
-          c.compileSchema.call(this, R);
+          s.compileSchema.call(this, R);
         } finally {
-          this.opts = D;
+          this.opts = q;
         }
       }
     }
-    C.ValidationError = o.default, C.MissingRefError = i.default, e.default = C;
-    function a(V, R, D, F = "error") {
+    S.ValidationError = o.default, S.MissingRefError = i.default, e.default = S;
+    function c(V, R, q, M = "error") {
       for (const $ in V) {
-        const k = $;
-        k in R && this.logger[F](`${D}: option ${$}. ${V[k]}`);
+        const x = $;
+        x in R && this.logger[M](`${q}: option ${$}. ${V[x]}`);
       }
     }
     function l(V) {
@@ -3515,21 +3515,21 @@ function Ji() {
           for (const R in V)
             this.addSchema(V[R], R);
     }
-    function x() {
+    function k() {
       for (const V in this.opts.formats) {
         const R = this.opts.formats[V];
         R && this.addFormat(V, R);
       }
     }
-    function E(V) {
+    function P(V) {
       if (Array.isArray(V)) {
         this.addVocabulary(V);
         return;
       }
       this.logger.warn("keywords option as map is deprecated, pass array");
       for (const R in V) {
-        const D = V[R];
-        D.keyword || (D.keyword = R), this.addKeyword(D);
+        const q = V[R];
+        q.keyword || (q.keyword = R), this.addKeyword(q);
       }
     }
     function N() {
@@ -3553,25 +3553,25 @@ function Ji() {
     }
     const T = /^[a-z_$][a-z0-9_$:-]*$/i;
     function J(V, R) {
-      const { RULES: D } = this;
-      if ((0, m.eachItem)(V, (F) => {
-        if (D.keywords[F])
-          throw new Error(`Keyword ${F} is already defined`);
-        if (!T.test(F))
-          throw new Error(`Keyword ${F} has invalid name`);
+      const { RULES: q } = this;
+      if ((0, m.eachItem)(V, (M) => {
+        if (q.keywords[M])
+          throw new Error(`Keyword ${M} is already defined`);
+        if (!T.test(M))
+          throw new Error(`Keyword ${M} has invalid name`);
       }), !!R && R.$data && !("code" in R || "validate" in R))
         throw new Error('$data keyword must have "code" or "validate" function');
     }
-    function Z(V, R, D) {
-      var F;
+    function Z(V, R, q) {
+      var M;
       const $ = R?.post;
-      if (D && $)
+      if (q && $)
         throw new Error('keyword with "post" flag cannot have "type"');
-      const { RULES: k } = this;
-      let I = $ ? k.post : k.rules.find(({ type: W }) => W === D);
-      if (I || (I = { type: D, rules: [] }, k.rules.push(I)), k.keywords[V] = !0, !R)
+      const { RULES: x } = this;
+      let I = $ ? x.post : x.rules.find(({ type: W }) => W === q);
+      if (I || (I = { type: q, rules: [] }, x.rules.push(I)), x.keywords[V] = !0, !R)
         return;
-      const H = {
+      const G = {
         keyword: V,
         definition: {
           ...R,
@@ -3579,13 +3579,13 @@ function Ji() {
           schemaType: (0, y.getJSONTypes)(R.schemaType)
         }
       };
-      R.before ? L.call(this, I, H, R.before) : I.rules.push(H), k.all[V] = H, (F = R.implements) === null || F === void 0 || F.forEach((W) => this.addKeyword(W));
+      R.before ? L.call(this, I, G, R.before) : I.rules.push(G), x.all[V] = G, (M = R.implements) === null || M === void 0 || M.forEach((W) => this.addKeyword(W));
     }
-    function L(V, R, D) {
-      const F = V.rules.findIndex(($) => $.keyword === D);
-      F >= 0 ? V.rules.splice(F, 0, R) : (V.rules.push(R), this.logger.warn(`rule ${D} is not defined`));
+    function L(V, R, q) {
+      const M = V.rules.findIndex(($) => $.keyword === q);
+      M >= 0 ? V.rules.splice(M, 0, R) : (V.rules.push(R), this.logger.warn(`rule ${q} is not defined`));
     }
-    function G(V) {
+    function H(V) {
       let { metaSchema: R } = V;
       R !== void 0 && (V.$data && this.opts.$data && (R = Y(R)), V.validateSchema = this.compile(R, !0));
     }
@@ -3610,97 +3610,97 @@ function Wi() {
   return vt.default = e, vt;
 }
 var je = {}, zr;
-function Gn() {
+function Hn() {
   if (zr) return je;
   zr = 1, Object.defineProperty(je, "__esModule", { value: !0 }), je.callRef = je.getValidate = void 0;
-  const e = /* @__PURE__ */ $n(), t = /* @__PURE__ */ xe(), n = /* @__PURE__ */ Q(), o = /* @__PURE__ */ ke(), i = /* @__PURE__ */ bn(), r = /* @__PURE__ */ ne(), c = {
+  const e = /* @__PURE__ */ $n(), t = /* @__PURE__ */ xe(), n = /* @__PURE__ */ Q(), o = /* @__PURE__ */ ke(), i = /* @__PURE__ */ bn(), r = /* @__PURE__ */ ne(), s = {
     keyword: "$ref",
     schemaType: "string",
     code(y) {
-      const { gen: m, schema: S, it: w } = y, { baseId: v, schemaEnv: _, validateName: b, opts: f, self: g } = w, { root: u } = _;
-      if ((S === "#" || S === "#/") && v === u.baseId)
-        return C();
-      const h = i.resolveRef.call(g, u, v, S);
+      const { gen: m, schema: C, it: b } = y, { baseId: v, schemaEnv: _, validateName: w, opts: f, self: g } = b, { root: u } = _;
+      if ((C === "#" || C === "#/") && v === u.baseId)
+        return S();
+      const h = i.resolveRef.call(g, u, v, C);
       if (h === void 0)
-        throw new e.default(w.opts.uriResolver, v, S);
+        throw new e.default(b.opts.uriResolver, v, C);
       if (h instanceof i.SchemaEnv)
-        return a(h);
+        return c(h);
       return l(h);
-      function C() {
+      function S() {
         if (_ === u)
-          return d(y, b, _, _.$async);
+          return d(y, w, _, _.$async);
         const p = m.scopeValue("root", { ref: u });
         return d(y, (0, n._)`${p}.validate`, u, u.$async);
       }
-      function a(p) {
-        const x = s(y, p);
-        d(y, x, p, p.$async);
+      function c(p) {
+        const k = a(y, p);
+        d(y, k, p, p.$async);
       }
       function l(p) {
-        const x = m.scopeValue("schema", f.code.source === !0 ? { ref: p, code: (0, n.stringify)(p) } : { ref: p }), E = m.name("valid"), N = y.subschema({
+        const k = m.scopeValue("schema", f.code.source === !0 ? { ref: p, code: (0, n.stringify)(p) } : { ref: p }), P = m.name("valid"), N = y.subschema({
           schema: p,
           dataTypes: [],
           schemaPath: n.nil,
-          topSchemaRef: x,
-          errSchemaPath: S
-        }, E);
-        y.mergeEvaluated(N), y.ok(E);
+          topSchemaRef: k,
+          errSchemaPath: C
+        }, P);
+        y.mergeEvaluated(N), y.ok(P);
       }
     }
   };
-  function s(y, m) {
-    const { gen: S } = y;
-    return m.validate ? S.scopeValue("validate", { ref: m.validate }) : (0, n._)`${S.scopeValue("wrapper", { ref: m })}.validate`;
+  function a(y, m) {
+    const { gen: C } = y;
+    return m.validate ? C.scopeValue("validate", { ref: m.validate }) : (0, n._)`${C.scopeValue("wrapper", { ref: m })}.validate`;
   }
-  je.getValidate = s;
-  function d(y, m, S, w) {
-    const { gen: v, it: _ } = y, { allErrors: b, schemaEnv: f, opts: g } = _, u = g.passContext ? o.default.this : n.nil;
-    w ? h() : C();
+  je.getValidate = a;
+  function d(y, m, C, b) {
+    const { gen: v, it: _ } = y, { allErrors: w, schemaEnv: f, opts: g } = _, u = g.passContext ? o.default.this : n.nil;
+    b ? h() : S();
     function h() {
       if (!f.$async)
         throw new Error("async schema referenced by sync schema");
       const p = v.let("valid");
       v.try(() => {
-        v.code((0, n._)`await ${(0, t.callValidateCode)(y, m, u)}`), l(m), b || v.assign(p, !0);
-      }, (x) => {
-        v.if((0, n._)`!(${x} instanceof ${_.ValidationError})`, () => v.throw(x)), a(x), b || v.assign(p, !1);
+        v.code((0, n._)`await ${(0, t.callValidateCode)(y, m, u)}`), l(m), w || v.assign(p, !0);
+      }, (k) => {
+        v.if((0, n._)`!(${k} instanceof ${_.ValidationError})`, () => v.throw(k)), c(k), w || v.assign(p, !1);
       }), y.ok(p);
     }
-    function C() {
-      y.result((0, t.callValidateCode)(y, m, u), () => l(m), () => a(m));
+    function S() {
+      y.result((0, t.callValidateCode)(y, m, u), () => l(m), () => c(m));
     }
-    function a(p) {
-      const x = (0, n._)`${p}.errors`;
-      v.assign(o.default.vErrors, (0, n._)`${o.default.vErrors} === null ? ${x} : ${o.default.vErrors}.concat(${x})`), v.assign(o.default.errors, (0, n._)`${o.default.vErrors}.length`);
+    function c(p) {
+      const k = (0, n._)`${p}.errors`;
+      v.assign(o.default.vErrors, (0, n._)`${o.default.vErrors} === null ? ${k} : ${o.default.vErrors}.concat(${k})`), v.assign(o.default.errors, (0, n._)`${o.default.vErrors}.length`);
     }
     function l(p) {
-      var x;
+      var k;
       if (!_.opts.unevaluated)
         return;
-      const E = (x = S?.validate) === null || x === void 0 ? void 0 : x.evaluated;
+      const P = (k = C?.validate) === null || k === void 0 ? void 0 : k.evaluated;
       if (_.props !== !0)
-        if (E && !E.dynamicProps)
-          E.props !== void 0 && (_.props = r.mergeEvaluated.props(v, E.props, _.props));
+        if (P && !P.dynamicProps)
+          P.props !== void 0 && (_.props = r.mergeEvaluated.props(v, P.props, _.props));
         else {
           const N = v.var("props", (0, n._)`${p}.evaluated.props`);
           _.props = r.mergeEvaluated.props(v, N, _.props, n.Name);
         }
       if (_.items !== !0)
-        if (E && !E.dynamicItems)
-          E.items !== void 0 && (_.items = r.mergeEvaluated.items(v, E.items, _.items));
+        if (P && !P.dynamicItems)
+          P.items !== void 0 && (_.items = r.mergeEvaluated.items(v, P.items, _.items));
         else {
           const N = v.var("items", (0, n._)`${p}.evaluated.items`);
           _.items = r.mergeEvaluated.items(v, N, _.items, n.Name);
         }
     }
   }
-  return je.callRef = d, je.default = c, je;
+  return je.callRef = d, je.default = s, je;
 }
 var Ir;
 function Yi() {
   if (Ir) return yt;
   Ir = 1, Object.defineProperty(yt, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ Wi(), t = /* @__PURE__ */ Gn(), n = [
+  const e = /* @__PURE__ */ Wi(), t = /* @__PURE__ */ Hn(), n = [
     "$schema",
     "$id",
     "$defs",
@@ -3712,18 +3712,18 @@ function Yi() {
   ];
   return yt.default = n, yt;
 }
-var $t = {}, bt = {}, Dr;
+var $t = {}, bt = {}, qr;
 function Xi() {
-  if (Dr) return bt;
-  Dr = 1, Object.defineProperty(bt, "__esModule", { value: !0 });
+  if (qr) return bt;
+  qr = 1, Object.defineProperty(bt, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ Q(), t = e.operators, n = {
     maximum: { okStr: "<=", ok: t.LTE, fail: t.GT },
     minimum: { okStr: ">=", ok: t.GTE, fail: t.LT },
     exclusiveMaximum: { okStr: "<", ok: t.LT, fail: t.GTE },
     exclusiveMinimum: { okStr: ">", ok: t.GT, fail: t.LTE }
   }, o = {
-    message: ({ keyword: r, schemaCode: c }) => (0, e.str)`must be ${n[r].okStr} ${c}`,
-    params: ({ keyword: r, schemaCode: c }) => (0, e._)`{comparison: ${n[r].okStr}, limit: ${c}}`
+    message: ({ keyword: r, schemaCode: s }) => (0, e.str)`must be ${n[r].okStr} ${s}`,
+    params: ({ keyword: r, schemaCode: s }) => (0, e._)`{comparison: ${n[r].okStr}, limit: ${s}}`
   }, i = {
     keyword: Object.keys(n),
     type: "number",
@@ -3731,16 +3731,16 @@ function Xi() {
     $data: !0,
     error: o,
     code(r) {
-      const { keyword: c, data: s, schemaCode: d } = r;
-      r.fail$data((0, e._)`${s} ${n[c].fail} ${d} || isNaN(${s})`);
+      const { keyword: s, data: a, schemaCode: d } = r;
+      r.fail$data((0, e._)`${a} ${n[s].fail} ${d} || isNaN(${a})`);
     }
   };
   return bt.default = i, bt;
 }
-var wt = {}, qr;
+var wt = {}, Dr;
 function Zi() {
-  if (qr) return wt;
-  qr = 1, Object.defineProperty(wt, "__esModule", { value: !0 });
+  if (Dr) return wt;
+  Dr = 1, Object.defineProperty(wt, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ Q(), n = {
     keyword: "multipleOf",
     type: "number",
@@ -3751,8 +3751,8 @@ function Zi() {
       params: ({ schemaCode: o }) => (0, e._)`{multipleOf: ${o}}`
     },
     code(o) {
-      const { gen: i, data: r, schemaCode: c, it: s } = o, d = s.opts.multipleOfPrecision, y = i.let("res"), m = d ? (0, e._)`Math.abs(Math.round(${y}) - ${y}) > 1e-${d}` : (0, e._)`${y} !== parseInt(${y})`;
-      o.fail$data((0, e._)`(${c} === 0 || (${y} = ${r}/${c}, ${m}))`);
+      const { gen: i, data: r, schemaCode: s, it: a } = o, d = a.opts.multipleOfPrecision, y = i.let("res"), m = d ? (0, e._)`Math.abs(Math.round(${y}) - ${y}) > 1e-${d}` : (0, e._)`${y} !== parseInt(${y})`;
+      o.fail$data((0, e._)`(${s} === 0 || (${y} = ${r}/${s}, ${m}))`);
     }
   };
   return wt.default = n, wt;
@@ -3780,15 +3780,15 @@ function es() {
     schemaType: "number",
     $data: !0,
     error: {
-      message({ keyword: r, schemaCode: c }) {
-        const s = r === "maxLength" ? "more" : "fewer";
-        return (0, e.str)`must NOT have ${s} than ${c} characters`;
+      message({ keyword: r, schemaCode: s }) {
+        const a = r === "maxLength" ? "more" : "fewer";
+        return (0, e.str)`must NOT have ${a} than ${s} characters`;
       },
       params: ({ schemaCode: r }) => (0, e._)`{limit: ${r}}`
     },
     code(r) {
-      const { keyword: c, data: s, schemaCode: d, it: y } = r, m = c === "maxLength" ? e.operators.GT : e.operators.LT, S = y.opts.unicode === !1 ? (0, e._)`${s}.length` : (0, e._)`${(0, t.useFunc)(r.gen, n.default)}(${s})`;
-      r.fail$data((0, e._)`${S} ${m} ${d}`);
+      const { keyword: s, data: a, schemaCode: d, it: y } = r, m = s === "maxLength" ? e.operators.GT : e.operators.LT, C = y.opts.unicode === !1 ? (0, e._)`${a}.length` : (0, e._)`${(0, t.useFunc)(r.gen, n.default)}(${a})`;
+      r.fail$data((0, e._)`${C} ${m} ${d}`);
     }
   };
   return _t.default = i, _t;
@@ -3807,13 +3807,13 @@ function ts() {
       params: ({ schemaCode: r }) => (0, n._)`{pattern: ${r}}`
     },
     code(r) {
-      const { gen: c, data: s, $data: d, schema: y, schemaCode: m, it: S } = r, w = S.opts.unicodeRegExp ? "u" : "";
+      const { gen: s, data: a, $data: d, schema: y, schemaCode: m, it: C } = r, b = C.opts.unicodeRegExp ? "u" : "";
       if (d) {
-        const { regExp: v } = S.opts.code, _ = v.code === "new RegExp" ? (0, n._)`new RegExp` : (0, t.useFunc)(c, v), b = c.let("valid");
-        c.try(() => c.assign(b, (0, n._)`${_}(${m}, ${w}).test(${s})`), () => c.assign(b, !1)), r.fail$data((0, n._)`!${b}`);
+        const { regExp: v } = C.opts.code, _ = v.code === "new RegExp" ? (0, n._)`new RegExp` : (0, t.useFunc)(s, v), w = s.let("valid");
+        s.try(() => s.assign(w, (0, n._)`${_}(${m}, ${b}).test(${a})`), () => s.assign(w, !1)), r.fail$data((0, n._)`!${w}`);
       } else {
         const v = (0, e.usePattern)(r, y);
-        r.fail$data((0, n._)`!${v}.test(${s})`);
+        r.fail$data((0, n._)`!${v}.test(${a})`);
       }
     }
   };
@@ -3836,8 +3836,8 @@ function ns() {
       params: ({ schemaCode: o }) => (0, e._)`{limit: ${o}}`
     },
     code(o) {
-      const { keyword: i, data: r, schemaCode: c } = o, s = i === "maxProperties" ? e.operators.GT : e.operators.LT;
-      o.fail$data((0, e._)`Object.keys(${r}).length ${s} ${c}`);
+      const { keyword: i, data: r, schemaCode: s } = o, a = i === "maxProperties" ? e.operators.GT : e.operators.LT;
+      o.fail$data((0, e._)`Object.keys(${r}).length ${a} ${s}`);
     }
   };
   return kt.default = n, kt;
@@ -3856,42 +3856,42 @@ function rs() {
       params: ({ params: { missingProperty: r } }) => (0, t._)`{missingProperty: ${r}}`
     },
     code(r) {
-      const { gen: c, schema: s, schemaCode: d, data: y, $data: m, it: S } = r, { opts: w } = S;
-      if (!m && s.length === 0)
+      const { gen: s, schema: a, schemaCode: d, data: y, $data: m, it: C } = r, { opts: b } = C;
+      if (!m && a.length === 0)
         return;
-      const v = s.length >= w.loopRequired;
-      if (S.allErrors ? _() : b(), w.strictRequired) {
+      const v = a.length >= b.loopRequired;
+      if (C.allErrors ? _() : w(), b.strictRequired) {
         const u = r.parentSchema.properties, { definedProperties: h } = r.it;
-        for (const C of s)
-          if (u?.[C] === void 0 && !h.has(C)) {
-            const a = S.schemaEnv.baseId + S.errSchemaPath, l = `required property "${C}" is not defined at "${a}" (strictRequired)`;
-            (0, n.checkStrictMode)(S, l, S.opts.strictRequired);
+        for (const S of a)
+          if (u?.[S] === void 0 && !h.has(S)) {
+            const c = C.schemaEnv.baseId + C.errSchemaPath, l = `required property "${S}" is not defined at "${c}" (strictRequired)`;
+            (0, n.checkStrictMode)(C, l, C.opts.strictRequired);
           }
       }
       function _() {
         if (v || m)
           r.block$data(t.nil, f);
         else
-          for (const u of s)
+          for (const u of a)
             (0, e.checkReportMissingProp)(r, u);
       }
-      function b() {
-        const u = c.let("missing");
+      function w() {
+        const u = s.let("missing");
         if (v || m) {
-          const h = c.let("valid", !0);
+          const h = s.let("valid", !0);
           r.block$data(h, () => g(u, h)), r.ok(h);
         } else
-          c.if((0, e.checkMissingProp)(r, s, u)), (0, e.reportMissingProp)(r, u), c.else();
+          s.if((0, e.checkMissingProp)(r, a, u)), (0, e.reportMissingProp)(r, u), s.else();
       }
       function f() {
-        c.forOf("prop", d, (u) => {
-          r.setParams({ missingProperty: u }), c.if((0, e.noPropertyInData)(c, y, u, w.ownProperties), () => r.error());
+        s.forOf("prop", d, (u) => {
+          r.setParams({ missingProperty: u }), s.if((0, e.noPropertyInData)(s, y, u, b.ownProperties), () => r.error());
         });
       }
       function g(u, h) {
-        r.setParams({ missingProperty: u }), c.forOf(u, d, () => {
-          c.assign(h, (0, e.propertyInData)(c, y, u, w.ownProperties)), c.if((0, t.not)(h), () => {
-            r.error(), c.break();
+        r.setParams({ missingProperty: u }), s.forOf(u, d, () => {
+          s.assign(h, (0, e.propertyInData)(s, y, u, b.ownProperties)), s.if((0, t.not)(h), () => {
+            r.error(), s.break();
           });
         }, t.nil);
       }
@@ -3899,10 +3899,10 @@ function rs() {
   };
   return xt.default = i, xt;
 }
-var Et = {}, Gr;
+var Et = {}, Hr;
 function os() {
-  if (Gr) return Et;
-  Gr = 1, Object.defineProperty(Et, "__esModule", { value: !0 });
+  if (Hr) return Et;
+  Hr = 1, Object.defineProperty(Et, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ Q(), n = {
     keyword: ["maxItems", "minItems"],
     type: "array",
@@ -3916,16 +3916,16 @@ function os() {
       params: ({ schemaCode: o }) => (0, e._)`{limit: ${o}}`
     },
     code(o) {
-      const { keyword: i, data: r, schemaCode: c } = o, s = i === "maxItems" ? e.operators.GT : e.operators.LT;
-      o.fail$data((0, e._)`${r}.length ${s} ${c}`);
+      const { keyword: i, data: r, schemaCode: s } = o, a = i === "maxItems" ? e.operators.GT : e.operators.LT;
+      o.fail$data((0, e._)`${r}.length ${a} ${s}`);
     }
   };
   return Et.default = n, Et;
 }
-var Pt = {}, At = {}, Hr;
-function Hn() {
-  if (Hr) return At;
-  Hr = 1, Object.defineProperty(At, "__esModule", { value: !0 });
+var Pt = {}, At = {}, Gr;
+function Gn() {
+  if (Gr) return At;
+  Gr = 1, Object.defineProperty(At, "__esModule", { value: !0 });
   const e = ei();
   return e.code = 'require("ajv/dist/runtime/equal").default', At.default = e, At;
 }
@@ -3933,40 +3933,40 @@ var Jr;
 function is() {
   if (Jr) return Pt;
   Jr = 1, Object.defineProperty(Pt, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ pn(), t = /* @__PURE__ */ Q(), n = /* @__PURE__ */ ne(), o = /* @__PURE__ */ Hn(), r = {
+  const e = /* @__PURE__ */ pn(), t = /* @__PURE__ */ Q(), n = /* @__PURE__ */ ne(), o = /* @__PURE__ */ Gn(), r = {
     keyword: "uniqueItems",
     type: "array",
     schemaType: "boolean",
     $data: !0,
     error: {
-      message: ({ params: { i: c, j: s } }) => (0, t.str)`must NOT have duplicate items (items ## ${s} and ${c} are identical)`,
-      params: ({ params: { i: c, j: s } }) => (0, t._)`{i: ${c}, j: ${s}}`
+      message: ({ params: { i: s, j: a } }) => (0, t.str)`must NOT have duplicate items (items ## ${a} and ${s} are identical)`,
+      params: ({ params: { i: s, j: a } }) => (0, t._)`{i: ${s}, j: ${a}}`
     },
-    code(c) {
-      const { gen: s, data: d, $data: y, schema: m, parentSchema: S, schemaCode: w, it: v } = c;
+    code(s) {
+      const { gen: a, data: d, $data: y, schema: m, parentSchema: C, schemaCode: b, it: v } = s;
       if (!y && !m)
         return;
-      const _ = s.let("valid"), b = S.items ? (0, e.getSchemaTypes)(S.items) : [];
-      c.block$data(_, f, (0, t._)`${w} === false`), c.ok(_);
+      const _ = a.let("valid"), w = C.items ? (0, e.getSchemaTypes)(C.items) : [];
+      s.block$data(_, f, (0, t._)`${b} === false`), s.ok(_);
       function f() {
-        const C = s.let("i", (0, t._)`${d}.length`), a = s.let("j");
-        c.setParams({ i: C, j: a }), s.assign(_, !0), s.if((0, t._)`${C} > 1`, () => (g() ? u : h)(C, a));
+        const S = a.let("i", (0, t._)`${d}.length`), c = a.let("j");
+        s.setParams({ i: S, j: c }), a.assign(_, !0), a.if((0, t._)`${S} > 1`, () => (g() ? u : h)(S, c));
       }
       function g() {
-        return b.length > 0 && !b.some((C) => C === "object" || C === "array");
+        return w.length > 0 && !w.some((S) => S === "object" || S === "array");
       }
-      function u(C, a) {
-        const l = s.name("item"), p = (0, e.checkDataTypes)(b, l, v.opts.strictNumbers, e.DataType.Wrong), x = s.const("indices", (0, t._)`{}`);
-        s.for((0, t._)`;${C}--;`, () => {
-          s.let(l, (0, t._)`${d}[${C}]`), s.if(p, (0, t._)`continue`), b.length > 1 && s.if((0, t._)`typeof ${l} == "string"`, (0, t._)`${l} += "_"`), s.if((0, t._)`typeof ${x}[${l}] == "number"`, () => {
-            s.assign(a, (0, t._)`${x}[${l}]`), c.error(), s.assign(_, !1).break();
-          }).code((0, t._)`${x}[${l}] = ${C}`);
+      function u(S, c) {
+        const l = a.name("item"), p = (0, e.checkDataTypes)(w, l, v.opts.strictNumbers, e.DataType.Wrong), k = a.const("indices", (0, t._)`{}`);
+        a.for((0, t._)`;${S}--;`, () => {
+          a.let(l, (0, t._)`${d}[${S}]`), a.if(p, (0, t._)`continue`), w.length > 1 && a.if((0, t._)`typeof ${l} == "string"`, (0, t._)`${l} += "_"`), a.if((0, t._)`typeof ${k}[${l}] == "number"`, () => {
+            a.assign(c, (0, t._)`${k}[${l}]`), s.error(), a.assign(_, !1).break();
+          }).code((0, t._)`${k}[${l}] = ${S}`);
         });
       }
-      function h(C, a) {
-        const l = (0, n.useFunc)(s, o.default), p = s.name("outer");
-        s.label(p).for((0, t._)`;${C}--;`, () => s.for((0, t._)`${a} = ${C}; ${a}--;`, () => s.if((0, t._)`${l}(${d}[${C}], ${d}[${a}])`, () => {
-          c.error(), s.assign(_, !1).break(p);
+      function h(S, c) {
+        const l = (0, n.useFunc)(a, o.default), p = a.name("outer");
+        a.label(p).for((0, t._)`;${S}--;`, () => a.for((0, t._)`${c} = ${S}; ${c}--;`, () => a.if((0, t._)`${l}(${d}[${S}], ${d}[${c}])`, () => {
+          s.error(), a.assign(_, !1).break(p);
         })));
       }
     }
@@ -3977,7 +3977,7 @@ var Rt = {}, Wr;
 function ss() {
   if (Wr) return Rt;
   Wr = 1, Object.defineProperty(Rt, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne(), n = /* @__PURE__ */ Hn(), i = {
+  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne(), n = /* @__PURE__ */ Gn(), i = {
     keyword: "const",
     $data: !0,
     error: {
@@ -3985,17 +3985,17 @@ function ss() {
       params: ({ schemaCode: r }) => (0, e._)`{allowedValue: ${r}}`
     },
     code(r) {
-      const { gen: c, data: s, $data: d, schemaCode: y, schema: m } = r;
-      d || m && typeof m == "object" ? r.fail$data((0, e._)`!${(0, t.useFunc)(c, n.default)}(${s}, ${y})`) : r.fail((0, e._)`${m} !== ${s}`);
+      const { gen: s, data: a, $data: d, schemaCode: y, schema: m } = r;
+      d || m && typeof m == "object" ? r.fail$data((0, e._)`!${(0, t.useFunc)(s, n.default)}(${a}, ${y})`) : r.fail((0, e._)`${m} !== ${a}`);
     }
   };
   return Rt.default = i, Rt;
 }
-var Mt = {}, Yr;
+var Ft = {}, Yr;
 function as() {
-  if (Yr) return Mt;
-  Yr = 1, Object.defineProperty(Mt, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne(), n = /* @__PURE__ */ Hn(), i = {
+  if (Yr) return Ft;
+  Yr = 1, Object.defineProperty(Ft, "__esModule", { value: !0 });
+  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne(), n = /* @__PURE__ */ Gn(), i = {
     keyword: "enum",
     schemaType: "array",
     $data: !0,
@@ -4004,38 +4004,38 @@ function as() {
       params: ({ schemaCode: r }) => (0, e._)`{allowedValues: ${r}}`
     },
     code(r) {
-      const { gen: c, data: s, $data: d, schema: y, schemaCode: m, it: S } = r;
+      const { gen: s, data: a, $data: d, schema: y, schemaCode: m, it: C } = r;
       if (!d && y.length === 0)
         throw new Error("enum must have non-empty array");
-      const w = y.length >= S.opts.loopEnum;
+      const b = y.length >= C.opts.loopEnum;
       let v;
-      const _ = () => v ?? (v = (0, t.useFunc)(c, n.default));
-      let b;
-      if (w || d)
-        b = c.let("valid"), r.block$data(b, f);
+      const _ = () => v ?? (v = (0, t.useFunc)(s, n.default));
+      let w;
+      if (b || d)
+        w = s.let("valid"), r.block$data(w, f);
       else {
         if (!Array.isArray(y))
           throw new Error("ajv implementation error");
-        const u = c.const("vSchema", m);
-        b = (0, e.or)(...y.map((h, C) => g(u, C)));
+        const u = s.const("vSchema", m);
+        w = (0, e.or)(...y.map((h, S) => g(u, S)));
       }
-      r.pass(b);
+      r.pass(w);
       function f() {
-        c.assign(b, !1), c.forOf("v", m, (u) => c.if((0, e._)`${_()}(${s}, ${u})`, () => c.assign(b, !0).break()));
+        s.assign(w, !1), s.forOf("v", m, (u) => s.if((0, e._)`${_()}(${a}, ${u})`, () => s.assign(w, !0).break()));
       }
       function g(u, h) {
-        const C = y[h];
-        return typeof C == "object" && C !== null ? (0, e._)`${_()}(${s}, ${u}[${h}])` : (0, e._)`${s} === ${C}`;
+        const S = y[h];
+        return typeof S == "object" && S !== null ? (0, e._)`${_()}(${a}, ${u}[${h}])` : (0, e._)`${a} === ${S}`;
       }
     }
   };
-  return Mt.default = i, Mt;
+  return Ft.default = i, Ft;
 }
 var Xr;
 function cs() {
   if (Xr) return $t;
   Xr = 1, Object.defineProperty($t, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ Xi(), t = /* @__PURE__ */ Zi(), n = /* @__PURE__ */ es(), o = /* @__PURE__ */ ts(), i = /* @__PURE__ */ ns(), r = /* @__PURE__ */ rs(), c = /* @__PURE__ */ os(), s = /* @__PURE__ */ is(), d = /* @__PURE__ */ ss(), y = /* @__PURE__ */ as(), m = [
+  const e = /* @__PURE__ */ Xi(), t = /* @__PURE__ */ Zi(), n = /* @__PURE__ */ es(), o = /* @__PURE__ */ ts(), i = /* @__PURE__ */ ns(), r = /* @__PURE__ */ rs(), s = /* @__PURE__ */ os(), a = /* @__PURE__ */ is(), d = /* @__PURE__ */ ss(), y = /* @__PURE__ */ as(), m = [
     // number
     e.default,
     t.default,
@@ -4046,8 +4046,8 @@ function cs() {
     i.default,
     r.default,
     // array
-    c.default,
     s.default,
+    a.default,
     // any
     { keyword: "type", schemaType: ["string", "array"] },
     { keyword: "nullable", schemaType: "boolean" },
@@ -4056,7 +4056,7 @@ function cs() {
   ];
   return $t.default = m, $t;
 }
-var Ft = {}, Ke = {}, Zr;
+var Mt = {}, Ke = {}, Zr;
 function ni() {
   if (Zr) return Ke;
   Zr = 1, Object.defineProperty(Ke, "__esModule", { value: !0 }), Ke.validateAdditionalItems = void 0;
@@ -4070,68 +4070,68 @@ function ni() {
       params: ({ params: { len: r } }) => (0, e._)`{limit: ${r}}`
     },
     code(r) {
-      const { parentSchema: c, it: s } = r, { items: d } = c;
+      const { parentSchema: s, it: a } = r, { items: d } = s;
       if (!Array.isArray(d)) {
-        (0, t.checkStrictMode)(s, '"additionalItems" is ignored when "items" is not an array of schemas');
+        (0, t.checkStrictMode)(a, '"additionalItems" is ignored when "items" is not an array of schemas');
         return;
       }
       i(r, d);
     }
   };
-  function i(r, c) {
-    const { gen: s, schema: d, data: y, keyword: m, it: S } = r;
-    S.items = !0;
-    const w = s.const("len", (0, e._)`${y}.length`);
+  function i(r, s) {
+    const { gen: a, schema: d, data: y, keyword: m, it: C } = r;
+    C.items = !0;
+    const b = a.const("len", (0, e._)`${y}.length`);
     if (d === !1)
-      r.setParams({ len: c.length }), r.pass((0, e._)`${w} <= ${c.length}`);
-    else if (typeof d == "object" && !(0, t.alwaysValidSchema)(S, d)) {
-      const _ = s.var("valid", (0, e._)`${w} <= ${c.length}`);
-      s.if((0, e.not)(_), () => v(_)), r.ok(_);
+      r.setParams({ len: s.length }), r.pass((0, e._)`${b} <= ${s.length}`);
+    else if (typeof d == "object" && !(0, t.alwaysValidSchema)(C, d)) {
+      const _ = a.var("valid", (0, e._)`${b} <= ${s.length}`);
+      a.if((0, e.not)(_), () => v(_)), r.ok(_);
     }
     function v(_) {
-      s.forRange("i", c.length, w, (b) => {
-        r.subschema({ keyword: m, dataProp: b, dataPropType: t.Type.Num }, _), S.allErrors || s.if((0, e.not)(_), () => s.break());
+      a.forRange("i", s.length, b, (w) => {
+        r.subschema({ keyword: m, dataProp: w, dataPropType: t.Type.Num }, _), C.allErrors || a.if((0, e.not)(_), () => a.break());
       });
     }
   }
   return Ke.validateAdditionalItems = i, Ke.default = o, Ke;
 }
-var Nt = {}, Ge = {}, Qr;
+var Nt = {}, He = {}, Qr;
 function ri() {
-  if (Qr) return Ge;
-  Qr = 1, Object.defineProperty(Ge, "__esModule", { value: !0 }), Ge.validateTuple = void 0;
+  if (Qr) return He;
+  Qr = 1, Object.defineProperty(He, "__esModule", { value: !0 }), He.validateTuple = void 0;
   const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ne(), n = /* @__PURE__ */ xe(), o = {
     keyword: "items",
     type: "array",
     schemaType: ["object", "array", "boolean"],
     before: "uniqueItems",
     code(r) {
-      const { schema: c, it: s } = r;
-      if (Array.isArray(c))
-        return i(r, "additionalItems", c);
-      s.items = !0, !(0, t.alwaysValidSchema)(s, c) && r.ok((0, n.validateArray)(r));
+      const { schema: s, it: a } = r;
+      if (Array.isArray(s))
+        return i(r, "additionalItems", s);
+      a.items = !0, !(0, t.alwaysValidSchema)(a, s) && r.ok((0, n.validateArray)(r));
     }
   };
-  function i(r, c, s = r.schema) {
-    const { gen: d, parentSchema: y, data: m, keyword: S, it: w } = r;
-    b(y), w.opts.unevaluated && s.length && w.items !== !0 && (w.items = t.mergeEvaluated.items(d, s.length, w.items));
+  function i(r, s, a = r.schema) {
+    const { gen: d, parentSchema: y, data: m, keyword: C, it: b } = r;
+    w(y), b.opts.unevaluated && a.length && b.items !== !0 && (b.items = t.mergeEvaluated.items(d, a.length, b.items));
     const v = d.name("valid"), _ = d.const("len", (0, e._)`${m}.length`);
-    s.forEach((f, g) => {
-      (0, t.alwaysValidSchema)(w, f) || (d.if((0, e._)`${_} > ${g}`, () => r.subschema({
-        keyword: S,
+    a.forEach((f, g) => {
+      (0, t.alwaysValidSchema)(b, f) || (d.if((0, e._)`${_} > ${g}`, () => r.subschema({
+        keyword: C,
         schemaProp: g,
         dataProp: g
       }, v)), r.ok(v));
     });
-    function b(f) {
-      const { opts: g, errSchemaPath: u } = w, h = s.length, C = h === f.minItems && (h === f.maxItems || f[c] === !1);
-      if (g.strictTuples && !C) {
-        const a = `"${S}" is ${h}-tuple, but minItems or maxItems/${c} are not specified or different at path "${u}"`;
-        (0, t.checkStrictMode)(w, a, g.strictTuples);
+    function w(f) {
+      const { opts: g, errSchemaPath: u } = b, h = a.length, S = h === f.minItems && (h === f.maxItems || f[s] === !1);
+      if (g.strictTuples && !S) {
+        const c = `"${C}" is ${h}-tuple, but minItems or maxItems/${s} are not specified or different at path "${u}"`;
+        (0, t.checkStrictMode)(b, c, g.strictTuples);
       }
     }
   }
-  return Ge.validateTuple = i, Ge.default = o, Ge;
+  return He.validateTuple = i, He.default = o, He;
 }
 var eo;
 function ls() {
@@ -4156,12 +4156,12 @@ function ds() {
     schemaType: ["object", "boolean"],
     before: "uniqueItems",
     error: {
-      message: ({ params: { len: c } }) => (0, e.str)`must NOT have more than ${c} items`,
-      params: ({ params: { len: c } }) => (0, e._)`{limit: ${c}}`
+      message: ({ params: { len: s } }) => (0, e.str)`must NOT have more than ${s} items`,
+      params: ({ params: { len: s } }) => (0, e._)`{limit: ${s}}`
     },
-    code(c) {
-      const { schema: s, parentSchema: d, it: y } = c, { prefixItems: m } = d;
-      y.items = !0, !(0, t.alwaysValidSchema)(y, s) && (m ? (0, o.validateAdditionalItems)(c, m) : c.ok((0, n.validateArray)(c)));
+    code(s) {
+      const { schema: a, parentSchema: d, it: y } = s, { prefixItems: m } = d;
+      y.items = !0, !(0, t.alwaysValidSchema)(y, a) && (m ? (0, o.validateAdditionalItems)(s, m) : s.ok((0, n.validateArray)(s)));
     }
   };
   return jt.default = r, jt;
@@ -4181,43 +4181,43 @@ function us() {
       params: ({ params: { min: i, max: r } }) => r === void 0 ? (0, e._)`{minContains: ${i}}` : (0, e._)`{minContains: ${i}, maxContains: ${r}}`
     },
     code(i) {
-      const { gen: r, schema: c, parentSchema: s, data: d, it: y } = i;
-      let m, S;
-      const { minContains: w, maxContains: v } = s;
-      y.opts.next ? (m = w === void 0 ? 1 : w, S = v) : m = 1;
+      const { gen: r, schema: s, parentSchema: a, data: d, it: y } = i;
+      let m, C;
+      const { minContains: b, maxContains: v } = a;
+      y.opts.next ? (m = b === void 0 ? 1 : b, C = v) : m = 1;
       const _ = r.const("len", (0, e._)`${d}.length`);
-      if (i.setParams({ min: m, max: S }), S === void 0 && m === 0) {
+      if (i.setParams({ min: m, max: C }), C === void 0 && m === 0) {
         (0, t.checkStrictMode)(y, '"minContains" == 0 without "maxContains": "contains" keyword ignored');
         return;
       }
-      if (S !== void 0 && m > S) {
+      if (C !== void 0 && m > C) {
         (0, t.checkStrictMode)(y, '"minContains" > "maxContains" is always invalid'), i.fail();
         return;
       }
-      if ((0, t.alwaysValidSchema)(y, c)) {
+      if ((0, t.alwaysValidSchema)(y, s)) {
         let h = (0, e._)`${_} >= ${m}`;
-        S !== void 0 && (h = (0, e._)`${h} && ${_} <= ${S}`), i.pass(h);
+        C !== void 0 && (h = (0, e._)`${h} && ${_} <= ${C}`), i.pass(h);
         return;
       }
       y.items = !0;
-      const b = r.name("valid");
-      S === void 0 && m === 1 ? g(b, () => r.if(b, () => r.break())) : m === 0 ? (r.let(b, !0), S !== void 0 && r.if((0, e._)`${d}.length > 0`, f)) : (r.let(b, !1), f()), i.result(b, () => i.reset());
+      const w = r.name("valid");
+      C === void 0 && m === 1 ? g(w, () => r.if(w, () => r.break())) : m === 0 ? (r.let(w, !0), C !== void 0 && r.if((0, e._)`${d}.length > 0`, f)) : (r.let(w, !1), f()), i.result(w, () => i.reset());
       function f() {
-        const h = r.name("_valid"), C = r.let("count", 0);
-        g(h, () => r.if(h, () => u(C)));
+        const h = r.name("_valid"), S = r.let("count", 0);
+        g(h, () => r.if(h, () => u(S)));
       }
-      function g(h, C) {
-        r.forRange("i", 0, _, (a) => {
+      function g(h, S) {
+        r.forRange("i", 0, _, (c) => {
           i.subschema({
             keyword: "contains",
-            dataProp: a,
+            dataProp: c,
             dataPropType: t.Type.Num,
             compositeRule: !0
-          }, h), C();
+          }, h), S();
         });
       }
       function u(h) {
-        r.code((0, e._)`${h}++`), S === void 0 ? r.if((0, e._)`${h} >= ${m}`, () => r.assign(b, !0).break()) : (r.if((0, e._)`${h} > ${S}`, () => r.assign(b, !1).break()), m === 1 ? r.assign(b, !0) : r.if((0, e._)`${h} >= ${m}`, () => r.assign(b, !0)));
+        r.code((0, e._)`${h}++`), C === void 0 ? r.if((0, e._)`${h} >= ${m}`, () => r.assign(w, !0).break()) : (r.if((0, e._)`${h} > ${C}`, () => r.assign(w, !1).break()), m === 1 ? r.assign(w, !0) : r.if((0, e._)`${h} >= ${m}`, () => r.assign(w, !0)));
       }
     }
   };
@@ -4230,11 +4230,11 @@ function Jn() {
     const t = /* @__PURE__ */ Q(), n = /* @__PURE__ */ ne(), o = /* @__PURE__ */ xe();
     e.error = {
       message: ({ params: { property: d, depsCount: y, deps: m } }) => {
-        const S = y === 1 ? "property" : "properties";
-        return (0, t.str)`must have ${S} ${m} when property ${d} is present`;
+        const C = y === 1 ? "property" : "properties";
+        return (0, t.str)`must have ${C} ${m} when property ${d} is present`;
       },
-      params: ({ params: { property: d, depsCount: y, deps: m, missingProperty: S } }) => (0, t._)`{property: ${d},
-    missingProperty: ${S},
+      params: ({ params: { property: d, depsCount: y, deps: m, missingProperty: C } }) => (0, t._)`{property: ${d},
+    missingProperty: ${C},
     depsCount: ${y},
     deps: ${m}}`
       // TODO change to reference
@@ -4246,54 +4246,54 @@ function Jn() {
       error: e.error,
       code(d) {
         const [y, m] = r(d);
-        c(d, y), s(d, m);
+        s(d, y), a(d, m);
       }
     };
     function r({ schema: d }) {
       const y = {}, m = {};
-      for (const S in d) {
-        if (S === "__proto__")
+      for (const C in d) {
+        if (C === "__proto__")
           continue;
-        const w = Array.isArray(d[S]) ? y : m;
-        w[S] = d[S];
+        const b = Array.isArray(d[C]) ? y : m;
+        b[C] = d[C];
       }
       return [y, m];
     }
-    function c(d, y = d.schema) {
-      const { gen: m, data: S, it: w } = d;
+    function s(d, y = d.schema) {
+      const { gen: m, data: C, it: b } = d;
       if (Object.keys(y).length === 0)
         return;
       const v = m.let("missing");
       for (const _ in y) {
-        const b = y[_];
-        if (b.length === 0)
+        const w = y[_];
+        if (w.length === 0)
           continue;
-        const f = (0, o.propertyInData)(m, S, _, w.opts.ownProperties);
+        const f = (0, o.propertyInData)(m, C, _, b.opts.ownProperties);
         d.setParams({
           property: _,
-          depsCount: b.length,
-          deps: b.join(", ")
-        }), w.allErrors ? m.if(f, () => {
-          for (const g of b)
+          depsCount: w.length,
+          deps: w.join(", ")
+        }), b.allErrors ? m.if(f, () => {
+          for (const g of w)
             (0, o.checkReportMissingProp)(d, g);
-        }) : (m.if((0, t._)`${f} && (${(0, o.checkMissingProp)(d, b, v)})`), (0, o.reportMissingProp)(d, v), m.else());
+        }) : (m.if((0, t._)`${f} && (${(0, o.checkMissingProp)(d, w, v)})`), (0, o.reportMissingProp)(d, v), m.else());
       }
     }
-    e.validatePropertyDeps = c;
-    function s(d, y = d.schema) {
-      const { gen: m, data: S, keyword: w, it: v } = d, _ = m.name("valid");
-      for (const b in y)
-        (0, n.alwaysValidSchema)(v, y[b]) || (m.if(
-          (0, o.propertyInData)(m, S, b, v.opts.ownProperties),
+    e.validatePropertyDeps = s;
+    function a(d, y = d.schema) {
+      const { gen: m, data: C, keyword: b, it: v } = d, _ = m.name("valid");
+      for (const w in y)
+        (0, n.alwaysValidSchema)(v, y[w]) || (m.if(
+          (0, o.propertyInData)(m, C, w, v.opts.ownProperties),
           () => {
-            const f = d.subschema({ keyword: w, schemaProp: b }, _);
+            const f = d.subschema({ keyword: b, schemaProp: w }, _);
             d.mergeValidEvaluated(f, _);
           },
           () => m.var(_, !0)
           // TODO var
         ), d.ok(_));
     }
-    e.validateSchemaDeps = s, e.default = i;
+    e.validateSchemaDeps = a, e.default = i;
   })(jn)), jn;
 }
 var Tt = {}, oo;
@@ -4309,11 +4309,11 @@ function fs() {
       params: ({ params: i }) => (0, e._)`{propertyName: ${i.propertyName}}`
     },
     code(i) {
-      const { gen: r, schema: c, data: s, it: d } = i;
-      if ((0, t.alwaysValidSchema)(d, c))
+      const { gen: r, schema: s, data: a, it: d } = i;
+      if ((0, t.alwaysValidSchema)(d, s))
         return;
       const y = r.name("valid");
-      r.forIn("key", s, (m) => {
+      r.forIn("key", a, (m) => {
         i.setParams({ propertyName: m }), i.subschema({
           keyword: "propertyNames",
           data: m,
@@ -4340,60 +4340,60 @@ function oi() {
     trackErrors: !0,
     error: {
       message: "must NOT have additional properties",
-      params: ({ params: c }) => (0, t._)`{additionalProperty: ${c.additionalProperty}}`
+      params: ({ params: s }) => (0, t._)`{additionalProperty: ${s.additionalProperty}}`
     },
-    code(c) {
-      const { gen: s, schema: d, parentSchema: y, data: m, errsCount: S, it: w } = c;
-      if (!S)
+    code(s) {
+      const { gen: a, schema: d, parentSchema: y, data: m, errsCount: C, it: b } = s;
+      if (!C)
         throw new Error("ajv implementation error");
-      const { allErrors: v, opts: _ } = w;
-      if (w.props = !0, _.removeAdditional !== "all" && (0, o.alwaysValidSchema)(w, d))
+      const { allErrors: v, opts: _ } = b;
+      if (b.props = !0, _.removeAdditional !== "all" && (0, o.alwaysValidSchema)(b, d))
         return;
-      const b = (0, e.allSchemaProperties)(y.properties), f = (0, e.allSchemaProperties)(y.patternProperties);
-      g(), c.ok((0, t._)`${S} === ${n.default.errors}`);
+      const w = (0, e.allSchemaProperties)(y.properties), f = (0, e.allSchemaProperties)(y.patternProperties);
+      g(), s.ok((0, t._)`${C} === ${n.default.errors}`);
       function g() {
-        s.forIn("key", m, (l) => {
-          !b.length && !f.length ? C(l) : s.if(u(l), () => C(l));
+        a.forIn("key", m, (l) => {
+          !w.length && !f.length ? S(l) : a.if(u(l), () => S(l));
         });
       }
       function u(l) {
         let p;
-        if (b.length > 8) {
-          const x = (0, o.schemaRefOrVal)(w, y.properties, "properties");
-          p = (0, e.isOwnProperty)(s, x, l);
-        } else b.length ? p = (0, t.or)(...b.map((x) => (0, t._)`${l} === ${x}`)) : p = t.nil;
-        return f.length && (p = (0, t.or)(p, ...f.map((x) => (0, t._)`${(0, e.usePattern)(c, x)}.test(${l})`))), (0, t.not)(p);
+        if (w.length > 8) {
+          const k = (0, o.schemaRefOrVal)(b, y.properties, "properties");
+          p = (0, e.isOwnProperty)(a, k, l);
+        } else w.length ? p = (0, t.or)(...w.map((k) => (0, t._)`${l} === ${k}`)) : p = t.nil;
+        return f.length && (p = (0, t.or)(p, ...f.map((k) => (0, t._)`${(0, e.usePattern)(s, k)}.test(${l})`))), (0, t.not)(p);
       }
       function h(l) {
-        s.code((0, t._)`delete ${m}[${l}]`);
+        a.code((0, t._)`delete ${m}[${l}]`);
       }
-      function C(l) {
+      function S(l) {
         if (_.removeAdditional === "all" || _.removeAdditional && d === !1) {
           h(l);
           return;
         }
         if (d === !1) {
-          c.setParams({ additionalProperty: l }), c.error(), v || s.break();
+          s.setParams({ additionalProperty: l }), s.error(), v || a.break();
           return;
         }
-        if (typeof d == "object" && !(0, o.alwaysValidSchema)(w, d)) {
-          const p = s.name("valid");
-          _.removeAdditional === "failing" ? (a(l, p, !1), s.if((0, t.not)(p), () => {
-            c.reset(), h(l);
-          })) : (a(l, p), v || s.if((0, t.not)(p), () => s.break()));
+        if (typeof d == "object" && !(0, o.alwaysValidSchema)(b, d)) {
+          const p = a.name("valid");
+          _.removeAdditional === "failing" ? (c(l, p, !1), a.if((0, t.not)(p), () => {
+            s.reset(), h(l);
+          })) : (c(l, p), v || a.if((0, t.not)(p), () => a.break()));
         }
       }
-      function a(l, p, x) {
-        const E = {
+      function c(l, p, k) {
+        const P = {
           keyword: "additionalProperties",
           dataProp: l,
           dataPropType: o.Type.Str
         };
-        x === !1 && Object.assign(E, {
+        k === !1 && Object.assign(P, {
           compositeRule: !0,
           createErrors: !1,
           allErrors: !1
-        }), c.subschema(E, p);
+        }), s.subschema(P, p);
       }
     }
   };
@@ -4408,22 +4408,22 @@ function ps() {
     type: "object",
     schemaType: "object",
     code(r) {
-      const { gen: c, schema: s, parentSchema: d, data: y, it: m } = r;
+      const { gen: s, schema: a, parentSchema: d, data: y, it: m } = r;
       m.opts.removeAdditional === "all" && d.additionalProperties === void 0 && o.default.code(new e.KeywordCxt(m, o.default, "additionalProperties"));
-      const S = (0, t.allSchemaProperties)(s);
-      for (const f of S)
+      const C = (0, t.allSchemaProperties)(a);
+      for (const f of C)
         m.definedProperties.add(f);
-      m.opts.unevaluated && S.length && m.props !== !0 && (m.props = n.mergeEvaluated.props(c, (0, n.toHash)(S), m.props));
-      const w = S.filter((f) => !(0, n.alwaysValidSchema)(m, s[f]));
-      if (w.length === 0)
+      m.opts.unevaluated && C.length && m.props !== !0 && (m.props = n.mergeEvaluated.props(s, (0, n.toHash)(C), m.props));
+      const b = C.filter((f) => !(0, n.alwaysValidSchema)(m, a[f]));
+      if (b.length === 0)
         return;
-      const v = c.name("valid");
-      for (const f of w)
-        _(f) ? b(f) : (c.if((0, t.propertyInData)(c, y, f, m.opts.ownProperties)), b(f), m.allErrors || c.else().var(v, !0), c.endIf()), r.it.definedProperties.add(f), r.ok(v);
+      const v = s.name("valid");
+      for (const f of b)
+        _(f) ? w(f) : (s.if((0, t.propertyInData)(s, y, f, m.opts.ownProperties)), w(f), m.allErrors || s.else().var(v, !0), s.endIf()), r.it.definedProperties.add(f), r.ok(v);
       function _(f) {
-        return m.opts.useDefaults && !m.compositeRule && s[f].default !== void 0;
+        return m.opts.useDefaults && !m.compositeRule && a[f].default !== void 0;
       }
-      function b(f) {
+      function w(f) {
         r.subschema({
           keyword: "properties",
           schemaProp: f,
@@ -4434,51 +4434,51 @@ function ps() {
   };
   return It.default = i, It;
 }
-var Dt = {}, ao;
+var qt = {}, ao;
 function hs() {
-  if (ao) return Dt;
-  ao = 1, Object.defineProperty(Dt, "__esModule", { value: !0 });
+  if (ao) return qt;
+  ao = 1, Object.defineProperty(qt, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ xe(), t = /* @__PURE__ */ Q(), n = /* @__PURE__ */ ne(), o = /* @__PURE__ */ ne(), i = {
     keyword: "patternProperties",
     type: "object",
     schemaType: "object",
     code(r) {
-      const { gen: c, schema: s, data: d, parentSchema: y, it: m } = r, { opts: S } = m, w = (0, e.allSchemaProperties)(s), v = w.filter((C) => (0, n.alwaysValidSchema)(m, s[C]));
-      if (w.length === 0 || v.length === w.length && (!m.opts.unevaluated || m.props === !0))
+      const { gen: s, schema: a, data: d, parentSchema: y, it: m } = r, { opts: C } = m, b = (0, e.allSchemaProperties)(a), v = b.filter((S) => (0, n.alwaysValidSchema)(m, a[S]));
+      if (b.length === 0 || v.length === b.length && (!m.opts.unevaluated || m.props === !0))
         return;
-      const _ = S.strictSchema && !S.allowMatchingProperties && y.properties, b = c.name("valid");
-      m.props !== !0 && !(m.props instanceof t.Name) && (m.props = (0, o.evaluatedPropsToName)(c, m.props));
+      const _ = C.strictSchema && !C.allowMatchingProperties && y.properties, w = s.name("valid");
+      m.props !== !0 && !(m.props instanceof t.Name) && (m.props = (0, o.evaluatedPropsToName)(s, m.props));
       const { props: f } = m;
       g();
       function g() {
-        for (const C of w)
-          _ && u(C), m.allErrors ? h(C) : (c.var(b, !0), h(C), c.if(b));
+        for (const S of b)
+          _ && u(S), m.allErrors ? h(S) : (s.var(w, !0), h(S), s.if(w));
       }
-      function u(C) {
-        for (const a in _)
-          new RegExp(C).test(a) && (0, n.checkStrictMode)(m, `property ${a} matches pattern ${C} (use allowMatchingProperties)`);
+      function u(S) {
+        for (const c in _)
+          new RegExp(S).test(c) && (0, n.checkStrictMode)(m, `property ${c} matches pattern ${S} (use allowMatchingProperties)`);
       }
-      function h(C) {
-        c.forIn("key", d, (a) => {
-          c.if((0, t._)`${(0, e.usePattern)(r, C)}.test(${a})`, () => {
-            const l = v.includes(C);
+      function h(S) {
+        s.forIn("key", d, (c) => {
+          s.if((0, t._)`${(0, e.usePattern)(r, S)}.test(${c})`, () => {
+            const l = v.includes(S);
             l || r.subschema({
               keyword: "patternProperties",
-              schemaProp: C,
-              dataProp: a,
+              schemaProp: S,
+              dataProp: c,
               dataPropType: o.Type.Str
-            }, b), m.opts.unevaluated && f !== !0 ? c.assign((0, t._)`${f}[${a}]`, !0) : !l && !m.allErrors && c.if((0, t.not)(b), () => c.break());
+            }, w), m.opts.unevaluated && f !== !0 ? s.assign((0, t._)`${f}[${c}]`, !0) : !l && !m.allErrors && s.if((0, t.not)(w), () => s.break());
           });
         });
       }
     }
   };
-  return Dt.default = i, Dt;
+  return qt.default = i, qt;
 }
-var qt = {}, co;
+var Dt = {}, co;
 function ms() {
-  if (co) return qt;
-  co = 1, Object.defineProperty(qt, "__esModule", { value: !0 });
+  if (co) return Dt;
+  co = 1, Object.defineProperty(Dt, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ ne(), t = {
     keyword: "not",
     schemaType: ["object", "boolean"],
@@ -4489,17 +4489,17 @@ function ms() {
         n.fail();
         return;
       }
-      const c = o.name("valid");
+      const s = o.name("valid");
       n.subschema({
         keyword: "not",
         compositeRule: !0,
         createErrors: !1,
         allErrors: !1
-      }, c), n.failResult(c, () => n.reset(), () => n.error());
+      }, s), n.failResult(s, () => n.reset(), () => n.error());
     },
     error: { message: "must NOT be valid" }
   };
-  return qt.default = t, qt;
+  return Dt.default = t, Dt;
 }
 var Vt = {}, lo;
 function gs() {
@@ -4527,22 +4527,22 @@ function ys() {
       params: ({ params: i }) => (0, e._)`{passingSchemas: ${i.passing}}`
     },
     code(i) {
-      const { gen: r, schema: c, parentSchema: s, it: d } = i;
-      if (!Array.isArray(c))
+      const { gen: r, schema: s, parentSchema: a, it: d } = i;
+      if (!Array.isArray(s))
         throw new Error("ajv implementation error");
-      if (d.opts.discriminator && s.discriminator)
+      if (d.opts.discriminator && a.discriminator)
         return;
-      const y = c, m = r.let("valid", !1), S = r.let("passing", null), w = r.name("_valid");
-      i.setParams({ passing: S }), r.block(v), i.result(m, () => i.reset(), () => i.error(!0));
+      const y = s, m = r.let("valid", !1), C = r.let("passing", null), b = r.name("_valid");
+      i.setParams({ passing: C }), r.block(v), i.result(m, () => i.reset(), () => i.error(!0));
       function v() {
-        y.forEach((_, b) => {
+        y.forEach((_, w) => {
           let f;
-          (0, t.alwaysValidSchema)(d, _) ? r.var(w, !0) : f = i.subschema({
+          (0, t.alwaysValidSchema)(d, _) ? r.var(b, !0) : f = i.subschema({
             keyword: "oneOf",
-            schemaProp: b,
+            schemaProp: w,
             compositeRule: !0
-          }, w), b > 0 && r.if((0, e._)`${w} && ${m}`).assign(m, !1).assign(S, (0, e._)`[${S}, ${b}]`).else(), r.if(w, () => {
-            r.assign(m, !0), r.assign(S, b), f && i.mergeEvaluated(f, e.Name);
+          }, b), w > 0 && r.if((0, e._)`${b} && ${m}`).assign(m, !1).assign(C, (0, e._)`[${C}, ${w}]`).else(), r.if(b, () => {
+            r.assign(m, !0), r.assign(C, w), f && i.mergeEvaluated(f, e.Name);
           });
         });
       }
@@ -4561,12 +4561,12 @@ function vs() {
       const { gen: o, schema: i, it: r } = n;
       if (!Array.isArray(i))
         throw new Error("ajv implementation error");
-      const c = o.name("valid");
-      i.forEach((s, d) => {
-        if ((0, e.alwaysValidSchema)(r, s))
+      const s = o.name("valid");
+      i.forEach((a, d) => {
+        if ((0, e.alwaysValidSchema)(r, a))
           return;
-        const y = n.subschema({ keyword: "allOf", schemaProp: d }, c);
-        n.ok(c), n.mergeEvaluated(y);
+        const y = n.subschema({ keyword: "allOf", schemaProp: d }, s);
+        n.ok(s), n.mergeEvaluated(y);
       });
     }
   };
@@ -4585,37 +4585,37 @@ function $s() {
       params: ({ params: r }) => (0, e._)`{failingKeyword: ${r.ifClause}}`
     },
     code(r) {
-      const { gen: c, parentSchema: s, it: d } = r;
-      s.then === void 0 && s.else === void 0 && (0, t.checkStrictMode)(d, '"if" without "then" and "else" is ignored');
+      const { gen: s, parentSchema: a, it: d } = r;
+      a.then === void 0 && a.else === void 0 && (0, t.checkStrictMode)(d, '"if" without "then" and "else" is ignored');
       const y = i(d, "then"), m = i(d, "else");
       if (!y && !m)
         return;
-      const S = c.let("valid", !0), w = c.name("_valid");
+      const C = s.let("valid", !0), b = s.name("_valid");
       if (v(), r.reset(), y && m) {
-        const b = c.let("ifClause");
-        r.setParams({ ifClause: b }), c.if(w, _("then", b), _("else", b));
-      } else y ? c.if(w, _("then")) : c.if((0, e.not)(w), _("else"));
-      r.pass(S, () => r.error(!0));
+        const w = s.let("ifClause");
+        r.setParams({ ifClause: w }), s.if(b, _("then", w), _("else", w));
+      } else y ? s.if(b, _("then")) : s.if((0, e.not)(b), _("else"));
+      r.pass(C, () => r.error(!0));
       function v() {
-        const b = r.subschema({
+        const w = r.subschema({
           keyword: "if",
           compositeRule: !0,
           createErrors: !1,
           allErrors: !1
-        }, w);
-        r.mergeEvaluated(b);
+        }, b);
+        r.mergeEvaluated(w);
       }
-      function _(b, f) {
+      function _(w, f) {
         return () => {
-          const g = r.subschema({ keyword: b }, w);
-          c.assign(S, w), r.mergeValidEvaluated(g, S), f ? c.assign(f, (0, e._)`${b}`) : r.setParams({ ifClause: b });
+          const g = r.subschema({ keyword: w }, b);
+          s.assign(C, b), r.mergeValidEvaluated(g, C), f ? s.assign(f, (0, e._)`${w}`) : r.setParams({ ifClause: w });
         };
       }
     }
   };
-  function i(r, c) {
-    const s = r.schema[c];
-    return s !== void 0 && !(0, t.alwaysValidSchema)(r, s);
+  function i(r, s) {
+    const a = r.schema[s];
+    return a !== void 0 && !(0, t.alwaysValidSchema)(r, a);
   }
   return Ut.default = o, Ut;
 }
@@ -4634,90 +4634,90 @@ function bs() {
 }
 var mo;
 function ws() {
-  if (mo) return Ft;
-  mo = 1, Object.defineProperty(Ft, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ ni(), t = /* @__PURE__ */ ls(), n = /* @__PURE__ */ ri(), o = /* @__PURE__ */ ds(), i = /* @__PURE__ */ us(), r = /* @__PURE__ */ Jn(), c = /* @__PURE__ */ fs(), s = /* @__PURE__ */ oi(), d = /* @__PURE__ */ ps(), y = /* @__PURE__ */ hs(), m = /* @__PURE__ */ ms(), S = /* @__PURE__ */ gs(), w = /* @__PURE__ */ ys(), v = /* @__PURE__ */ vs(), _ = /* @__PURE__ */ $s(), b = /* @__PURE__ */ bs();
+  if (mo) return Mt;
+  mo = 1, Object.defineProperty(Mt, "__esModule", { value: !0 });
+  const e = /* @__PURE__ */ ni(), t = /* @__PURE__ */ ls(), n = /* @__PURE__ */ ri(), o = /* @__PURE__ */ ds(), i = /* @__PURE__ */ us(), r = /* @__PURE__ */ Jn(), s = /* @__PURE__ */ fs(), a = /* @__PURE__ */ oi(), d = /* @__PURE__ */ ps(), y = /* @__PURE__ */ hs(), m = /* @__PURE__ */ ms(), C = /* @__PURE__ */ gs(), b = /* @__PURE__ */ ys(), v = /* @__PURE__ */ vs(), _ = /* @__PURE__ */ $s(), w = /* @__PURE__ */ bs();
   function f(g = !1) {
     const u = [
       // any
       m.default,
-      S.default,
-      w.default,
+      C.default,
+      b.default,
       v.default,
       _.default,
-      b.default,
+      w.default,
       // object
-      c.default,
       s.default,
+      a.default,
       r.default,
       d.default,
       y.default
     ];
     return g ? u.push(t.default, o.default) : u.push(e.default, n.default), u.push(i.default), u;
   }
-  return Ft.default = f, Ft;
+  return Mt.default = f, Mt;
 }
-var Gt = {}, He = {}, go;
+var Ht = {}, Ge = {}, go;
 function ii() {
-  if (go) return He;
-  go = 1, Object.defineProperty(He, "__esModule", { value: !0 }), He.dynamicAnchor = void 0;
-  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ke(), n = /* @__PURE__ */ bn(), o = /* @__PURE__ */ Gn(), i = {
+  if (go) return Ge;
+  go = 1, Object.defineProperty(Ge, "__esModule", { value: !0 }), Ge.dynamicAnchor = void 0;
+  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ke(), n = /* @__PURE__ */ bn(), o = /* @__PURE__ */ Hn(), i = {
     keyword: "$dynamicAnchor",
     schemaType: "string",
-    code: (s) => r(s, s.schema)
+    code: (a) => r(a, a.schema)
   };
-  function r(s, d) {
-    const { gen: y, it: m } = s;
+  function r(a, d) {
+    const { gen: y, it: m } = a;
     m.schemaEnv.root.dynamicAnchors[d] = !0;
-    const S = (0, e._)`${t.default.dynamicAnchors}${(0, e.getProperty)(d)}`, w = m.errSchemaPath === "#" ? m.validateName : c(s);
-    y.if((0, e._)`!${S}`, () => y.assign(S, w));
+    const C = (0, e._)`${t.default.dynamicAnchors}${(0, e.getProperty)(d)}`, b = m.errSchemaPath === "#" ? m.validateName : s(a);
+    y.if((0, e._)`!${C}`, () => y.assign(C, b));
   }
-  He.dynamicAnchor = r;
-  function c(s) {
-    const { schemaEnv: d, schema: y, self: m } = s.it, { root: S, baseId: w, localRefs: v, meta: _ } = d.root, { schemaId: b } = m.opts, f = new n.SchemaEnv({ schema: y, schemaId: b, root: S, baseId: w, localRefs: v, meta: _ });
-    return n.compileSchema.call(m, f), (0, o.getValidate)(s, f);
+  Ge.dynamicAnchor = r;
+  function s(a) {
+    const { schemaEnv: d, schema: y, self: m } = a.it, { root: C, baseId: b, localRefs: v, meta: _ } = d.root, { schemaId: w } = m.opts, f = new n.SchemaEnv({ schema: y, schemaId: w, root: C, baseId: b, localRefs: v, meta: _ });
+    return n.compileSchema.call(m, f), (0, o.getValidate)(a, f);
   }
-  return He.default = i, He;
+  return Ge.default = i, Ge;
 }
 var Je = {}, yo;
 function si() {
   if (yo) return Je;
   yo = 1, Object.defineProperty(Je, "__esModule", { value: !0 }), Je.dynamicRef = void 0;
-  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ke(), n = /* @__PURE__ */ Gn(), o = {
+  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ ke(), n = /* @__PURE__ */ Hn(), o = {
     keyword: "$dynamicRef",
     schemaType: "string",
     code: (r) => i(r, r.schema)
   };
-  function i(r, c) {
-    const { gen: s, keyword: d, it: y } = r;
-    if (c[0] !== "#")
+  function i(r, s) {
+    const { gen: a, keyword: d, it: y } = r;
+    if (s[0] !== "#")
       throw new Error(`"${d}" only supports hash fragment reference`);
-    const m = c.slice(1);
+    const m = s.slice(1);
     if (y.allErrors)
-      S();
+      C();
     else {
-      const v = s.let("valid", !1);
-      S(v), r.ok(v);
+      const v = a.let("valid", !1);
+      C(v), r.ok(v);
     }
-    function S(v) {
+    function C(v) {
       if (y.schemaEnv.root.dynamicAnchors[m]) {
-        const _ = s.let("_v", (0, e._)`${t.default.dynamicAnchors}${(0, e.getProperty)(m)}`);
-        s.if(_, w(_, v), w(y.validateName, v));
+        const _ = a.let("_v", (0, e._)`${t.default.dynamicAnchors}${(0, e.getProperty)(m)}`);
+        a.if(_, b(_, v), b(y.validateName, v));
       } else
-        w(y.validateName, v)();
+        b(y.validateName, v)();
     }
-    function w(v, _) {
-      return _ ? () => s.block(() => {
-        (0, n.callRef)(r, v), s.let(_, !0);
+    function b(v, _) {
+      return _ ? () => a.block(() => {
+        (0, n.callRef)(r, v), a.let(_, !0);
       }) : () => (0, n.callRef)(r, v);
     }
   }
   return Je.dynamicRef = i, Je.default = o, Je;
 }
-var Ht = {}, vo;
+var Gt = {}, vo;
 function _s() {
-  if (vo) return Ht;
-  vo = 1, Object.defineProperty(Ht, "__esModule", { value: !0 });
+  if (vo) return Gt;
+  vo = 1, Object.defineProperty(Gt, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ ii(), t = /* @__PURE__ */ ne(), n = {
     keyword: "$recursiveAnchor",
     schemaType: "boolean",
@@ -4725,7 +4725,7 @@ function _s() {
       o.schema ? (0, e.dynamicAnchor)(o, "") : (0, t.checkStrictMode)(o.it, "$recursiveAnchor: false is ignored");
     }
   };
-  return Ht.default = n, Ht;
+  return Gt.default = n, Gt;
 }
 var Jt = {}, $o;
 function Ss() {
@@ -4740,10 +4740,10 @@ function Ss() {
 }
 var bo;
 function Cs() {
-  if (bo) return Gt;
-  bo = 1, Object.defineProperty(Gt, "__esModule", { value: !0 });
+  if (bo) return Ht;
+  bo = 1, Object.defineProperty(Ht, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ ii(), t = /* @__PURE__ */ si(), n = /* @__PURE__ */ _s(), o = /* @__PURE__ */ Ss(), i = [e.default, t.default, n.default, o.default];
-  return Gt.default = i, Gt;
+  return Ht.default = i, Ht;
 }
 var Wt = {}, Yt = {}, wo;
 function ks() {
@@ -4805,29 +4805,29 @@ function As() {
       params: ({ params: r }) => (0, e._)`{unevaluatedProperty: ${r.unevaluatedProperty}}`
     },
     code(r) {
-      const { gen: c, schema: s, data: d, errsCount: y, it: m } = r;
+      const { gen: s, schema: a, data: d, errsCount: y, it: m } = r;
       if (!y)
         throw new Error("ajv implementation error");
-      const { allErrors: S, props: w } = m;
-      w instanceof e.Name ? c.if((0, e._)`${w} !== true`, () => c.forIn("key", d, (f) => c.if(_(w, f), () => v(f)))) : w !== !0 && c.forIn("key", d, (f) => w === void 0 ? v(f) : c.if(b(w, f), () => v(f))), m.props = !0, r.ok((0, e._)`${y} === ${n.default.errors}`);
+      const { allErrors: C, props: b } = m;
+      b instanceof e.Name ? s.if((0, e._)`${b} !== true`, () => s.forIn("key", d, (f) => s.if(_(b, f), () => v(f)))) : b !== !0 && s.forIn("key", d, (f) => b === void 0 ? v(f) : s.if(w(b, f), () => v(f))), m.props = !0, r.ok((0, e._)`${y} === ${n.default.errors}`);
       function v(f) {
-        if (s === !1) {
-          r.setParams({ unevaluatedProperty: f }), r.error(), S || c.break();
+        if (a === !1) {
+          r.setParams({ unevaluatedProperty: f }), r.error(), C || s.break();
           return;
         }
-        if (!(0, t.alwaysValidSchema)(m, s)) {
-          const g = c.name("valid");
+        if (!(0, t.alwaysValidSchema)(m, a)) {
+          const g = s.name("valid");
           r.subschema({
             keyword: "unevaluatedProperties",
             dataProp: f,
             dataPropType: t.Type.Str
-          }, g), S || c.if((0, e.not)(g), () => c.break());
+          }, g), C || s.if((0, e.not)(g), () => s.break());
         }
       }
       function _(f, g) {
         return (0, e._)`!${f} || !${f}[${g}]`;
       }
-      function b(f, g) {
+      function w(f, g) {
         const u = [];
         for (const h in f)
           f[h] === !0 && u.push((0, e._)`${g} !== ${h}`);
@@ -4850,20 +4850,20 @@ function Rs() {
       params: ({ params: { len: i } }) => (0, e._)`{limit: ${i}}`
     },
     code(i) {
-      const { gen: r, schema: c, data: s, it: d } = i, y = d.items || 0;
+      const { gen: r, schema: s, data: a, it: d } = i, y = d.items || 0;
       if (y === !0)
         return;
-      const m = r.const("len", (0, e._)`${s}.length`);
-      if (c === !1)
+      const m = r.const("len", (0, e._)`${a}.length`);
+      if (s === !1)
         i.setParams({ len: y }), i.fail((0, e._)`${m} > ${y}`);
-      else if (typeof c == "object" && !(0, t.alwaysValidSchema)(d, c)) {
-        const w = r.var("valid", (0, e._)`${m} <= ${y}`);
-        r.if((0, e.not)(w), () => S(w, y)), i.ok(w);
+      else if (typeof s == "object" && !(0, t.alwaysValidSchema)(d, s)) {
+        const b = r.var("valid", (0, e._)`${m} <= ${y}`);
+        r.if((0, e.not)(b), () => C(b, y)), i.ok(b);
       }
       d.items = !0;
-      function S(w, v) {
+      function C(b, v) {
         r.forRange("i", v, m, (_) => {
-          i.subschema({ keyword: "unevaluatedItems", dataProp: _, dataPropType: t.Type.Num }, w), d.allErrors || r.if((0, e.not)(w), () => r.break());
+          i.subschema({ keyword: "unevaluatedItems", dataProp: _, dataPropType: t.Type.Num }, b), d.allErrors || r.if((0, e.not)(b), () => r.break());
         });
       }
     }
@@ -4871,14 +4871,14 @@ function Rs() {
   return tn.default = o, tn;
 }
 var Eo;
-function Ms() {
+function Fs() {
   if (Eo) return Qt;
   Eo = 1, Object.defineProperty(Qt, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ As(), t = /* @__PURE__ */ Rs(), n = [e.default, t.default];
   return Qt.default = n, Qt;
 }
 var nn = {}, rn = {}, Po;
-function Fs() {
+function Ms() {
   if (Po) return rn;
   Po = 1, Object.defineProperty(rn, "__esModule", { value: !0 });
   const e = /* @__PURE__ */ Q(), n = {
@@ -4891,55 +4891,55 @@ function Fs() {
       params: ({ schemaCode: o }) => (0, e._)`{format: ${o}}`
     },
     code(o, i) {
-      const { gen: r, data: c, $data: s, schema: d, schemaCode: y, it: m } = o, { opts: S, errSchemaPath: w, schemaEnv: v, self: _ } = m;
-      if (!S.validateFormats)
+      const { gen: r, data: s, $data: a, schema: d, schemaCode: y, it: m } = o, { opts: C, errSchemaPath: b, schemaEnv: v, self: _ } = m;
+      if (!C.validateFormats)
         return;
-      s ? b() : f();
-      function b() {
+      a ? w() : f();
+      function w() {
         const g = r.scopeValue("formats", {
           ref: _.formats,
-          code: S.code.formats
-        }), u = r.const("fDef", (0, e._)`${g}[${y}]`), h = r.let("fType"), C = r.let("format");
-        r.if((0, e._)`typeof ${u} == "object" && !(${u} instanceof RegExp)`, () => r.assign(h, (0, e._)`${u}.type || "string"`).assign(C, (0, e._)`${u}.validate`), () => r.assign(h, (0, e._)`"string"`).assign(C, u)), o.fail$data((0, e.or)(a(), l()));
-        function a() {
-          return S.strictSchema === !1 ? e.nil : (0, e._)`${y} && !${C}`;
+          code: C.code.formats
+        }), u = r.const("fDef", (0, e._)`${g}[${y}]`), h = r.let("fType"), S = r.let("format");
+        r.if((0, e._)`typeof ${u} == "object" && !(${u} instanceof RegExp)`, () => r.assign(h, (0, e._)`${u}.type || "string"`).assign(S, (0, e._)`${u}.validate`), () => r.assign(h, (0, e._)`"string"`).assign(S, u)), o.fail$data((0, e.or)(c(), l()));
+        function c() {
+          return C.strictSchema === !1 ? e.nil : (0, e._)`${y} && !${S}`;
         }
         function l() {
-          const p = v.$async ? (0, e._)`(${u}.async ? await ${C}(${c}) : ${C}(${c}))` : (0, e._)`${C}(${c})`, x = (0, e._)`(typeof ${C} == "function" ? ${p} : ${C}.test(${c}))`;
-          return (0, e._)`${C} && ${C} !== true && ${h} === ${i} && !${x}`;
+          const p = v.$async ? (0, e._)`(${u}.async ? await ${S}(${s}) : ${S}(${s}))` : (0, e._)`${S}(${s})`, k = (0, e._)`(typeof ${S} == "function" ? ${p} : ${S}.test(${s}))`;
+          return (0, e._)`${S} && ${S} !== true && ${h} === ${i} && !${k}`;
         }
       }
       function f() {
         const g = _.formats[d];
         if (!g) {
-          a();
+          c();
           return;
         }
         if (g === !0)
           return;
-        const [u, h, C] = l(g);
+        const [u, h, S] = l(g);
         u === i && o.pass(p());
-        function a() {
-          if (S.strictSchema === !1) {
-            _.logger.warn(x());
+        function c() {
+          if (C.strictSchema === !1) {
+            _.logger.warn(k());
             return;
           }
-          throw new Error(x());
-          function x() {
-            return `unknown format "${d}" ignored in schema at path "${w}"`;
+          throw new Error(k());
+          function k() {
+            return `unknown format "${d}" ignored in schema at path "${b}"`;
           }
         }
-        function l(x) {
-          const E = x instanceof RegExp ? (0, e.regexpCode)(x) : S.code.formats ? (0, e._)`${S.code.formats}${(0, e.getProperty)(d)}` : void 0, N = r.scopeValue("formats", { key: d, ref: x, code: E });
-          return typeof x == "object" && !(x instanceof RegExp) ? [x.type || "string", x.validate, (0, e._)`${N}.validate`] : ["string", x, N];
+        function l(k) {
+          const P = k instanceof RegExp ? (0, e.regexpCode)(k) : C.code.formats ? (0, e._)`${C.code.formats}${(0, e.getProperty)(d)}` : void 0, N = r.scopeValue("formats", { key: d, ref: k, code: P });
+          return typeof k == "object" && !(k instanceof RegExp) ? [k.type || "string", k.validate, (0, e._)`${N}.validate`] : ["string", k, N];
         }
         function p() {
           if (typeof g == "object" && !(g instanceof RegExp) && g.async) {
             if (!v.$async)
               throw new Error("async format in sync schema");
-            return (0, e._)`await ${C}(${c})`;
+            return (0, e._)`await ${S}(${s})`;
           }
-          return typeof h == "function" ? (0, e._)`${C}(${c})` : (0, e._)`${C}.test(${c})`;
+          return typeof h == "function" ? (0, e._)`${S}(${s})` : (0, e._)`${S}.test(${s})`;
         }
       }
     }
@@ -4950,12 +4950,12 @@ var Ao;
 function Ns() {
   if (Ao) return nn;
   Ao = 1, Object.defineProperty(nn, "__esModule", { value: !0 });
-  const t = [(/* @__PURE__ */ Fs()).default];
+  const t = [(/* @__PURE__ */ Ms()).default];
   return nn.default = t, nn;
 }
-var De = {}, Ro;
+var qe = {}, Ro;
 function js() {
-  return Ro || (Ro = 1, Object.defineProperty(De, "__esModule", { value: !0 }), De.contentVocabulary = De.metadataVocabulary = void 0, De.metadataVocabulary = [
+  return Ro || (Ro = 1, Object.defineProperty(qe, "__esModule", { value: !0 }), qe.contentVocabulary = qe.metadataVocabulary = void 0, qe.metadataVocabulary = [
     "title",
     "description",
     "default",
@@ -4963,33 +4963,33 @@ function js() {
     "readOnly",
     "writeOnly",
     "examples"
-  ], De.contentVocabulary = [
+  ], qe.contentVocabulary = [
     "contentMediaType",
     "contentEncoding",
     "contentSchema"
-  ]), De;
+  ]), qe;
 }
-var Mo;
+var Fo;
 function Os() {
-  if (Mo) return gt;
-  Mo = 1, Object.defineProperty(gt, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ Yi(), t = /* @__PURE__ */ cs(), n = /* @__PURE__ */ ws(), o = /* @__PURE__ */ Cs(), i = /* @__PURE__ */ Ps(), r = /* @__PURE__ */ Ms(), c = /* @__PURE__ */ Ns(), s = /* @__PURE__ */ js(), d = [
+  if (Fo) return gt;
+  Fo = 1, Object.defineProperty(gt, "__esModule", { value: !0 });
+  const e = /* @__PURE__ */ Yi(), t = /* @__PURE__ */ cs(), n = /* @__PURE__ */ ws(), o = /* @__PURE__ */ Cs(), i = /* @__PURE__ */ Ps(), r = /* @__PURE__ */ Fs(), s = /* @__PURE__ */ Ns(), a = /* @__PURE__ */ js(), d = [
     o.default,
     e.default,
     t.default,
     (0, n.default)(!0),
-    c.default,
-    s.metadataVocabulary,
-    s.contentVocabulary,
+    s.default,
+    a.metadataVocabulary,
+    a.contentVocabulary,
     i.default,
     r.default
   ];
   return gt.default = d, gt;
 }
-var on = {}, it = {}, Fo;
+var on = {}, it = {}, Mo;
 function Ts() {
-  if (Fo) return it;
-  Fo = 1, Object.defineProperty(it, "__esModule", { value: !0 }), it.DiscrError = void 0;
+  if (Mo) return it;
+  Mo = 1, Object.defineProperty(it, "__esModule", { value: !0 }), it.DiscrError = void 0;
   var e;
   return (function(t) {
     t.Tag = "tag", t.Mapping = "mapping";
@@ -4999,17 +4999,17 @@ var No;
 function zs() {
   if (No) return on;
   No = 1, Object.defineProperty(on, "__esModule", { value: !0 });
-  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ Ts(), n = /* @__PURE__ */ bn(), o = /* @__PURE__ */ $n(), i = /* @__PURE__ */ ne(), c = {
+  const e = /* @__PURE__ */ Q(), t = /* @__PURE__ */ Ts(), n = /* @__PURE__ */ bn(), o = /* @__PURE__ */ $n(), i = /* @__PURE__ */ ne(), s = {
     keyword: "discriminator",
     type: "object",
     schemaType: "object",
     error: {
-      message: ({ params: { discrError: s, tagName: d } }) => s === t.DiscrError.Tag ? `tag "${d}" must be string` : `value of tag "${d}" must be in oneOf`,
-      params: ({ params: { discrError: s, tag: d, tagName: y } }) => (0, e._)`{error: ${s}, tag: ${y}, tagValue: ${d}}`
+      message: ({ params: { discrError: a, tagName: d } }) => a === t.DiscrError.Tag ? `tag "${d}" must be string` : `value of tag "${d}" must be in oneOf`,
+      params: ({ params: { discrError: a, tag: d, tagName: y } }) => (0, e._)`{error: ${a}, tag: ${y}, tagValue: ${d}}`
     },
-    code(s) {
-      const { gen: d, data: y, schema: m, parentSchema: S, it: w } = s, { oneOf: v } = S;
-      if (!w.opts.discriminator)
+    code(a) {
+      const { gen: d, data: y, schema: m, parentSchema: C, it: b } = a, { oneOf: v } = C;
+      if (!b.opts.discriminator)
         throw new Error("discriminator: requires discriminator option");
       const _ = m.propertyName;
       if (typeof _ != "string")
@@ -5018,42 +5018,42 @@ function zs() {
         throw new Error("discriminator: mapping is not supported");
       if (!v)
         throw new Error("discriminator: requires oneOf keyword");
-      const b = d.let("valid", !1), f = d.const("tag", (0, e._)`${y}${(0, e.getProperty)(_)}`);
-      d.if((0, e._)`typeof ${f} == "string"`, () => g(), () => s.error(!1, { discrError: t.DiscrError.Tag, tag: f, tagName: _ })), s.ok(b);
+      const w = d.let("valid", !1), f = d.const("tag", (0, e._)`${y}${(0, e.getProperty)(_)}`);
+      d.if((0, e._)`typeof ${f} == "string"`, () => g(), () => a.error(!1, { discrError: t.DiscrError.Tag, tag: f, tagName: _ })), a.ok(w);
       function g() {
-        const C = h();
+        const S = h();
         d.if(!1);
-        for (const a in C)
-          d.elseIf((0, e._)`${f} === ${a}`), d.assign(b, u(C[a]));
-        d.else(), s.error(!1, { discrError: t.DiscrError.Mapping, tag: f, tagName: _ }), d.endIf();
+        for (const c in S)
+          d.elseIf((0, e._)`${f} === ${c}`), d.assign(w, u(S[c]));
+        d.else(), a.error(!1, { discrError: t.DiscrError.Mapping, tag: f, tagName: _ }), d.endIf();
       }
-      function u(C) {
-        const a = d.name("valid"), l = s.subschema({ keyword: "oneOf", schemaProp: C }, a);
-        return s.mergeEvaluated(l, e.Name), a;
+      function u(S) {
+        const c = d.name("valid"), l = a.subschema({ keyword: "oneOf", schemaProp: S }, c);
+        return a.mergeEvaluated(l, e.Name), c;
       }
       function h() {
-        var C;
-        const a = {}, l = x(S);
+        var S;
+        const c = {}, l = k(C);
         let p = !0;
         for (let z = 0; z < v.length; z++) {
           let A = v[z];
-          if (A?.$ref && !(0, i.schemaHasRulesButRef)(A, w.self.RULES)) {
+          if (A?.$ref && !(0, i.schemaHasRulesButRef)(A, b.self.RULES)) {
             const J = A.$ref;
-            if (A = n.resolveRef.call(w.self, w.schemaEnv.root, w.baseId, J), A instanceof n.SchemaEnv && (A = A.schema), A === void 0)
-              throw new o.default(w.opts.uriResolver, w.baseId, J);
+            if (A = n.resolveRef.call(b.self, b.schemaEnv.root, b.baseId, J), A instanceof n.SchemaEnv && (A = A.schema), A === void 0)
+              throw new o.default(b.opts.uriResolver, b.baseId, J);
           }
-          const T = (C = A?.properties) === null || C === void 0 ? void 0 : C[_];
+          const T = (S = A?.properties) === null || S === void 0 ? void 0 : S[_];
           if (typeof T != "object")
             throw new Error(`discriminator: oneOf subschemas (or referenced schemas) must have "properties/${_}"`);
-          p = p && (l || x(A)), E(T, z);
+          p = p && (l || k(A)), P(T, z);
         }
         if (!p)
           throw new Error(`discriminator: "${_}" must be required`);
-        return a;
-        function x({ required: z }) {
+        return c;
+        function k({ required: z }) {
           return Array.isArray(z) && z.includes(_);
         }
-        function E(z, A) {
+        function P(z, A) {
           if (z.const)
             N(z.const, A);
           else if (z.enum)
@@ -5063,26 +5063,26 @@ function zs() {
             throw new Error(`discriminator: "properties/${_}" must have "const" or "enum"`);
         }
         function N(z, A) {
-          if (typeof z != "string" || z in a)
+          if (typeof z != "string" || z in c)
             throw new Error(`discriminator: "${_}" values must be unique strings`);
-          a[z] = A;
+          c[z] = A;
         }
       }
     }
   };
-  return on.default = c, on;
+  return on.default = s, on;
 }
 var sn = {};
-const Is = "https://json-schema.org/draft/2020-12/schema", Ds = "https://json-schema.org/draft/2020-12/schema", qs = { "https://json-schema.org/draft/2020-12/vocab/core": !0, "https://json-schema.org/draft/2020-12/vocab/applicator": !0, "https://json-schema.org/draft/2020-12/vocab/unevaluated": !0, "https://json-schema.org/draft/2020-12/vocab/validation": !0, "https://json-schema.org/draft/2020-12/vocab/meta-data": !0, "https://json-schema.org/draft/2020-12/vocab/format-annotation": !0, "https://json-schema.org/draft/2020-12/vocab/content": !0 }, Vs = "meta", Bs = "Core and Validation specifications meta-schema", Ls = [{ $ref: "meta/core" }, { $ref: "meta/applicator" }, { $ref: "meta/unevaluated" }, { $ref: "meta/validation" }, { $ref: "meta/meta-data" }, { $ref: "meta/format-annotation" }, { $ref: "meta/content" }], Us = ["object", "boolean"], Ks = "This meta-schema also defines keywords that have appeared in previous drafts in order to prevent incompatible extensions as they remain in common use.", Gs = { definitions: { $comment: '"definitions" has been replaced by "$defs".', type: "object", additionalProperties: { $dynamicRef: "#meta" }, deprecated: !0, default: {} }, dependencies: { $comment: '"dependencies" has been split and replaced by "dependentSchemas" and "dependentRequired" in order to serve their differing semantics.', type: "object", additionalProperties: { anyOf: [{ $dynamicRef: "#meta" }, { $ref: "meta/validation#/$defs/stringArray" }] }, deprecated: !0, default: {} }, $recursiveAnchor: { $comment: '"$recursiveAnchor" has been replaced by "$dynamicAnchor".', $ref: "meta/core#/$defs/anchorString", deprecated: !0 }, $recursiveRef: { $comment: '"$recursiveRef" has been replaced by "$dynamicRef".', $ref: "meta/core#/$defs/uriReferenceString", deprecated: !0 } }, Hs = {
+const Is = "https://json-schema.org/draft/2020-12/schema", qs = "https://json-schema.org/draft/2020-12/schema", Ds = { "https://json-schema.org/draft/2020-12/vocab/core": !0, "https://json-schema.org/draft/2020-12/vocab/applicator": !0, "https://json-schema.org/draft/2020-12/vocab/unevaluated": !0, "https://json-schema.org/draft/2020-12/vocab/validation": !0, "https://json-schema.org/draft/2020-12/vocab/meta-data": !0, "https://json-schema.org/draft/2020-12/vocab/format-annotation": !0, "https://json-schema.org/draft/2020-12/vocab/content": !0 }, Vs = "meta", Bs = "Core and Validation specifications meta-schema", Ls = [{ $ref: "meta/core" }, { $ref: "meta/applicator" }, { $ref: "meta/unevaluated" }, { $ref: "meta/validation" }, { $ref: "meta/meta-data" }, { $ref: "meta/format-annotation" }, { $ref: "meta/content" }], Us = ["object", "boolean"], Ks = "This meta-schema also defines keywords that have appeared in previous drafts in order to prevent incompatible extensions as they remain in common use.", Hs = { definitions: { $comment: '"definitions" has been replaced by "$defs".', type: "object", additionalProperties: { $dynamicRef: "#meta" }, deprecated: !0, default: {} }, dependencies: { $comment: '"dependencies" has been split and replaced by "dependentSchemas" and "dependentRequired" in order to serve their differing semantics.', type: "object", additionalProperties: { anyOf: [{ $dynamicRef: "#meta" }, { $ref: "meta/validation#/$defs/stringArray" }] }, deprecated: !0, default: {} }, $recursiveAnchor: { $comment: '"$recursiveAnchor" has been replaced by "$dynamicAnchor".', $ref: "meta/core#/$defs/anchorString", deprecated: !0 }, $recursiveRef: { $comment: '"$recursiveRef" has been replaced by "$dynamicRef".', $ref: "meta/core#/$defs/uriReferenceString", deprecated: !0 } }, Gs = {
   $schema: Is,
-  $id: Ds,
-  $vocabulary: qs,
+  $id: qs,
+  $vocabulary: Ds,
   $dynamicAnchor: Vs,
   title: Bs,
   allOf: Ls,
   type: Us,
   $comment: Ks,
-  properties: Gs
+  properties: Hs
 }, Js = "https://json-schema.org/draft/2020-12/schema", Ws = "https://json-schema.org/draft/2020-12/meta/applicator", Ys = { "https://json-schema.org/draft/2020-12/vocab/applicator": !0 }, Xs = "meta", Zs = "Applicator vocabulary meta-schema", Qs = ["object", "boolean"], ea = { prefixItems: { $ref: "#/$defs/schemaArray" }, items: { $dynamicRef: "#meta" }, contains: { $dynamicRef: "#meta" }, additionalProperties: { $dynamicRef: "#meta" }, properties: { type: "object", additionalProperties: { $dynamicRef: "#meta" }, default: {} }, patternProperties: { type: "object", additionalProperties: { $dynamicRef: "#meta" }, propertyNames: { format: "regex" }, default: {} }, dependentSchemas: { type: "object", additionalProperties: { $dynamicRef: "#meta" }, default: {} }, propertyNames: { $dynamicRef: "#meta" }, if: { $dynamicRef: "#meta" }, then: { $dynamicRef: "#meta" }, else: { $dynamicRef: "#meta" }, allOf: { $ref: "#/$defs/schemaArray" }, anyOf: { $ref: "#/$defs/schemaArray" }, oneOf: { $ref: "#/$defs/schemaArray" }, not: { $dynamicRef: "#meta" } }, ta = { schemaArray: { type: "array", minItems: 1, items: { $dynamicRef: "#meta" } } }, na = {
   $schema: Js,
   $id: Ws,
@@ -5117,27 +5117,27 @@ const Is = "https://json-schema.org/draft/2020-12/schema", Ds = "https://json-sc
   type: Ca,
   properties: ka,
   $defs: xa
-}, Pa = "https://json-schema.org/draft/2020-12/schema", Aa = "https://json-schema.org/draft/2020-12/meta/format-annotation", Ra = { "https://json-schema.org/draft/2020-12/vocab/format-annotation": !0 }, Ma = "meta", Fa = "Format vocabulary meta-schema for annotation results", Na = ["object", "boolean"], ja = { format: { type: "string" } }, Oa = {
+}, Pa = "https://json-schema.org/draft/2020-12/schema", Aa = "https://json-schema.org/draft/2020-12/meta/format-annotation", Ra = { "https://json-schema.org/draft/2020-12/vocab/format-annotation": !0 }, Fa = "meta", Ma = "Format vocabulary meta-schema for annotation results", Na = ["object", "boolean"], ja = { format: { type: "string" } }, Oa = {
   $schema: Pa,
   $id: Aa,
   $vocabulary: Ra,
-  $dynamicAnchor: Ma,
-  title: Fa,
+  $dynamicAnchor: Fa,
+  title: Ma,
   type: Na,
   properties: ja
-}, Ta = "https://json-schema.org/draft/2020-12/schema", za = "https://json-schema.org/draft/2020-12/meta/meta-data", Ia = { "https://json-schema.org/draft/2020-12/vocab/meta-data": !0 }, Da = "meta", qa = "Meta-data vocabulary meta-schema", Va = ["object", "boolean"], Ba = { title: { type: "string" }, description: { type: "string" }, default: !0, deprecated: { type: "boolean", default: !1 }, readOnly: { type: "boolean", default: !1 }, writeOnly: { type: "boolean", default: !1 }, examples: { type: "array", items: !0 } }, La = {
+}, Ta = "https://json-schema.org/draft/2020-12/schema", za = "https://json-schema.org/draft/2020-12/meta/meta-data", Ia = { "https://json-schema.org/draft/2020-12/vocab/meta-data": !0 }, qa = "meta", Da = "Meta-data vocabulary meta-schema", Va = ["object", "boolean"], Ba = { title: { type: "string" }, description: { type: "string" }, default: !0, deprecated: { type: "boolean", default: !1 }, readOnly: { type: "boolean", default: !1 }, writeOnly: { type: "boolean", default: !1 }, examples: { type: "array", items: !0 } }, La = {
   $schema: Ta,
   $id: za,
   $vocabulary: Ia,
-  $dynamicAnchor: Da,
-  title: qa,
+  $dynamicAnchor: qa,
+  title: Da,
   type: Va,
   properties: Ba
-}, Ua = "https://json-schema.org/draft/2020-12/schema", Ka = "https://json-schema.org/draft/2020-12/meta/validation", Ga = { "https://json-schema.org/draft/2020-12/vocab/validation": !0 }, Ha = "meta", Ja = "Validation vocabulary meta-schema", Wa = ["object", "boolean"], Ya = { type: { anyOf: [{ $ref: "#/$defs/simpleTypes" }, { type: "array", items: { $ref: "#/$defs/simpleTypes" }, minItems: 1, uniqueItems: !0 }] }, const: !0, enum: { type: "array", items: !0 }, multipleOf: { type: "number", exclusiveMinimum: 0 }, maximum: { type: "number" }, exclusiveMaximum: { type: "number" }, minimum: { type: "number" }, exclusiveMinimum: { type: "number" }, maxLength: { $ref: "#/$defs/nonNegativeInteger" }, minLength: { $ref: "#/$defs/nonNegativeIntegerDefault0" }, pattern: { type: "string", format: "regex" }, maxItems: { $ref: "#/$defs/nonNegativeInteger" }, minItems: { $ref: "#/$defs/nonNegativeIntegerDefault0" }, uniqueItems: { type: "boolean", default: !1 }, maxContains: { $ref: "#/$defs/nonNegativeInteger" }, minContains: { $ref: "#/$defs/nonNegativeInteger", default: 1 }, maxProperties: { $ref: "#/$defs/nonNegativeInteger" }, minProperties: { $ref: "#/$defs/nonNegativeIntegerDefault0" }, required: { $ref: "#/$defs/stringArray" }, dependentRequired: { type: "object", additionalProperties: { $ref: "#/$defs/stringArray" } } }, Xa = { nonNegativeInteger: { type: "integer", minimum: 0 }, nonNegativeIntegerDefault0: { $ref: "#/$defs/nonNegativeInteger", default: 0 }, simpleTypes: { enum: ["array", "boolean", "integer", "null", "number", "object", "string"] }, stringArray: { type: "array", items: { type: "string" }, uniqueItems: !0, default: [] } }, Za = {
+}, Ua = "https://json-schema.org/draft/2020-12/schema", Ka = "https://json-schema.org/draft/2020-12/meta/validation", Ha = { "https://json-schema.org/draft/2020-12/vocab/validation": !0 }, Ga = "meta", Ja = "Validation vocabulary meta-schema", Wa = ["object", "boolean"], Ya = { type: { anyOf: [{ $ref: "#/$defs/simpleTypes" }, { type: "array", items: { $ref: "#/$defs/simpleTypes" }, minItems: 1, uniqueItems: !0 }] }, const: !0, enum: { type: "array", items: !0 }, multipleOf: { type: "number", exclusiveMinimum: 0 }, maximum: { type: "number" }, exclusiveMaximum: { type: "number" }, minimum: { type: "number" }, exclusiveMinimum: { type: "number" }, maxLength: { $ref: "#/$defs/nonNegativeInteger" }, minLength: { $ref: "#/$defs/nonNegativeIntegerDefault0" }, pattern: { type: "string", format: "regex" }, maxItems: { $ref: "#/$defs/nonNegativeInteger" }, minItems: { $ref: "#/$defs/nonNegativeIntegerDefault0" }, uniqueItems: { type: "boolean", default: !1 }, maxContains: { $ref: "#/$defs/nonNegativeInteger" }, minContains: { $ref: "#/$defs/nonNegativeInteger", default: 1 }, maxProperties: { $ref: "#/$defs/nonNegativeInteger" }, minProperties: { $ref: "#/$defs/nonNegativeIntegerDefault0" }, required: { $ref: "#/$defs/stringArray" }, dependentRequired: { type: "object", additionalProperties: { $ref: "#/$defs/stringArray" } } }, Xa = { nonNegativeInteger: { type: "integer", minimum: 0 }, nonNegativeIntegerDefault0: { $ref: "#/$defs/nonNegativeInteger", default: 0 }, simpleTypes: { enum: ["array", "boolean", "integer", "null", "number", "object", "string"] }, stringArray: { type: "array", items: { type: "string" }, uniqueItems: !0, default: [] } }, Za = {
   $schema: Ua,
   $id: Ka,
-  $vocabulary: Ga,
-  $dynamicAnchor: Ha,
+  $vocabulary: Ha,
+  $dynamicAnchor: Ga,
   title: Ja,
   type: Wa,
   properties: Ya,
@@ -5147,7 +5147,7 @@ var jo;
 function Qa() {
   if (jo) return sn;
   jo = 1, Object.defineProperty(sn, "__esModule", { value: !0 });
-  const e = Hs, t = na, n = da, o = va, i = Ea, r = Oa, c = La, s = Za, d = ["/properties"];
+  const e = Gs, t = na, n = da, o = va, i = Ea, r = Oa, s = La, a = Za, d = ["/properties"];
   function y(m) {
     return [
       e,
@@ -5155,12 +5155,12 @@ function Qa() {
       n,
       o,
       i,
-      S(this, r),
-      c,
-      S(this, s)
-    ].forEach((w) => this.addMetaSchema(w, void 0, !1)), this;
-    function S(w, v) {
-      return m ? w.$dataMetaSchema(v, d) : v;
+      C(this, r),
+      s,
+      C(this, a)
+    ].forEach((b) => this.addMetaSchema(b, void 0, !1)), this;
+    function C(b, v) {
+      return m ? b.$dataMetaSchema(v, d) : v;
     }
   }
   return sn.default = y, sn;
@@ -5169,8 +5169,8 @@ var Oo;
 function ec() {
   return Oo || (Oo = 1, (function(e, t) {
     Object.defineProperty(t, "__esModule", { value: !0 }), t.MissingRefError = t.ValidationError = t.CodeGen = t.Name = t.nil = t.stringify = t.str = t._ = t.KeywordCxt = t.Ajv2020 = void 0;
-    const n = /* @__PURE__ */ Ji(), o = /* @__PURE__ */ Os(), i = /* @__PURE__ */ zs(), r = /* @__PURE__ */ Qa(), c = "https://json-schema.org/draft/2020-12/schema";
-    class s extends n.default {
+    const n = /* @__PURE__ */ Ji(), o = /* @__PURE__ */ Os(), i = /* @__PURE__ */ zs(), r = /* @__PURE__ */ Qa(), s = "https://json-schema.org/draft/2020-12/schema";
+    class a extends n.default {
       constructor(v = {}) {
         super({
           ...v,
@@ -5185,13 +5185,13 @@ function ec() {
       _addDefaultMetaSchema() {
         super._addDefaultMetaSchema();
         const { $data: v, meta: _ } = this.opts;
-        _ && (r.default.call(this, v), this.refs["http://json-schema.org/schema"] = c);
+        _ && (r.default.call(this, v), this.refs["http://json-schema.org/schema"] = s);
       }
       defaultMeta() {
-        return this.opts.defaultMeta = super.defaultMeta() || (this.getSchema(c) ? c : void 0);
+        return this.opts.defaultMeta = super.defaultMeta() || (this.getSchema(s) ? s : void 0);
       }
     }
-    t.Ajv2020 = s, e.exports = t = s, e.exports.Ajv2020 = s, Object.defineProperty(t, "__esModule", { value: !0 }), t.default = s;
+    t.Ajv2020 = a, e.exports = t = a, e.exports.Ajv2020 = a, Object.defineProperty(t, "__esModule", { value: !0 }), t.default = a;
     var d = /* @__PURE__ */ vn();
     Object.defineProperty(t, "KeywordCxt", { enumerable: !0, get: function() {
       return d.KeywordCxt;
@@ -5214,21 +5214,21 @@ function ec() {
     Object.defineProperty(t, "ValidationError", { enumerable: !0, get: function() {
       return m.default;
     } });
-    var S = /* @__PURE__ */ $n();
+    var C = /* @__PURE__ */ $n();
     Object.defineProperty(t, "MissingRefError", { enumerable: !0, get: function() {
-      return S.default;
+      return C.default;
     } });
   })(ut, ut.exports)), ut.exports;
 }
 var tc = /* @__PURE__ */ ec();
-const nc = /* @__PURE__ */ Fi(tc), rc = "https://json-schema.org/draft/2020-12/schema", oc = "https://raw.githubusercontent.com/omsf-eco-infra/gufe-viz/main/schema/gufe-viz.schema.json", ic = "gufe-viz payload", sc = "Python-to-TypeScript contract bridge for gufe visualizations. Source of truth both languages are downstream of it. This schema is not strictly versioned or published as it is only internally consumed by this codebase. Schema description: one schema object per gufe class: every $def named *Viz is the visualization form of exactly one GufeTokenizable, it carries that object's `gufe-key`. Every reference from one gufe object to another is that object's gufe key, and the objects themselves live in the `registry` on the root payload. So a ligand network's nodes are keys, a chemical system's components and a transformation's protocol are keys and each one resolves to a complete, drawable object. An alchemical network whose forty systems share one protein carries that PDB once and points at it forty times, and the browser can still drill into it, because what it points at is a whole ProteinComponentViz. This is a single-shot dump rather than a conversation with a server, so the registry travels with the payload.", ac = [{ $ref: "#/$defs/SmallMoleculeComponentViz" }, { $ref: "#/$defs/ProteinComponentViz" }, { $ref: "#/$defs/SolvatedPDBComponentViz" }, { $ref: "#/$defs/ProteinMembraneComponentViz" }, { $ref: "#/$defs/SolventComponentViz" }, { $ref: "#/$defs/UnknownComponentViz" }, { $ref: "#/$defs/ProtocolViz" }, { $ref: "#/$defs/LigandAtomMappingViz" }, { $ref: "#/$defs/LigandNetworkViz" }, { $ref: "#/$defs/ChemicalSystemViz" }, { $ref: "#/$defs/TransformationViz" }, { $ref: "#/$defs/AlchemicalNetworkViz" }], cc = /* @__PURE__ */ JSON.parse('{"GufeKey":{"title":"GufeKey","description":"A gufe key: the identity of a GufeTokenizable, of the form \'ClassName-<hex digest>\'. It is deterministic and repeatable within a software environment. Only its non-emptiness is checked","type":"string","minLength":1},"ComponentKey":{"title":"ComponentKey","description":"A gufe key naming a ComponentViz in the registry. Identical to GufeKey at validation time: JSON Schema has no way to say \'this string is the gufe-key of an entry in that array, and that entry has this type\', because that is a join across two parts of the document. What the name buys is that the referent\'s type is stated in the contract and carried into the generated TypeScript, instead of living only in a test and a view.","$ref":"#/$defs/GufeKey"},"SmallMoleculeComponentKey":{"title":"SmallMoleculeComponentKey","description":"A gufe key naming a SmallMoleculeComponentViz in the registry. Resolving it yields the whole molecule, SDF included. See ComponentKey for what the schema can and cannot check about that.","$ref":"#/$defs/GufeKey"},"ChemicalSystemKey":{"title":"ChemicalSystemKey","description":"A gufe key naming a ChemicalSystemViz in the registry. See ComponentKey for what the schema can and cannot check about that.","$ref":"#/$defs/GufeKey"},"ProtocolKey":{"title":"ProtocolKey","description":"A gufe key naming a ProtocolViz in the registry. Every transformation of a network usually names the same one. See ComponentKey for what the schema can and cannot check about that.","$ref":"#/$defs/GufeKey"},"Registry":{"title":"Registry","description":"The pool of gufe objects this payload refers to by key, each a complete payload object in its own right. Entries are unique by `gufe-key` and sorted by (type, gufe-key) so a committed fixture is byte-stable. JSON Schema cannot express \'unique by a property\' or \'every reference resolves\', so both are covered by tests on the Python side and degraded over by the views.","type":"array","items":{"oneOf":[{"$ref":"#/$defs/ComponentViz"},{"$ref":"#/$defs/ProtocolViz"},{"$ref":"#/$defs/ChemicalSystemViz"}]}},"ComponentViz":{"title":"ComponentViz","description":"Any single chemical-system component","oneOf":[{"$ref":"#/$defs/SmallMoleculeComponentViz"},{"$ref":"#/$defs/ProteinComponentViz"},{"$ref":"#/$defs/SolvatedPDBComponentViz"},{"$ref":"#/$defs/ProteinMembraneComponentViz"},{"$ref":"#/$defs/SolventComponentViz"},{"$ref":"#/$defs/UnknownComponentViz"}]},"SmallMoleculeComponentViz":{"title":"SmallMoleculeComponentViz","description":"A small molecule, carried as a complete SDF record.","type":"object","properties":{"type":{"const":"SmallMoleculeComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"sdf":{"type":"string","minLength":1,"description":"Complete inline SDF record, including the conformer."},"smiles":{"type":"string"},"total_charge":{"type":"integer","description":"Net formal charge. Displayed, never recomputed from the SDF."}},"required":["type","gufe-key","name","sdf","smiles","total_charge"],"additionalProperties":false},"ProteinComponentViz":{"title":"ProteinComponentViz","description":"A protein, carried as a complete PDB record.","type":"object","properties":{"type":{"const":"ProteinComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"pdb":{"type":"string","minLength":1,"description":"Complete inline PDB representation."}},"required":["type","gufe-key","name","pdb"],"additionalProperties":false},"SolvatedPDBComponentViz":{"title":"SolvatedPDBComponentViz","description":"A protein with explicit solvent. A distinct type rather than a flag on ProteinComponentViz, because the discriminator is what a view dispatches on and the presence of waters changes what a sensible default representation is.","type":"object","properties":{"type":{"const":"SolvatedPDBComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"pdb":{"type":"string","minLength":1,"description":"Complete inline PDB representation, including explicit solvent."}},"required":["type","gufe-key","name","pdb"],"additionalProperties":false},"ProteinMembraneComponentViz":{"title":"ProteinMembraneComponentViz","description":"A protein embedded in a membrane.","type":"object","properties":{"type":{"const":"ProteinMembraneComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"pdb":{"type":"string","minLength":1,"description":"Complete inline PDB representation of the protein and membrane system."}},"required":["type","gufe-key","name","pdb"],"additionalProperties":false},"SolventComponentViz":{"title":"SolventComponentViz","description":"Bulk solvent settings. There is no structure to draw, so these are flat fields suitable for rendering as a settings card.","type":"object","properties":{"type":{"const":"SolventComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"smiles":{"type":"string","minLength":1},"positive_ion":{"type":"string"},"negative_ion":{"type":"string"},"neutralize":{"type":"boolean"},"ion_concentration":{"type":"string","description":"Display-form concentration with units, for example \'0.15 molar\'. A string rather than a number because the unit is part of the value and the view only ever prints it."}},"required":["type","gufe-key","name","smiles","positive_ion","negative_ion","neutralize","ion_concentration"],"additionalProperties":false},"UnknownComponentViz":{"title":"UnknownComponentViz","description":"The graceful fallback for a component type this build does not recognize. gufe supports custom Component subclasses, so meeting one is an expected outcome rather than an error, and the browser answers it with \'sorry, there is no visualization for this\'. This covers an unrecognized type only: a recognized component whose serializer fails is a bug, and raises in Python rather than arriving here wearing a disguise.","type":"object","properties":{"type":{"const":"UnknownComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"gufe_type":{"type":"string","minLength":1,"description":"The gufe class name, so the panel can say which type it could not draw."}},"required":["type","gufe-key","name","gufe_type"],"additionalProperties":false},"ProtocolViz":{"title":"ProtocolViz","description":"A gufe Protocol, named. Every transformation in an alchemical network usually shares one, so this is a registry entry that many edges point at rather than a class name repeated per edge. Settings are deliberately absent for now: they are large, deeply nested, and nothing draws them yet, adding a `settings` field later is additive and breaks nothing.","type":"object","properties":{"type":{"const":"ProtocolViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"gufe_type":{"type":"string","minLength":1,"description":"The Protocol\'s class name, which is what identifies it to a reader, a Protocol has no name of its own, so `name` is usually empty."}},"required":["type","gufe-key","name","gufe_type"],"additionalProperties":false},"ChemicalSystemViz":{"title":"ChemicalSystemViz","description":"A gufe ChemicalSystem: labels mapped to the gufe keys of its components.","type":"object","properties":{"type":{"const":"ChemicalSystemViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"components":{"type":"object","description":"ChemicalSystem labels mapped to the gufe keys of the components in the registry.","additionalProperties":{"$ref":"#/$defs/ComponentKey"}},"registry":{"$ref":"#/$defs/Registry"}},"required":["type","gufe-key","name","components"],"additionalProperties":false},"AtomMapping":{"title":"AtomMapping","description":"Atom index correspondence from molecule A to molecule B, as a list of index pairs. A list rather than an object keyed by A\'s index, because JSON object keys can only be strings: keying by index would put decimal strings such as \'12\' in the payload and leave both languages casting them back to integers, and it is Python\'s dict-of-int shape only by resemblance. As a list, both indices stay integers, and \'an entry has a B index for every A index\' becomes a `required` the schema states rather than a convention a reader has to trust. Pairs are ordered by `index_A` so a committed fixture is byte-stable.","type":"array","items":{"type":"object","properties":{"index_A":{"type":"integer","minimum":0,"description":"An atom index in molecule A."},"index_B":{"type":"integer","minimum":0,"description":"The atom index in molecule B that it maps to."}},"required":["index_A","index_B"],"additionalProperties":false}},"Annotations":{"title":"Annotations","description":"Free-form mapping metadata. gufe puts nothing here by design and every mapper picks its own keys, so this is deliberately open. Values are whatever survived being made JSON-safe. Displayed but never interpreted, with the single exception of \'score\'.","type":"object"},"LigandAtomMappingViz":{"title":"LigandAtomMappingViz","description":"One atom mapping between two small molecules. This is also what an edge of a ligand network is because the two endpoints are gufe keys either way: standalone they resolve in this object\'s own registry, and in a network they resolve in the network\'s, where they are the same entries the nodes name. `componentA` and `componentB` are the molecules the two sides of `componentA_to_componentB` index into: an `index_A` is an atom of the SmallMoleculeComponentViz that `componentA` names, and an `index_B` an atom of `componentB`\'s.","type":"object","properties":{"type":{"const":"LigandAtomMappingViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"componentA":{"$ref":"#/$defs/SmallMoleculeComponentKey"},"componentB":{"$ref":"#/$defs/SmallMoleculeComponentKey"},"componentA_to_componentB":{"$ref":"#/$defs/AtomMapping"},"score":{"type":["number","null"],"description":"The \'score\' annotation when it is a plain number, otherwise null. This is the one annotation key that is interpreted rather than displayed: it drives the edge colouring and the force layout\'s link distance."},"annotations":{"$ref":"#/$defs/Annotations"},"registry":{"$ref":"#/$defs/Registry"}},"required":["type","gufe-key","name","componentA","componentB","componentA_to_componentB","score","annotations"],"additionalProperties":false},"LigandNetworkViz":{"title":"LigandNetworkViz","description":"A ligand network: the ligands in the registry, the nodes as keys into it, and the mappings as edges. Deliberately not gufe\'s GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.","type":"object","properties":{"type":{"const":"LigandNetworkViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"registry":{"$ref":"#/$defs/Registry"},"nodes":{"type":"array","description":"The gufe key of each ligand, resolved in `registry`.","items":{"$ref":"#/$defs/SmallMoleculeComponentKey"}},"edges":{"type":"array","description":"The mappings, whose `componentA` and `componentB` name nodes of this network. JSON Schema cannot express that referential constraint, so a Python test covers it, and the view drops a dangling edge with a banner rather than failing.","items":{"$ref":"#/$defs/LigandAtomMappingViz"}}},"required":["type","gufe-key","name","registry","nodes","edges"],"additionalProperties":false},"TransformationViz":{"title":"TransformationViz","description":"A transformation between two chemical systems, both named by gufe key, as is its protocol: `stateA` is the system it starts from, `stateB` the one it ends at, and every edge of a network usually names the same protocol. This is also what an edge of an alchemical network is (there is no separate edge type) because `stateA` and `stateB` are keys either way, and in a network they are the keys the nodes name. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.","type":"object","properties":{"type":{"const":"TransformationViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"protocol":{"$ref":"#/$defs/ProtocolKey"},"stateA":{"$ref":"#/$defs/ChemicalSystemKey"},"stateB":{"$ref":"#/$defs/ChemicalSystemKey"},"mappings":{"type":"array","items":{"$ref":"#/$defs/LigandAtomMappingViz"}},"registry":{"$ref":"#/$defs/Registry"}},"required":["type","gufe-key","name","protocol","stateA","stateB","mappings"],"additionalProperties":false},"AlchemicalNetworkViz":{"title":"AlchemicalNetworkViz","description":"A graph of chemical systems joined by transformations. What repeats here is not the nodes and edges themselves but what they are made of: in practice every system shares one protein and every transformation shares one protocol. Both live in the registry, once, as whole objects so this view can show composition and topology while still letting a reader open a node and see the protein.","type":"object","properties":{"type":{"const":"AlchemicalNetworkViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"registry":{"$ref":"#/$defs/Registry"},"nodes":{"type":"array","description":"The gufe key of each ChemicalSystem, resolved in `registry`.","items":{"$ref":"#/$defs/ChemicalSystemKey"}},"edges":{"type":"array","description":"The transformations, whose `stateA` and `stateB` name nodes of this network.","items":{"$ref":"#/$defs/TransformationViz"}}},"required":["type","gufe-key","name","registry","nodes","edges"],"additionalProperties":false}}'), Wn = {
+const nc = /* @__PURE__ */ Mi(tc), rc = "https://json-schema.org/draft/2020-12/schema", oc = "https://raw.githubusercontent.com/omsf-eco-infra/gufe-viz/main/schema/gufe-viz.schema.json", ic = "gufe-viz payload", sc = "Python-to-TypeScript contract bridge for gufe visualizations. Source of truth both languages are downstream of it. This schema is not strictly versioned or published as it is only internally consumed by this codebase. Schema description: one schema object per gufe class: every $def named *Viz is the visualization form of exactly one GufeTokenizable, it carries that object's `gufe-key`. Every reference from one gufe object to another is that object's gufe key, and the objects themselves live in the `registry` on the root payload. So a ligand network's nodes are keys, a chemical system's components and a transformation's protocol are keys and each one resolves to a complete, drawable object. An alchemical network whose forty systems share one protein carries that PDB once and points at it forty times, and the browser can still drill into it, because what it points at is a whole ProteinComponentViz. This is a single-shot dump rather than a conversation with a server, so the registry travels with the payload.", ac = [{ $ref: "#/$defs/SmallMoleculeComponentViz" }, { $ref: "#/$defs/ProteinComponentViz" }, { $ref: "#/$defs/SolvatedPDBComponentViz" }, { $ref: "#/$defs/ProteinMembraneComponentViz" }, { $ref: "#/$defs/SolventComponentViz" }, { $ref: "#/$defs/UnknownComponentViz" }, { $ref: "#/$defs/ProtocolViz" }, { $ref: "#/$defs/LigandAtomMappingViz" }, { $ref: "#/$defs/LigandNetworkViz" }, { $ref: "#/$defs/ChemicalSystemViz" }, { $ref: "#/$defs/TransformationViz" }, { $ref: "#/$defs/AlchemicalNetworkViz" }], cc = /* @__PURE__ */ JSON.parse('{"GufeKey":{"title":"GufeKey","description":"A gufe key: the identity of a GufeTokenizable, of the form \'ClassName-<hex digest>\'. It is deterministic and repeatable within a software environment. Only its non-emptiness is checked","type":"string","minLength":1},"ComponentKey":{"title":"ComponentKey","description":"A gufe key naming a ComponentViz in the registry. Identical to GufeKey at validation time: JSON Schema has no way to say \'this string is the gufe-key of an entry in that array, and that entry has this type\', because that is a join across two parts of the document. What the name buys is that the referent\'s type is stated in the contract and carried into the generated TypeScript, instead of living only in a test and a view.","$ref":"#/$defs/GufeKey"},"SmallMoleculeComponentKey":{"title":"SmallMoleculeComponentKey","description":"A gufe key naming a SmallMoleculeComponentViz in the registry. Resolving it yields the whole molecule, SDF included. See ComponentKey for what the schema can and cannot check about that.","$ref":"#/$defs/GufeKey"},"ChemicalSystemKey":{"title":"ChemicalSystemKey","description":"A gufe key naming a ChemicalSystemViz in the registry. See ComponentKey for what the schema can and cannot check about that.","$ref":"#/$defs/GufeKey"},"ProtocolKey":{"title":"ProtocolKey","description":"A gufe key naming a ProtocolViz in the registry. Every transformation of a network usually names the same one. See ComponentKey for what the schema can and cannot check about that.","$ref":"#/$defs/GufeKey"},"Registry":{"title":"Registry","description":"The pool of gufe objects this payload refers to by key, each a complete payload object in its own right. Entries are unique by `gufe-key` and sorted by (type, gufe-key) so a committed fixture is byte-stable. JSON Schema cannot express \'unique by a property\' or \'every reference resolves\', so both are covered by tests on the Python side and degraded over by the views.","type":"array","items":{"oneOf":[{"$ref":"#/$defs/ComponentViz"},{"$ref":"#/$defs/ProtocolViz"},{"$ref":"#/$defs/ChemicalSystemViz"}]}},"ComponentViz":{"title":"ComponentViz","description":"Any single chemical-system component","oneOf":[{"$ref":"#/$defs/SmallMoleculeComponentViz"},{"$ref":"#/$defs/ProteinComponentViz"},{"$ref":"#/$defs/SolvatedPDBComponentViz"},{"$ref":"#/$defs/ProteinMembraneComponentViz"},{"$ref":"#/$defs/SolventComponentViz"},{"$ref":"#/$defs/UnknownComponentViz"}]},"SmallMoleculeComponentViz":{"title":"SmallMoleculeComponentViz","description":"A small molecule, carried as a complete SDF record.","type":"object","properties":{"type":{"const":"SmallMoleculeComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"sdf":{"type":"string","minLength":1,"description":"Complete inline SDF record, including the conformer."},"smiles":{"type":"string"},"total_charge":{"type":"integer","description":"Net formal charge. Displayed, never recomputed from the SDF."}},"required":["type","gufe-key","name","sdf","smiles","total_charge"],"additionalProperties":false},"ProteinComponentViz":{"title":"ProteinComponentViz","description":"A protein, carried as a complete PDB record.","type":"object","properties":{"type":{"const":"ProteinComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"pdb":{"type":"string","minLength":1,"description":"Complete inline PDB representation."}},"required":["type","gufe-key","name","pdb"],"additionalProperties":false},"SolvatedPDBComponentViz":{"title":"SolvatedPDBComponentViz","description":"A protein with explicit solvent. A distinct type rather than a flag on ProteinComponentViz, because the discriminator is what a view dispatches on and the presence of waters changes what a sensible default representation is.","type":"object","properties":{"type":{"const":"SolvatedPDBComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"pdb":{"type":"string","minLength":1,"description":"Complete inline PDB representation, including explicit solvent."}},"required":["type","gufe-key","name","pdb"],"additionalProperties":false},"ProteinMembraneComponentViz":{"title":"ProteinMembraneComponentViz","description":"A protein embedded in a membrane.","type":"object","properties":{"type":{"const":"ProteinMembraneComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"pdb":{"type":"string","minLength":1,"description":"Complete inline PDB representation of the protein and membrane system."}},"required":["type","gufe-key","name","pdb"],"additionalProperties":false},"SolventComponentViz":{"title":"SolventComponentViz","description":"Bulk solvent settings. There is no structure to draw, so these are flat fields suitable for rendering as a settings card.","type":"object","properties":{"type":{"const":"SolventComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"smiles":{"type":"string","minLength":1},"positive_ion":{"type":"string"},"negative_ion":{"type":"string"},"neutralize":{"type":"boolean"},"ion_concentration":{"type":"string","description":"Display-form concentration with units, for example \'0.15 molar\'. A string rather than a number because the unit is part of the value and the view only ever prints it."}},"required":["type","gufe-key","name","smiles","positive_ion","negative_ion","neutralize","ion_concentration"],"additionalProperties":false},"UnknownComponentViz":{"title":"UnknownComponentViz","description":"The graceful fallback for a component type this build does not recognize. gufe supports custom Component subclasses, so meeting one is an expected outcome rather than an error, and the browser answers it with \'sorry, there is no visualization for this\'. This covers an unrecognized type only: a recognized component whose serializer fails is a bug, and raises in Python rather than arriving here wearing a disguise.","type":"object","properties":{"type":{"const":"UnknownComponentViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"gufe_type":{"type":"string","minLength":1,"description":"The gufe class name, so the panel can say which type it could not draw."}},"required":["type","gufe-key","name","gufe_type"],"additionalProperties":false},"ProtocolViz":{"title":"ProtocolViz","description":"A gufe Protocol, named. Every transformation in an alchemical network usually shares one, so this is a registry entry that many edges point at rather than a class name repeated per edge. Settings are deliberately absent for now: they are large, deeply nested, and nothing draws them yet, adding a `settings` field later is additive and breaks nothing.","type":"object","properties":{"type":{"const":"ProtocolViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"gufe_type":{"type":"string","minLength":1,"description":"The Protocol\'s class name, which is what identifies it to a reader, a Protocol has no name of its own, so `name` is usually empty."}},"required":["type","gufe-key","name","gufe_type"],"additionalProperties":false},"ChemicalSystemViz":{"title":"ChemicalSystemViz","description":"A gufe ChemicalSystem: labels mapped to the gufe keys of its components.","type":"object","properties":{"type":{"const":"ChemicalSystemViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"components":{"type":"object","description":"ChemicalSystem labels mapped to the gufe keys of the components in the registry.","additionalProperties":{"$ref":"#/$defs/ComponentKey"}},"registry":{"$ref":"#/$defs/Registry"}},"required":["type","gufe-key","name","components"],"additionalProperties":false},"AtomMapping":{"title":"AtomMapping","description":"Atom index correspondence from molecule A to molecule B, as a list of index pairs. A list rather than an object keyed by A\'s index, because JSON object keys can only be strings: keying by index would put decimal strings such as \'12\' in the payload and leave both languages casting them back to integers, and it is Python\'s dict-of-int shape only by resemblance. As a list, both indices stay integers, and \'an entry has a B index for every A index\' becomes a `required` the schema states rather than a convention a reader has to trust. Pairs are ordered by `index_A` so a committed fixture is byte-stable.","type":"array","items":{"type":"object","properties":{"index_A":{"type":"integer","minimum":0,"description":"An atom index in molecule A."},"index_B":{"type":"integer","minimum":0,"description":"The atom index in molecule B that it maps to."}},"required":["index_A","index_B"],"additionalProperties":false}},"Annotations":{"title":"Annotations","description":"Free-form mapping metadata. gufe puts nothing here by design and every mapper picks its own keys, so this is deliberately open. Values are whatever survived being made JSON-safe. Displayed but never interpreted, with the single exception of \'score\'.","type":"object"},"LigandAtomMappingViz":{"title":"LigandAtomMappingViz","description":"One atom mapping between two small molecules. This is also what an edge of a ligand network is because the two endpoints are gufe keys either way: standalone they resolve in this object\'s own registry, and in a network they resolve in the network\'s, where they are the same entries the nodes name. `componentA` and `componentB` are the molecules the two sides of `componentA_to_componentB` index into: an `index_A` is an atom of the SmallMoleculeComponentViz that `componentA` names, and an `index_B` an atom of `componentB`\'s.","type":"object","properties":{"type":{"const":"LigandAtomMappingViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"componentA":{"$ref":"#/$defs/SmallMoleculeComponentKey"},"componentB":{"$ref":"#/$defs/SmallMoleculeComponentKey"},"componentA_to_componentB":{"$ref":"#/$defs/AtomMapping"},"score":{"type":["number","null"],"description":"The \'score\' annotation when it is a plain number, otherwise null. This is the one annotation key that is interpreted rather than displayed: it drives the edge colouring and the force layout\'s link distance."},"annotations":{"$ref":"#/$defs/Annotations"},"registry":{"$ref":"#/$defs/Registry"}},"required":["type","gufe-key","name","componentA","componentB","componentA_to_componentB","score","annotations"],"additionalProperties":false},"LigandNetworkViz":{"title":"LigandNetworkViz","description":"A ligand network: the ligands in the registry, the nodes as keys into it, and the mappings as edges. Deliberately not gufe\'s GraphML: that format embeds a gufe to_json moldict per node, so forwarding it would relocate the decoding problem into the browser rather than avoid it.","type":"object","properties":{"type":{"const":"LigandNetworkViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"registry":{"$ref":"#/$defs/Registry"},"nodes":{"type":"array","description":"The gufe key of each ligand, resolved in `registry`.","items":{"$ref":"#/$defs/SmallMoleculeComponentKey"}},"edges":{"type":"array","description":"The mappings, whose `componentA` and `componentB` name nodes of this network. JSON Schema cannot express that referential constraint, so a Python test covers it, and the view drops a dangling edge with a banner rather than failing.","items":{"$ref":"#/$defs/LigandAtomMappingViz"}}},"required":["type","gufe-key","name","registry","nodes","edges"],"additionalProperties":false},"TransformationViz":{"title":"TransformationViz","description":"A transformation between two chemical systems, both named by gufe key, as is its protocol: `stateA` is the system it starts from, `stateB` the one it ends at, and every edge of a network usually names the same protocol. This is also what an edge of an alchemical network is (there is no separate edge type) because `stateA` and `stateB` are keys either way, and in a network they are the keys the nodes name. NonTransformation uses this type too: it exposes the same stateA and stateB properties, both its single system, so it renders as a diff with no differences.","type":"object","properties":{"type":{"const":"TransformationViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"protocol":{"$ref":"#/$defs/ProtocolKey"},"stateA":{"$ref":"#/$defs/ChemicalSystemKey"},"stateB":{"$ref":"#/$defs/ChemicalSystemKey"},"mappings":{"type":"array","items":{"$ref":"#/$defs/LigandAtomMappingViz"}},"registry":{"$ref":"#/$defs/Registry"}},"required":["type","gufe-key","name","protocol","stateA","stateB","mappings"],"additionalProperties":false},"AlchemicalNetworkViz":{"title":"AlchemicalNetworkViz","description":"A graph of chemical systems joined by transformations. What repeats here is not the nodes and edges themselves but what they are made of: in practice every system shares one protein and every transformation shares one protocol. Both live in the registry, once, as whole objects so this view can show composition and topology while still letting a reader open a node and see the protein.","type":"object","properties":{"type":{"const":"AlchemicalNetworkViz"},"gufe-key":{"$ref":"#/$defs/GufeKey"},"name":{"type":"string"},"registry":{"$ref":"#/$defs/Registry"},"nodes":{"type":"array","description":"The gufe key of each ChemicalSystem, resolved in `registry`.","items":{"$ref":"#/$defs/ChemicalSystemKey"}},"edges":{"type":"array","description":"The transformations, whose `stateA` and `stateB` name nodes of this network.","items":{"$ref":"#/$defs/TransformationViz"}}},"required":["type","gufe-key","name","registry","nodes","edges"],"additionalProperties":false}}'), Wn = {
   $schema: rc,
   $id: oc,
   title: ic,
   description: sc,
   oneOf: ac,
   $defs: cc
-}, Dl = [
+}, Il = [
   "AlchemicalNetworkViz",
   "ChemicalSystemViz",
   "LigandAtomMappingViz",
@@ -5250,7 +5250,7 @@ for (const e of ai) {
   const t = Xn.getSchema(`${Yn}#/$defs/${e}`);
   t && Zn.set(e, t);
 }
-const qn = { valid: !0, issues: [] };
+const Dn = { valid: !0, issues: [] };
 function Vn(e) {
   return (e ?? []).map((t) => ({
     path: t.instancePath || "",
@@ -5264,11 +5264,11 @@ function lc(e) {
       issues: [{ path: "", message: "must be a JSON object" }]
     };
   const t = e.type, n = typeof t == "string" ? Zn.get(t) : void 0;
-  return n ? n(e) ? qn : { valid: !1, issues: Vn(n.errors) } : To(e) ? qn : { valid: !1, issues: Vn(To.errors) };
+  return n ? n(e) ? Dn : { valid: !1, issues: Vn(n.errors) } : To(e) ? Dn : { valid: !1, issues: Vn(To.errors) };
 }
-function Vl(e, t) {
+function Dl(e, t) {
   const n = Zn.get(e);
-  return n ? n(t) ? qn : { valid: !1, issues: Vn(n.errors) } : {
+  return n ? n(t) ? Dn : { valid: !1, issues: Vn(n.errors) } : {
     valid: !1,
     issues: [
       { path: "", message: `unknown payload type ${JSON.stringify(e)}` }
@@ -5317,7 +5317,7 @@ function uc(e) {
     message: `Sorry, there is no visualization for ${e} yet. This build can draw: ${t}.`
   };
 }
-function Bl(e) {
+function Vl(e) {
   return ci(e)?.message ?? null;
 }
 class fc extends Se {
@@ -5329,12 +5329,12 @@ class fc extends Se {
     const o = ci(n);
     if (o)
       return t.appendChild(pc(o, n)), {};
-    const i = n.type, r = Qn[i], c = document.createElement(r);
-    return c.style.cssText = "flex:1;min-height:0;min-width:0;", c.payload = n, t.appendChild(c), {
-      onResize: () => c.resize?.(),
+    const i = n.type, r = Qn[i], s = document.createElement(r);
+    return s.style.cssText = "flex:1;min-height:0;min-width:0;", s.payload = n, t.appendChild(s), {
+      onResize: () => s.resize?.(),
       // Removing the child fires its own `disconnectedCallback`, which is where
       // its viewers and observers are released
-      cleanup: () => c.remove()
+      cleanup: () => s.remove()
     };
   }
 }
@@ -5344,9 +5344,9 @@ function pc(e, t) {
     "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:32px;"
   );
   n.appendChild(ae(e.message));
-  const o = (r, c) => j(
+  const o = (r, s) => j(
     "div",
-    "max-width:640px;padding:8px 12px;border-radius:6px;font-size:11px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;" + (c ? `background:${P.warnBg};color:${P.warnFg};border:1px solid ${P.warnBorder};` : `background:${P.panelBg};color:${P.textMuted2};border:1px solid ${P.cardBorder};`),
+    "max-width:640px;padding:8px 12px;border-radius:6px;font-size:11px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;" + (s ? `background:${E.warnBg};color:${E.warnFg};border:1px solid ${E.warnBorder};` : `background:${E.panelBg};color:${E.textMuted2};border:1px solid ${E.cardBorder};`),
     r
   );
   e.detail && n.appendChild(o(e.detail, !0));
@@ -5416,16 +5416,16 @@ function or(e, t) {
     n = !0;
   }, r = () => {
     n = !1;
-  }, c = (s) => {
-    if (s.stopPropagation(), n || s.ctrlKey || s.metaKey) {
-      s.preventDefault(), t.onZoom(s);
+  }, s = (a) => {
+    if (a.stopPropagation(), n || a.ctrlKey || a.metaKey) {
+      a.preventDefault(), t.onZoom(a);
       return;
     }
     t.hint && !o && (o = !0, gc(e, t.hint));
   };
-  return e.addEventListener("wheel", c, { passive: !1, capture: !0 }), e.addEventListener("pointerdown", i), e.addEventListener("pointerenter", i), e.addEventListener("pointerleave", r), {
+  return e.addEventListener("wheel", s, { passive: !1, capture: !0 }), e.addEventListener("pointerdown", i), e.addEventListener("pointerenter", i), e.addEventListener("pointerleave", r), {
     cleanup() {
-      e.removeEventListener("wheel", c, { capture: !0 }), e.removeEventListener("pointerdown", i), e.removeEventListener("pointerenter", i), e.removeEventListener("pointerleave", r);
+      e.removeEventListener("wheel", s, { capture: !0 }), e.removeEventListener("pointerdown", i), e.removeEventListener("pointerenter", i), e.removeEventListener("pointerleave", r);
     }
   };
 }
@@ -5476,7 +5476,7 @@ const ct = {
   uniqueAtom: "#DC3220",
   elementChange3D: "0x005AB5",
   uniqueAtom3D: "0xDC3220"
-}, Ll = [
+}, Bl = [
   "#FF0000",
   "#FF0C00",
   "#FF1800",
@@ -5605,126 +5605,126 @@ const ct = {
   "#FF0030",
   "#FF0024",
   "#FF0018"
-], Ul = "hsv", q = [0, 0, 0], wc = {
-  0: q,
-  1: q,
-  2: q,
-  3: q,
-  4: q,
-  5: q,
-  6: q,
-  7: q,
-  8: q,
-  9: q,
-  10: q,
-  11: q,
-  12: q,
-  13: q,
-  14: q,
-  15: q,
-  16: q,
-  17: q,
-  18: q,
-  19: q,
-  20: q,
-  21: q,
-  22: q,
-  23: q,
-  24: q,
-  25: q,
-  26: q,
-  27: q,
-  28: q,
-  29: q,
-  30: q,
-  31: q,
-  32: q,
-  33: q,
-  34: q,
-  35: q,
-  36: q,
-  37: q,
-  38: q,
-  39: q,
-  40: q,
-  41: q,
-  42: q,
-  43: q,
-  44: q,
-  45: q,
-  46: q,
-  47: q,
-  48: q,
-  49: q,
-  50: q,
-  51: q,
-  52: q,
-  53: q,
-  54: q,
-  55: q,
-  56: q,
-  57: q,
-  58: q,
-  59: q,
-  60: q,
-  61: q,
-  62: q,
-  63: q,
-  64: q,
-  65: q,
-  66: q,
-  67: q,
-  68: q,
-  69: q,
-  70: q,
-  71: q,
-  72: q,
-  73: q,
-  74: q,
-  75: q,
-  76: q,
-  77: q,
-  78: q,
-  79: q,
-  80: q,
-  81: q,
-  82: q,
-  83: q,
-  84: q,
-  85: q,
-  86: q,
-  87: q,
-  88: q,
-  89: q,
-  90: q,
-  91: q,
-  92: q,
-  93: q,
-  94: q,
-  95: q,
-  96: q,
-  97: q,
-  98: q,
-  99: q,
-  100: q,
-  101: q,
-  102: q,
-  103: q,
-  104: q,
-  105: q,
-  106: q,
-  107: q,
-  108: q,
-  109: q,
-  110: q,
-  111: q,
-  112: q,
-  113: q,
-  114: q,
-  115: q,
-  116: q,
-  117: q,
-  118: q
+], Ll = "hsv", D = [0, 0, 0], wc = {
+  0: D,
+  1: D,
+  2: D,
+  3: D,
+  4: D,
+  5: D,
+  6: D,
+  7: D,
+  8: D,
+  9: D,
+  10: D,
+  11: D,
+  12: D,
+  13: D,
+  14: D,
+  15: D,
+  16: D,
+  17: D,
+  18: D,
+  19: D,
+  20: D,
+  21: D,
+  22: D,
+  23: D,
+  24: D,
+  25: D,
+  26: D,
+  27: D,
+  28: D,
+  29: D,
+  30: D,
+  31: D,
+  32: D,
+  33: D,
+  34: D,
+  35: D,
+  36: D,
+  37: D,
+  38: D,
+  39: D,
+  40: D,
+  41: D,
+  42: D,
+  43: D,
+  44: D,
+  45: D,
+  46: D,
+  47: D,
+  48: D,
+  49: D,
+  50: D,
+  51: D,
+  52: D,
+  53: D,
+  54: D,
+  55: D,
+  56: D,
+  57: D,
+  58: D,
+  59: D,
+  60: D,
+  61: D,
+  62: D,
+  63: D,
+  64: D,
+  65: D,
+  66: D,
+  67: D,
+  68: D,
+  69: D,
+  70: D,
+  71: D,
+  72: D,
+  73: D,
+  74: D,
+  75: D,
+  76: D,
+  77: D,
+  78: D,
+  79: D,
+  80: D,
+  81: D,
+  82: D,
+  83: D,
+  84: D,
+  85: D,
+  86: D,
+  87: D,
+  88: D,
+  89: D,
+  90: D,
+  91: D,
+  92: D,
+  93: D,
+  94: D,
+  95: D,
+  96: D,
+  97: D,
+  98: D,
+  99: D,
+  100: D,
+  101: D,
+  102: D,
+  103: D,
+  104: D,
+  105: D,
+  106: D,
+  107: D,
+  108: D,
+  109: D,
+  110: D,
+  111: D,
+  112: D,
+  113: D,
+  114: D,
+  115: D,
+  116: D,
+  117: D,
+  118: D
 }, _c = {
   atomColourPalette: wc,
   addAtomIndices: !0,
@@ -5739,24 +5739,24 @@ function zo(e, t) {
   if (o.indexOf("V3000") !== -1) throw new Error("V3000 molfiles are not supported");
   const i = parseInt(o.substring(0, 3), 10), r = parseInt(o.substring(3, 6), 10);
   if (!isFinite(i) || i <= 0) throw new Error(`bad counts line: ${o}`);
-  const c = [], s = [];
+  const s = [], a = [];
   for (let m = 0; m < i; m++) {
-    const S = n[4 + m];
-    if (S == null) throw new Error("truncated atom block");
-    c.push([
-      parseFloat(S.substring(0, 10)) || 0,
-      parseFloat(S.substring(10, 20)) || 0,
-      parseFloat(S.substring(20, 30)) || 0
-    ]), s.push(S.substring(31, 34).trim() || "X");
+    const C = n[4 + m];
+    if (C == null) throw new Error("truncated atom block");
+    s.push([
+      parseFloat(C.substring(0, 10)) || 0,
+      parseFloat(C.substring(10, 20)) || 0,
+      parseFloat(C.substring(20, 30)) || 0
+    ]), a.push(C.substring(31, 34).trim() || "X");
   }
   const d = [];
   for (let m = 0; m < (isFinite(r) ? r : 0); m++) {
-    const S = n[4 + i + m];
-    if (S == null) break;
-    const w = parseInt(S.substring(0, 3), 10), v = parseInt(S.substring(3, 6), 10), _ = parseInt(S.substring(6, 9), 10);
-    !isFinite(w) || !isFinite(v) || d.push([w - 1, v - 1, isFinite(_) ? _ : 1]);
+    const C = n[4 + i + m];
+    if (C == null) break;
+    const b = parseInt(C.substring(0, 3), 10), v = parseInt(C.substring(3, 6), 10), _ = parseInt(C.substring(6, 9), 10);
+    !isFinite(b) || !isFinite(v) || d.push([b - 1, v - 1, isFinite(_) ? _ : 1]);
   }
-  return { name: (n[0] || "").trim() || t || "molecule", symbols: s, bonds: d, coords: c };
+  return { name: (n[0] || "").trim() || t || "molecule", symbols: a, bonds: d, coords: s };
 }
 function Sc(e) {
   const t = e.symbols.length, n = e.bonds.length, o = [
@@ -5772,9 +5772,9 @@ function Sc(e) {
     );
   }
   for (let i = 0; i < n; i++) {
-    const r = e.bonds[i], c = r[2] === 12 ? 4 : r[2];
+    const r = e.bonds[i], s = r[2] === 12 ? 4 : r[2];
     o.push(
-      String(r[0] + 1).padStart(3) + String(r[1] + 1).padStart(3) + String(c).padStart(3) + "  0  0  0  0"
+      String(r[0] + 1).padStart(3) + String(r[1] + 1).padStart(3) + String(s).padStart(3) + "  0  0  0  0"
     );
   }
   return o.push("M  END"), o.join(wn);
@@ -5826,8 +5826,8 @@ function Ec(e, t, n, o, i = {}) {
         highlightAtomColors: i
       })
     ) || null : r.get_svg(n, n) || null : null;
-  } catch (c) {
-    return console.warn("[gufe-viz] depictHighlightedSVG threw -", ge(c)), null;
+  } catch (s) {
+    return console.warn("[gufe-viz] depictHighlightedSVG threw -", ge(s)), null;
   } finally {
     if (r)
       try {
@@ -5844,86 +5844,86 @@ const Pc = [
   stick: { stick: { radius: 0.15, colorscheme: "Jmol" } },
   ball: { stick: { radius: 0.12, colorscheme: "Jmol" }, sphere: { scale: 0.28, colorscheme: "Jmol" } },
   sphere: { sphere: { scale: 1, colorscheme: "Jmol" } }
-}, Do = 400;
+}, qo = 400;
 class Ac extends Se {
   placeholder() {
     return "Waiting for a SmallMoleculeComponent payload...";
   }
   renderView(t, n) {
-    const o = n.sdf, i = n.name ?? "", r = n.smiles, c = n.total_charge;
-    t.appendChild(Te(i || "Unnamed molecule", "SmallMoleculeComponent"));
-    const s = j("div", "flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;");
-    t.appendChild(s);
+    const o = n.sdf, i = n.name ?? "", r = n.smiles, s = n.total_charge;
+    t.appendChild(Te(i || "Unnamed molecule"));
+    const a = j("div", "flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;");
+    t.appendChild(a);
     const d = j("div", "flex:1 1 50%;min-width:0;display:flex;flex-direction:column;"), y = j("div", "flex:1 1 50%;min-width:0;display:flex;flex-direction:column;position:relative;");
-    s.appendChild(d), s.appendChild(j("div", `width:1px;flex-shrink:0;background:${P.splitBorder};`)), s.appendChild(y);
-    const m = (p) => j("div", `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${P.labelFg};background:${P.labelBg};`, p);
+    a.appendChild(d), a.appendChild(j("div", `width:1px;flex-shrink:0;background:${E.splitBorder};`)), a.appendChild(y);
+    const m = (p) => j("div", `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${E.labelFg};background:${E.labelBg};`, p);
     d.appendChild(m("2D"));
-    const S = j(
+    const C = j(
       "div",
-      `flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;background:${P.canvas2DBg};`
+      `flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;background:${E.canvas2DBg};`
     );
-    d.appendChild(S), y.appendChild(m("3D"));
-    const w = Xo();
-    y.appendChild(w.wrap);
+    d.appendChild(C), y.appendChild(m("3D"));
+    const b = Xo();
+    y.appendChild(b.wrap);
     const v = j(
       "div",
-      `flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:12px;background:${P.toolbarBg};border-top:1px solid ${P.toolbarBorder};color:${P.textPrimary};`
+      `flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:12px;background:${E.toolbarBg};border-top:1px solid ${E.toolbarBorder};color:${E.textPrimary};`
     );
     t.appendChild(v);
-    const _ = o ? xc(o) : null, b = [
+    const _ = o ? xc(o) : null, w = [
       ["Name", i || Ze, !1],
       ["SMILES", r || Ze, !0],
-      ["Charge", c == null ? Ze : String(c), !1],
+      ["Charge", s == null ? Ze : String(s), !1],
       ["Atoms", _ ? String(_.atoms) : Ze, !1],
       ["Bonds", _ ? String(_.bonds) : Ze, !1]
     ];
-    for (const [p, x, E] of b) {
+    for (const [p, k, P] of w) {
       const N = j("div", "display:flex;align-items:baseline;gap:6px;min-width:0;");
       N.appendChild(
         j(
           "span",
-          `font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;color:${P.textMuted2};`,
+          `font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;color:${E.textMuted2};`,
           p
         )
       );
       const z = j(
         "span",
-        `user-select:text;cursor:text;color:${P.textPrimary}` + (E ? ";font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow-wrap:anywhere;" : ""),
-        x
+        `user-select:text;cursor:text;color:${E.textPrimary}` + (P ? ";font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow-wrap:anywhere;" : ""),
+        k
       );
-      z.title = x, N.appendChild(z), v.appendChild(N);
+      z.title = k, N.appendChild(z), v.appendChild(N);
     }
     if (!o || !o.trim())
-      return S.appendChild(ae("No molecule provided")), w.container.appendChild(ae("No molecule provided")), {};
-    S.appendChild(ae("Loading 2D depiction...")), rr().then((p) => {
-      const x = fi(p, o, Do);
-      x ? pi(S, x, Do) : S.replaceChildren(ae("Failed to parse molecule", !0));
+      return C.appendChild(ae("No molecule provided")), b.container.appendChild(ae("No molecule provided")), {};
+    C.appendChild(ae("Loading 2D depiction...")), rr().then((p) => {
+      const k = fi(p, o, qo);
+      k ? pi(C, k, qo) : C.replaceChildren(ae("Failed to parse molecule", !0));
     }).catch((p) => {
-      S.replaceChildren(ae(`RDKit failed to load: ${ge(p)}`, !0));
+      C.replaceChildren(ae(`RDKit failed to load: ${ge(p)}`, !0));
     });
     let f = null, g = null, u = "stick", h = !1;
-    const C = j(
+    const S = j(
       "div",
-      `position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;background:${P.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`
+      `position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;background:${E.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`
     );
-    C.appendChild(
+    S.appendChild(
       mn(Pc, u, (p) => {
         u = p, f && (f.setStyle({}, Io[p]), f.render());
       })
     );
-    const a = j("button", `${Be}margin-left:4px;`, "Spin");
-    a.title = "Toggle continuous rotation", a.onclick = () => {
-      h = !h, a.style.background = h ? P.btnBgActive : P.btnBg;
+    const c = j("button", `${Be}margin-left:4px;`, "Spin");
+    c.title = "Toggle continuous rotation", c.onclick = () => {
+      h = !h, c.style.background = h ? E.btnBgActive : E.btnBg;
       try {
         f?.spin(h ? "y" : !1);
       } catch {
       }
-    }, C.appendChild(a);
+    }, S.appendChild(c);
     const l = ir(() => g?.reset());
-    return l.style.marginLeft = "4px", C.appendChild(l), y.appendChild(C), w.container.appendChild(ae("Loading 3D viewer...")), nr().then(() => {
-      w.container.replaceChildren(), f = Ve.createViewer(w.container, { backgroundColor: P.viewerBg }), f.addModel(kc(o), "sdf"), f.setStyle({}, Io[u]), f.zoomTo(), f.render(), g = ui(w.container, f);
+    return l.style.marginLeft = "4px", S.appendChild(l), y.appendChild(S), b.container.appendChild(ae("Loading 3D viewer...")), nr().then(() => {
+      b.container.replaceChildren(), f = Ve.createViewer(b.container, { backgroundColor: E.viewerBg }), f.addModel(kc(o), "sdf"), f.setStyle({}, Io[u]), f.zoomTo(), f.render(), g = ui(b.container, f);
     }).catch((p) => {
-      w.container.replaceChildren(ae(`3D render failed: ${ge(p)}`, !0));
+      b.container.replaceChildren(ae(`3D render failed: ${ge(p)}`, !0));
     }), {
       onResize() {
         f && (f.resize(), f.render());
@@ -5945,7 +5945,7 @@ class Ac extends Se {
   }
 }
 Ce("gufe-small-molecule", Ac);
-const hi = ["HOH", "WAT", "SOL", "TIP3"], qo = { hetflag: !1 }, Rc = { hetflag: !0 }, Mc = { resn: hi }, Oe = {
+const hi = ["HOH", "WAT", "SOL", "TIP3"], Do = { hetflag: !1 }, Rc = { hetflag: !0 }, Fc = { resn: hi }, Oe = {
   stick: { radius: 0.15 },
   sphere: { scale: 0.3 },
   hetero: { stickRadius: 0.2, sphereScale: 0.28 },
@@ -5954,18 +5954,18 @@ const hi = ["HOH", "WAT", "SOL", "TIP3"], qo = { hetflag: !1 }, Rc = { hetflag: 
   /** Above this many atoms a surface is slow enough to be worth warning about. */
   surfaceAtomWarn: 4e4
 };
-function Fc(e) {
+function Mc(e) {
   const t = /* @__PURE__ */ new Set(), n = /* @__PURE__ */ new Set();
-  let o = 0, i = 0, r = 0, c = 1 / 0, s = -1 / 0;
+  let o = 0, i = 0, r = 0, s = 1 / 0, a = -1 / 0;
   for (const d of e.split(/\r?\n/)) {
     const y = d.slice(0, 6);
     if (y === "ENDMDL") break;
     if (y !== "ATOM  " && y !== "HETATM") continue;
     o++, y === "HETATM" && i++;
-    const m = d.slice(17, 20).trim(), S = d.slice(21, 22).trim() || "_", w = d.slice(22, 26).trim(), v = d.slice(26, 27).trim();
-    hi.indexOf(m) !== -1 && r++, t.add(S), n.add(`${S}|${w}${v}|${m}`);
-    const _ = parseInt(w, 10);
-    isNaN(_) || (_ < c && (c = _), _ > s && (s = _));
+    const m = d.slice(17, 20).trim(), C = d.slice(21, 22).trim() || "_", b = d.slice(22, 26).trim(), v = d.slice(26, 27).trim();
+    hi.indexOf(m) !== -1 && r++, t.add(C), n.add(`${C}|${b}${v}|${m}`);
+    const _ = parseInt(b, 10);
+    isNaN(_) || (_ < s && (s = _), _ > a && (a = _));
   }
   return {
     chains: t.size,
@@ -5974,8 +5974,8 @@ function Fc(e) {
     hetatms: i,
     waters: r,
     heteroNonWater: i - r,
-    resiMin: c === 1 / 0 ? 0 : c,
-    resiMax: s === -1 / 0 ? 0 : s
+    resiMin: s === 1 / 0 ? 0 : s,
+    resiMax: a === -1 / 0 ? 0 : a
   };
 }
 function Nc(e) {
@@ -5992,7 +5992,7 @@ function Vo(e, t, n, o) {
   } catch {
   }
   if (e.setStyle({}, {}), e.setStyle(
-    qo,
+    Do,
     t.rep === "stick" ? { stick: { radius: Oe.stick.radius, ...r } } : t.rep === "sphere" ? { sphere: { scale: Oe.sphere.scale, ...r } } : (
       // For 'surface' the shell is added separately; leave the atoms bare so
       // it is not cluttered from the inside.
@@ -6005,7 +6005,7 @@ function Vo(e, t, n, o) {
       sphere: { scale: Oe.hetero.sphereScale, colorscheme: "Jmol" }
     } : {}
   ), e.setStyle(
-    Mc,
+    Fc,
     t.waters ? {
       stick: { radius: Oe.water.stickRadius, colorscheme: "Jmol" },
       sphere: { scale: Oe.water.sphereScale, colorscheme: "Jmol" }
@@ -6019,12 +6019,12 @@ function Vo(e, t, n, o) {
   ), e.render(), setTimeout(() => {
     try {
       Promise.resolve(
-        e.addSurface(Ve.SurfaceType.VDW, { opacity: Oe.surfaceOpacity, ...r }, qo)
+        e.addSurface(Ve.SurfaceType.VDW, { opacity: Oe.surfaceOpacity, ...r }, Do)
       ).then(() => {
         i(null), e.render();
-      }).catch((c) => i(`Surface failed: ${ge(c)}`, "error"));
-    } catch (c) {
-      i(`Surface failed: ${ge(c)}`, "error");
+      }).catch((s) => i(`Surface failed: ${ge(s)}`, "error"));
+    } catch (s) {
+      i(`Surface failed: ${ge(s)}`, "error");
     }
   }, 30);
 }
@@ -6038,106 +6038,102 @@ const Oc = [
   { id: "spectrum", label: "Spectrum" },
   { id: "ss", label: "Secondary structure" },
   { id: "element", label: "Element" }
-], zc = {
-  ProteinComponentViz: "ProteinComponent",
-  SolvatedPDBComponentViz: "SolvatedPDBComponent",
-  ProteinMembraneComponentViz: "ProteinMembraneComponent"
-};
-class Ic extends Se {
+];
+class zc extends Se {
   placeholder() {
     return "Waiting for a ProteinComponent payload...";
   }
   renderView(t, n) {
-    const o = n.pdb, i = n.name ?? "", r = zc[n.type] ?? "ProteinComponent", s = { rep: "cartoon", color: "chain", waters: n.type !== "ProteinComponentViz", hetero: !0 };
-    let d = null, y = null, m = null;
-    const S = j(
+    const o = n.pdb, i = n.name ?? "", s = { rep: "cartoon", color: "chain", waters: n.type !== "ProteinComponentViz", hetero: !0 };
+    let a = null, d = null, y = null;
+    const m = j(
       "div",
-      `display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;font-size:12px;background:${P.toolbarBg};border-bottom:1px solid ${P.toolbarBorder};color:${P.textPrimary};`
+      `display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;font-size:12px;background:${E.toolbarBg};border-bottom:1px solid ${E.toolbarBorder};color:${E.textPrimary};`
     );
-    t.appendChild(S), S.appendChild(
-      j("span", `font-weight:700;font-size:14px;letter-spacing:.02em;color:${P.titleColor};`, i || "Protein")
-    ), S.appendChild(j("span", `font-size:11px;color:${P.textMuted2};`, r));
-    const w = (a) => j("span", `font-size:11px;color:${P.textMuted};`, a);
-    S.appendChild(w("Style:")), S.appendChild(
-      mn(Oc, s.rep, (a) => {
-        s.rep = a, C();
+    t.appendChild(m), m.appendChild(
+      j("span", `font-weight:700;font-size:14px;letter-spacing:.02em;color:${E.titleColor};`, i || "Protein")
+    );
+    const C = (S) => j("span", `font-size:11px;color:${E.textMuted};`, S);
+    m.appendChild(C("Style:")), m.appendChild(
+      mn(Oc, s.rep, (S) => {
+        s.rep = S, h();
       })
-    ), S.appendChild(w("Color:"));
-    const v = j("select", dn);
-    for (const a of Tc) {
-      const l = j("option", "", a.label);
-      l.value = a.id, v.appendChild(l);
+    ), m.appendChild(C("Color:"));
+    const b = j("select", dn);
+    for (const S of Tc) {
+      const c = j("option", "", S.label);
+      c.value = S.id, b.appendChild(c);
     }
-    v.value = s.color, v.addEventListener("change", () => {
-      s.color = v.value, C();
-    }), S.appendChild(v);
-    const _ = j("div", "display:flex;gap:4px;");
-    S.appendChild(_);
-    const b = [
-      ["waters", "Waters", "Show water molecules", () => C()],
-      ["hetero", "Hetero", "Show hetero atoms / ligands / ions / lipids", () => C()],
-      ["spin", "Spin", "Rotate the view continuously", () => d?.spin(s.spin ? "y" : !1)]
+    b.value = s.color, b.addEventListener("change", () => {
+      s.color = b.value, h();
+    }), m.appendChild(b);
+    const v = j("div", "display:flex;gap:4px;");
+    m.appendChild(v);
+    const _ = [
+      ["waters", "Waters", "Show water molecules", () => h()],
+      ["hetero", "Hetero", "Show hetero atoms / ligands / ions / lipids", () => h()],
+      ["spin", "Spin", "Rotate the view continuously", () => a?.spin(s.spin ? "y" : !1)]
     ];
-    for (const [a, l, p, x] of b) {
-      const E = j("button", Be, l);
-      E.title = p, E.style.background = s[a] ? P.btnBgActive : P.btnBg, E.onclick = () => {
-        s[a] = !s[a], E.style.background = s[a] ? P.btnBgActive : P.btnBg, x();
-      }, _.appendChild(E);
+    for (const [S, c, l, p] of _) {
+      const k = j("button", Be, c);
+      k.title = l, k.style.background = s[S] ? E.btnBgActive : E.btnBg, k.onclick = () => {
+        s[S] = !s[S], k.style.background = s[S] ? E.btnBgActive : E.btnBg, p();
+      }, v.appendChild(k);
     }
-    _.appendChild(ir(() => y?.reset()));
-    const f = j("span", `margin-left:auto;font-size:11px;white-space:nowrap;color:${P.textMuted2};`);
-    S.appendChild(f);
-    const g = Xo();
-    t.appendChild(g.wrap);
-    const u = j(
+    v.appendChild(ir(() => d?.reset()));
+    const w = j("span", `margin-left:auto;font-size:11px;white-space:nowrap;color:${E.textMuted2};`);
+    m.appendChild(w);
+    const f = Xo();
+    t.appendChild(f.wrap);
+    const g = j(
       "div",
       "position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:6px 14px;border-radius:6px;font-size:12px;z-index:20;display:none;pointer-events:none;"
     );
-    g.wrap.appendChild(u);
-    const h = (a, l) => {
-      if (a == null) {
-        u.style.display = "none";
+    f.wrap.appendChild(g);
+    const u = (S, c) => {
+      if (S == null) {
+        g.style.display = "none";
         return;
       }
-      u.textContent = a, u.style.display = "block";
-      const p = l === "error";
-      u.style.background = p ? P.warnBg : P.toolbarBg, u.style.color = p ? P.warnFg : P.textMuted, u.style.border = `1px solid ${p ? P.warnBorder : P.toolbarBorder}`;
+      g.textContent = S, g.style.display = "block";
+      const l = c === "error";
+      g.style.background = l ? E.warnBg : E.toolbarBg, g.style.color = l ? E.warnFg : E.textMuted, g.style.border = `1px solid ${l ? E.warnBorder : E.toolbarBorder}`;
     };
-    function C() {
-      d && Vo(d, s, m, h);
+    function h() {
+      a && Vo(a, s, y, u);
     }
     if (!o || !o.trim())
-      return h("No protein data - waiting for a PDB payload."), {};
+      return u("No protein data - waiting for a PDB payload."), {};
     try {
-      m = Fc(o), f.textContent = Nc(m);
-    } catch (a) {
-      h(`⚠ PDB parse error: ${ge(a)}`, "error");
+      y = Mc(o), w.textContent = Nc(y);
+    } catch (S) {
+      u(`⚠ PDB parse error: ${ge(S)}`, "error");
     }
-    return h("Loading 3D viewer..."), nr().then(() => {
-      d = Ve.createViewer(g.container, { backgroundColor: P.viewerBg }), d.addModel(o, "pdb"), Vo(d, s, m, h), d.zoomTo(), d.spin(s.spin ? "y" : !1), d.render(), y = ui(g.container, d);
-    }).catch((a) => {
-      h(`⚠ Failed to render structure: ${ge(a)}`, "error");
+    return u("Loading 3D viewer..."), nr().then(() => {
+      a = Ve.createViewer(f.container, { backgroundColor: E.viewerBg }), a.addModel(o, "pdb"), Vo(a, s, y, u), a.zoomTo(), a.spin(s.spin ? "y" : !1), a.render(), d = ui(f.container, a);
+    }).catch((S) => {
+      u(`⚠ Failed to render structure: ${ge(S)}`, "error");
     }), {
       onResize() {
-        d && (d.resize(), d.render());
+        a && (a.resize(), a.render());
       },
       cleanup() {
-        if (y?.cleanup(), y = null, !!d) {
+        if (d?.cleanup(), d = null, !!a) {
           try {
-            d.spin(!1);
+            a.spin(!1);
           } catch {
           }
           try {
-            d.clear();
+            a.clear();
           } catch {
           }
-          d = null;
+          a = null;
         }
       }
     };
   }
 }
-Ce("gufe-protein", Ic);
+Ce("gufe-protein", zc);
 const mi = "http://www.w3.org/2000/svg";
 function ie(e, t = {}) {
   const n = document.createElementNS(mi, e);
@@ -6186,29 +6182,29 @@ function an(e, t) {
 function Bo(e) {
   return [e[0], e[3], e[6], e[1], e[4], e[7], e[2], e[5], e[8]];
 }
-function Dc(e) {
+function Ic(e) {
   return e[0] * (e[4] * e[8] - e[5] * e[7]) - e[1] * (e[3] * e[8] - e[5] * e[6]) + e[2] * (e[3] * e[7] - e[4] * e[6]);
 }
 function Lo(e) {
   const t = e.slice(), n = [1, 0, 0, 0, 1, 0, 0, 0, 1];
   for (let o = 0; o < 50 && !(Math.abs(t[1]) + Math.abs(t[2]) + Math.abs(t[5]) < 1e-12); o++) {
     const r = [[0, 1], [0, 2], [1, 2]];
-    for (let c = 0; c < 3; c++) {
-      const s = r[c][0], d = r[c][1], y = t[s * 3 + d];
+    for (let s = 0; s < 3; s++) {
+      const a = r[s][0], d = r[s][1], y = t[a * 3 + d];
       if (Math.abs(y) < 1e-14) continue;
-      const m = t[s * 3 + s], S = t[d * 3 + d], w = (S - m) / (2 * y);
+      const m = t[a * 3 + a], C = t[d * 3 + d], b = (C - m) / (2 * y);
       let v;
-      Math.abs(w) > 1e10 ? v = 1 / (2 * w) : v = (w >= 0 ? 1 : -1) / (Math.abs(w) + Math.sqrt(w * w + 1));
-      const _ = 1 / Math.sqrt(1 + v * v), b = v * _;
-      t[s * 3 + s] = m - v * y, t[d * 3 + d] = S + v * y, t[s * 3 + d] = 0, t[d * 3 + s] = 0;
+      Math.abs(b) > 1e10 ? v = 1 / (2 * b) : v = (b >= 0 ? 1 : -1) / (Math.abs(b) + Math.sqrt(b * b + 1));
+      const _ = 1 / Math.sqrt(1 + v * v), w = v * _;
+      t[a * 3 + a] = m - v * y, t[d * 3 + d] = C + v * y, t[a * 3 + d] = 0, t[d * 3 + a] = 0;
       for (let f = 0; f < 3; f++)
-        if (f !== s && f !== d) {
-          const g = t[f * 3 + s], u = t[f * 3 + d];
-          t[f * 3 + s] = _ * g - b * u, t[s * 3 + f] = t[f * 3 + s], t[f * 3 + d] = b * g + _ * u, t[d * 3 + f] = t[f * 3 + d];
+        if (f !== a && f !== d) {
+          const g = t[f * 3 + a], u = t[f * 3 + d];
+          t[f * 3 + a] = _ * g - w * u, t[a * 3 + f] = t[f * 3 + a], t[f * 3 + d] = w * g + _ * u, t[d * 3 + f] = t[f * 3 + d];
         }
       for (let f = 0; f < 3; f++) {
-        const g = n[f * 3 + s], u = n[f * 3 + d];
-        n[f * 3 + s] = _ * g - b * u, n[f * 3 + d] = b * g + _ * u;
+        const g = n[f * 3 + a], u = n[f * 3 + d];
+        n[f * 3 + a] = _ * g - w * u, n[f * 3 + d] = w * g + _ * u;
       }
     }
   }
@@ -6224,35 +6220,35 @@ function qc(e, t) {
     return { R: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [o[0] - i[0], o[1] - i[1], o[2] - i[2]] };
   const r = [0, 0, 0, 0, 0, 0, 0, 0, 0];
   for (let h = 0; h < n; h++) {
-    const C = e[h][0] - o[0], a = e[h][1] - o[1], l = e[h][2] - o[2], p = t[h][0] - i[0], x = t[h][1] - i[1], E = t[h][2] - i[2];
-    r[0] += C * p, r[1] += C * x, r[2] += C * E, r[3] += a * p, r[4] += a * x, r[5] += a * E, r[6] += l * p, r[7] += l * x, r[8] += l * E;
+    const S = e[h][0] - o[0], c = e[h][1] - o[1], l = e[h][2] - o[2], p = t[h][0] - i[0], k = t[h][1] - i[1], P = t[h][2] - i[2];
+    r[0] += S * p, r[1] += S * k, r[2] += S * P, r[3] += c * p, r[4] += c * k, r[5] += c * P, r[6] += l * p, r[7] += l * k, r[8] += l * P;
   }
-  const c = Bo(r), s = an(c, r), d = an(r, c);
-  let y = Lo(s), m = Lo(d);
-  function S(h) {
-    const C = [0, 1, 2].sort((l, p) => h.values[p] - h.values[l]), a = new Array(9);
+  const s = Bo(r), a = an(s, r), d = an(r, s);
+  let y = Lo(a), m = Lo(d);
+  function C(h) {
+    const S = [0, 1, 2].sort((l, p) => h.values[p] - h.values[l]), c = new Array(9);
     for (let l = 0; l < 3; l++) {
-      const p = C[l];
-      a[l] = h.vectors[p], a[3 + l] = h.vectors[3 + p], a[6 + l] = h.vectors[6 + p];
+      const p = S[l];
+      c[l] = h.vectors[p], c[3 + l] = h.vectors[3 + p], c[6 + l] = h.vectors[6 + p];
     }
     return {
-      values: [h.values[C[0]], h.values[C[1]], h.values[C[2]]],
-      vectors: a
+      values: [h.values[S[0]], h.values[S[1]], h.values[S[2]]],
+      vectors: c
     };
   }
-  y = S(y), m = S(m);
-  const w = y.vectors, v = m.vectors;
+  y = C(y), m = C(m);
+  const b = y.vectors, v = m.vectors;
   for (let h = 0; h < 3; h++) {
-    const C = w[h], a = w[3 + h], l = w[6 + h], p = r[0] * C + r[1] * a + r[2] * l, x = r[3] * C + r[4] * a + r[5] * l, E = r[6] * C + r[7] * a + r[8] * l, N = v[h], z = v[3 + h], A = v[6 + h];
-    p * N + x * z + E * A < 0 && (v[h] = -N, v[3 + h] = -z, v[6 + h] = -A);
+    const S = b[h], c = b[3 + h], l = b[6 + h], p = r[0] * S + r[1] * c + r[2] * l, k = r[3] * S + r[4] * c + r[5] * l, P = r[6] * S + r[7] * c + r[8] * l, N = v[h], z = v[3 + h], A = v[6 + h];
+    p * N + k * z + P * A < 0 && (v[h] = -N, v[3 + h] = -z, v[6 + h] = -A);
   }
-  const _ = Bo(w);
-  let b = an(v, _);
-  Dc(b) < 0 && (v[2] = -v[2], v[5] = -v[5], v[8] = -v[8], b = an(v, _));
-  const f = b[0] * i[0] + b[1] * i[1] + b[2] * i[2], g = b[3] * i[0] + b[4] * i[1] + b[5] * i[2], u = b[6] * i[0] + b[7] * i[1] + b[8] * i[2];
-  return { R: b, t: [o[0] - f, o[1] - g, o[2] - u] };
+  const _ = Bo(b);
+  let w = an(v, _);
+  Ic(w) < 0 && (v[2] = -v[2], v[5] = -v[5], v[8] = -v[8], w = an(v, _));
+  const f = w[0] * i[0] + w[1] * i[1] + w[2] * i[2], g = w[3] * i[0] + w[4] * i[1] + w[5] * i[2], u = w[6] * i[0] + w[7] * i[1] + w[8] * i[2];
+  return { R: w, t: [o[0] - f, o[1] - g, o[2] - u] };
 }
-function Vc(e, t, n) {
+function Dc(e, t, n) {
   const o = e[0], i = e[1], r = e[2];
   return [
     t[0] * o + t[1] * i + t[2] * r + n[0],
@@ -6260,7 +6256,7 @@ function Vc(e, t, n) {
     t[6] * o + t[7] * i + t[8] * r + n[2]
   ];
 }
-const Bc = [
+const Vc = [
   { id: "plain", label: "3D", title: "Plain 3D view" },
   { id: "colored", label: "3D-Map", title: "Colour-coded by mapping" },
   { id: "lines", label: "Pairs", title: "Dashed lines between mapped atoms" },
@@ -6280,16 +6276,16 @@ function gi(e) {
   const t = parseInt(e.replace("#", ""), 16);
   return [(t >> 16 & 255) / 255, (t >> 8 & 255) / 255, (t & 255) / 255];
 }
-const Lc = gi(ct.elementChange), Uc = gi(ct.uniqueAtom);
+const Bc = gi(ct.elementChange), Lc = gi(ct.uniqueAtom);
 function Ko(e, t, n) {
   const o = [], i = [], r = [];
-  for (let c = 0; c < t.length; c++) {
-    const s = e.get(c);
-    s === void 0 ? o.push(c) : t[c] !== n[s] ? i.push(c) : r.push(c);
+  for (let s = 0; s < t.length; s++) {
+    const a = e.get(s);
+    a === void 0 ? o.push(s) : t[s] !== n[a] ? i.push(s) : r.push(s);
   }
   return { atoms: o, elements: i, mapped: r };
 }
-function Kc(e) {
+function Uc(e) {
   const t = /* @__PURE__ */ new Map();
   for (const n of e.componentA_to_componentB ?? [])
     Number.isInteger(n?.index_A) && Number.isInteger(n?.index_B) && t.set(n.index_A, n.index_B);
@@ -6299,19 +6295,19 @@ function yi(e, t) {
   const n = Ae(t, e.componentA, "SmallMoleculeComponentViz"), o = Ae(t, e.componentB, "SmallMoleculeComponentViz");
   return !n || !o ? null : { ...e, registry: n["gufe-key"] === o["gufe-key"] ? [n] : [n, o] };
 }
-function Go(e) {
+function Ho(e) {
   const t = [1 / 0, 1 / 0, 1 / 0], n = [-1 / 0, -1 / 0, -1 / 0];
   for (const o of e)
     for (let i = 0; i < 3; i++)
       o[i] < t[i] && (t[i] = o[i]), o[i] > n[i] && (n[i] = o[i]);
   return { min: t, max: n, span: [n[0] - t[0], n[1] - t[1], n[2] - t[2]] };
 }
-function Gc(e, t) {
-  const n = Go(e), o = Go(t);
+function Kc(e, t) {
+  const n = Ho(e), o = Ho(t);
   let i = 0;
   n.span[1] < n.span[i] && (i = 1), n.span[2] < n.span[i] && (i = 2);
-  const r = Math.max(n.span[0], n.span[1], n.span[2]), c = n.max[i] - o.min[i] + Tn.gap, s = Tn.minLiftFraction * r + Tn.gap;
-  return { axis: i, lift: Math.max(c, s) };
+  const r = Math.max(n.span[0], n.span[1], n.span[2]), s = n.max[i] - o.min[i] + Tn.gap, a = Tn.minLiftFraction * r + Tn.gap;
+  return { axis: i, lift: Math.max(s, a) };
 }
 class Hc extends Se {
   placeholder() {
@@ -6323,31 +6319,31 @@ class Hc extends Se {
       return t.appendChild(
         ae("This mapping names two molecules, and its registry does not hold them.")
       ), {};
-    const c = et(i), s = et(r), d = Kc(n);
+    const s = et(i), a = et(r), d = Uc(n);
     let y, m;
     try {
-      y = zo(i.sdf, c), m = zo(r.sdf, s);
+      y = zo(i.sdf, s), m = zo(r.sdf, a);
     } catch (L) {
       return t.appendChild(ae(`Could not read a molecule: ${ge(L)}`, !0)), {};
     }
-    const S = /* @__PURE__ */ new Map();
-    for (const [L, G] of d) S.set(G, L);
-    const w = Ko(d, y.symbols, m.symbols), v = Ko(S, m.symbols, y.symbols), _ = j("div", "position:relative;flex:1;min-height:0;display:flex;flex-direction:column;");
+    const C = /* @__PURE__ */ new Map();
+    for (const [L, H] of d) C.set(H, L);
+    const b = Ko(d, y.symbols, m.symbols), v = Ko(C, m.symbols, y.symbols), _ = j("div", "position:relative;flex:1;min-height:0;display:flex;flex-direction:column;");
     t.appendChild(_);
-    const b = j("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
-    _.appendChild(b);
+    const w = j("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
+    _.appendChild(w);
     let f = "plain";
     const g = j(
       "div",
-      `position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;background:${P.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`
+      `position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;background:${E.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`
     );
     g.appendChild(
-      mn(Bc, f, (L) => {
+      mn(Vc, f, (L) => {
         f = L, Z();
       })
     ), _.appendChild(g);
-    let u = [], h = 0, C = !0;
-    const a = () => {
+    let u = [], h = 0, S = !0;
+    const c = () => {
       h && cancelAnimationFrame(h), h = 0;
       for (const L of u) {
         L.guard?.cleanup();
@@ -6356,36 +6352,36 @@ class Hc extends Se {
         } catch {
         }
       }
-      u = [], b.replaceChildren();
+      u = [], w.replaceChildren();
     }, l = (L) => {
-      const G = j("div", "flex:1;display:flex;flex-direction:column;position:relative;min-height:0;");
-      G.appendChild(
+      const H = j("div", "flex:1;display:flex;flex-direction:column;position:relative;min-height:0;");
+      H.appendChild(
         j(
           "div",
-          `padding:4px 10px;font-size:13px;font-weight:bold;color:${P.labelFg};background:${P.labelBg};`,
+          `padding:4px 10px;font-size:13px;font-weight:bold;color:${E.labelFg};background:${E.labelBg};`,
           L
         )
       );
       const U = j("div", "flex:1;position:relative;min-height:0;");
-      U.dataset.gufeViewer = "", G.appendChild(U), b.appendChild(G);
+      U.dataset.gufeViewer = "", H.appendChild(U), w.appendChild(H);
       const Y = { container: U, viewer: null, guard: null };
       return u.push(Y), Y;
     }, p = () => {
       if (u.length < 2) return;
       const L = u.map(() => "");
-      let G = !1;
+      let H = !1;
       const U = () => {
-        if (C) {
-          if (!G)
+        if (S) {
+          if (!H)
             for (let Y = 0; Y < u.length; Y++) {
               const V = u[Y].viewer;
               if (!V) continue;
               const R = JSON.stringify(V.getView());
               if (R !== L[Y]) {
-                G = !0;
-                for (let D = 0; D < u.length; D++)
-                  D !== Y && u[D].viewer && (u[D].viewer.setView(V.getView()), u[D].viewer.render()), L[D] = R;
-                G = !1;
+                H = !0;
+                for (let q = 0; q < u.length; q++)
+                  q !== Y && u[q].viewer && (u[q].viewer.setView(V.getView()), u[q].viewer.render()), L[q] = R;
+                H = !1;
                 break;
               }
             }
@@ -6393,17 +6389,17 @@ class Hc extends Se {
         }
       };
       h = requestAnimationFrame(U);
-    }, x = (L, G) => {
-      const U = Ve.createViewer(L.container, { backgroundColor: P.viewerBg });
-      for (const { mol: Y } of G) U.addModel(Cc(Y), "sdf");
+    }, k = (L, H) => {
+      const U = Ve.createViewer(L.container, { backgroundColor: E.viewerBg });
+      for (const { mol: Y } of H) U.addModel(Cc(Y), "sdf");
       return L.viewer = U, L.guard = or(L.container, {
         hint: "Click or hold Ctrl to zoom",
         onZoom: () => {
         }
       }), U;
-    }, E = () => {
+    }, P = () => {
       for (const L of [y, m]) {
-        const G = l(L.name), U = x(G, [{ mol: L }]);
+        const H = l(L.name), U = k(H, [{ mol: L }]);
         U.setStyle(
           {},
           { stick: { radius: pe.stick, colorscheme: "Jmol" }, sphere: { scale: pe.sphere, colorscheme: "Jmol" } }
@@ -6412,146 +6408,146 @@ class Hc extends Se {
       p();
     }, N = () => {
       const L = [
-        { mol: y, uniques: w, colour: P.colorUniqueA },
-        { mol: m, uniques: v, colour: P.colorUniqueB }
+        { mol: y, uniques: b, colour: E.colorUniqueA },
+        { mol: m, uniques: v, colour: E.colorUniqueB }
       ];
-      for (const G of L) {
-        const U = l(G.mol.name), Y = x(U, [{ mol: G.mol }]);
+      for (const H of L) {
+        const U = l(H.mol.name), Y = k(U, [{ mol: H.mol }]);
         Y.setStyle(
           {},
-          { stick: { radius: pe.stick, color: P.colorCore }, sphere: { scale: pe.sphere, color: P.colorCore } }
+          { stick: { radius: pe.stick, color: E.colorCore }, sphere: { scale: pe.sphere, color: E.colorCore } }
         );
-        for (const V of G.uniques.atoms)
+        for (const V of H.uniques.atoms)
           Y.addStyle(
             { serial: V + 1 },
             {
-              stick: { radius: pe.uniqueStick, color: G.colour },
-              sphere: { scale: pe.uniqueSphere, color: G.colour }
+              stick: { radius: pe.uniqueStick, color: H.colour },
+              sphere: { scale: pe.uniqueSphere, color: H.colour }
             }
           );
         Y.zoomTo(), Y.render();
       }
       p();
     }, z = () => {
-      const L = l(`${c} to ${s}  (${d.size} mapped pairs)`), G = [], U = [];
-      for (const [k, I] of d) {
-        const H = y.coords[k], W = m.coords[I];
-        H && W && (G.push(H), U.push(W));
+      const L = l(`${s} to ${a}  (${d.size} mapped pairs)`), H = [], U = [];
+      for (const [x, I] of d) {
+        const G = y.coords[x], W = m.coords[I];
+        G && W && (H.push(G), U.push(W));
       }
-      const Y = qc(G, U), V = m.coords.map((k) => Y ? Vc(k, Y.R, Y.t) : [...k]), { axis: R, lift: D } = Gc(y.coords, V), F = {
+      const Y = qc(H, U), V = m.coords.map((x) => Y ? Dc(x, Y.R, Y.t) : [...x]), { axis: R, lift: q } = Kc(y.coords, V), M = {
         ...m,
-        coords: V.map((k) => {
-          const I = [k[0], k[1], k[2]];
-          return I[R] += D, I;
+        coords: V.map((x) => {
+          const I = [x[0], x[1], x[2]];
+          return I[R] += q, I;
         })
-      }, $ = x(L, [{ mol: y }, { mol: F }]);
+      }, $ = k(L, [{ mol: y }, { mol: M }]);
       $.setStyle(
         { model: 0 },
-        { stick: { radius: pe.stick, color: P.linesMolA }, sphere: { scale: pe.pairSphere, color: P.linesMolA } }
+        { stick: { radius: pe.stick, color: E.linesMolA }, sphere: { scale: pe.pairSphere, color: E.linesMolA } }
       ), $.setStyle(
         { model: 1 },
-        { stick: { radius: pe.stick, color: P.linesMolB }, sphere: { scale: pe.pairSphere, color: P.linesMolB } }
+        { stick: { radius: pe.stick, color: E.linesMolB }, sphere: { scale: pe.pairSphere, color: E.linesMolB } }
       );
-      for (const [k, I] of d) {
-        const H = y.coords[k], W = F.coords[I];
-        !H || !W || $.addCylinder({
-          start: { x: H[0], y: H[1], z: H[2] },
+      for (const [x, I] of d) {
+        const G = y.coords[x], W = M.coords[I];
+        !G || !W || $.addCylinder({
+          start: { x: G[0], y: G[1], z: G[2] },
           end: { x: W[0], y: W[1], z: W[2] },
           radius: pe.lineRadius,
           dashed: !0,
           fromCap: "round",
           toCap: "round",
-          color: P.linesDash
+          color: E.linesDash
         });
       }
       $.zoomTo(), R === 2 ? $.rotate(90, "x") : R === 0 && $.rotate(-90, "z"), $.render();
     }, A = () => {
-      const L = l(`${c} + ${s}  (overlay)`), G = x(L, [{ mol: y }, { mol: m }]);
+      const L = l(`${s} + ${a}  (overlay)`), H = k(L, [{ mol: y }, { mol: m }]);
       for (const [U, Y] of [
-        [0, P.overlayMolA],
-        [1, P.overlayMolB]
+        [0, E.overlayMolA],
+        [1, E.overlayMolB]
       ])
-        G.setStyle(
+        H.setStyle(
           { model: U },
           {
             stick: { radius: pe.stick, color: Y, opacity: pe.overlayOpacity },
             sphere: { scale: pe.pairSphere, color: Y, opacity: pe.overlayOpacity }
           }
         );
-      G.zoomTo(), G.render();
+      H.zoomTo(), H.render();
     }, T = () => {
-      const G = [
-        { mol: y, sdf: i.sdf, uniques: w },
+      const H = [
+        { mol: y, sdf: i.sdf, uniques: b },
         { mol: m, sdf: r.sdf, uniques: v }
       ].map((U) => {
         const Y = j("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
         Y.appendChild(
           j(
             "div",
-            `padding:4px 10px;font-size:13px;font-weight:bold;color:${P.labelFg};background:${P.labelBg};`,
+            `padding:4px 10px;font-size:13px;font-weight:bold;color:${E.labelFg};background:${E.labelBg};`,
             U.mol.name
           )
         );
         const V = j(
           "div",
-          `flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;background:${P.canvas2DBg};`
+          `flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;background:${E.canvas2DBg};`
         );
-        return V.appendChild(ae("Loading 2D depiction...")), Y.appendChild(V), b.appendChild(Y), { box: V, side: U };
+        return V.appendChild(ae("Loading 2D depiction...")), Y.appendChild(V), w.appendChild(Y), { box: V, side: U };
       });
       rr().then((U) => {
-        for (const { box: Y, side: V } of G) {
+        for (const { box: Y, side: V } of H) {
           const R = {};
-          for (const $ of V.uniques.elements) R[$] = Lc;
-          for (const $ of V.uniques.atoms) R[$] = Uc;
-          const D = [...V.uniques.elements, ...V.uniques.atoms], F = Ec(U, V.sdf, Uo, D, R);
-          Y.replaceChildren(), F ? pi(Y, F, Uo) : Y.appendChild(ae("Failed to parse molecule", !0));
+          for (const $ of V.uniques.elements) R[$] = Bc;
+          for (const $ of V.uniques.atoms) R[$] = Lc;
+          const q = [...V.uniques.elements, ...V.uniques.atoms], M = Ec(U, V.sdf, Uo, q, R);
+          Y.replaceChildren(), M ? pi(Y, M, Uo) : Y.appendChild(ae("Failed to parse molecule", !0));
         }
       }).catch((U) => {
-        for (const { box: Y } of G)
+        for (const { box: Y } of H)
           Y.replaceChildren(ae(`RDKit failed to load: ${ge(U)}`, !0));
       });
     }, J = () => {
       const L = j("div", "flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px;");
-      b.appendChild(L);
-      const G = j("div", "display:flex;flex-direction:column;gap:2px;");
-      G.appendChild(
+      w.appendChild(L);
+      const H = j("div", "display:flex;flex-direction:column;gap:2px;");
+      H.appendChild(
         j(
           "div",
-          `font-size:15px;font-weight:700;color:${P.titleColor};`,
-          n.name || `${c} to ${s}`
+          `font-size:15px;font-weight:700;color:${E.titleColor};`,
+          n.name || `${s} to ${a}`
         )
-      ), G.appendChild(j("div", `font-size:12px;color:${P.textMuted2};`, "LigandAtomMapping")), L.appendChild(G);
+      ), H.appendChild(j("div", `font-size:12px;color:${E.textMuted2};`, "LigandAtomMapping")), L.appendChild(H);
       const U = j("div", "display:flex;flex-wrap:wrap;gap:8px 16px;font-size:11px;");
       U.appendChild(ce("mapped atoms", String(d.size))), U.appendChild(
-        ce("element changes", String(w.elements.length), ct.elementChange)
-      ), U.appendChild(ce(`unique to ${c}`, String(w.atoms.length), ct.uniqueAtom)), U.appendChild(ce(`unique to ${s}`, String(v.atoms.length), ct.uniqueAtom)), U.appendChild(ce(`atoms in ${c}`, String(y.symbols.length))), U.appendChild(ce(`atoms in ${s}`, String(m.symbols.length))), U.appendChild(ce("score", n.score == null ? Ze : n.score.toFixed(3))), L.appendChild(U);
-      const Y = j("div", `font-size:11px;font-weight:700;color:${P.textMuted2};`, "CORRESPONDENCE");
+        ce("element changes", String(b.elements.length), ct.elementChange)
+      ), U.appendChild(ce(`unique to ${s}`, String(b.atoms.length), ct.uniqueAtom)), U.appendChild(ce(`unique to ${a}`, String(v.atoms.length), ct.uniqueAtom)), U.appendChild(ce(`atoms in ${s}`, String(y.symbols.length))), U.appendChild(ce(`atoms in ${a}`, String(m.symbols.length))), U.appendChild(ce("score", n.score == null ? Ze : n.score.toFixed(3))), L.appendChild(U);
+      const Y = j("div", `font-size:11px;font-weight:700;color:${E.textMuted2};`, "CORRESPONDENCE");
       L.appendChild(Y);
       const V = j(
         "div",
-        `font-size:11px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${P.textMuted};`
+        `font-size:11px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${E.textMuted};`
       );
-      V.textContent = d.size ? Array.from(d, ([D, F]) => `${D} -> ${F}`).join("   ") : "This mapping relates no atoms at all.", L.appendChild(V);
-      const R = Object.entries(n.annotations ?? {}).filter(([D]) => D !== "score");
+      V.textContent = d.size ? Array.from(d, ([q, M]) => `${q} -> ${M}`).join("   ") : "This mapping relates no atoms at all.", L.appendChild(V);
+      const R = Object.entries(n.annotations ?? {}).filter(([q]) => q !== "score");
       if (R.length) {
-        L.appendChild(j("div", `font-size:11px;font-weight:700;color:${P.textMuted2};`, "ANNOTATIONS"));
-        const D = j(
+        L.appendChild(j("div", `font-size:11px;font-weight:700;color:${E.textMuted2};`, "ANNOTATIONS"));
+        const q = j(
           "div",
-          `font-size:11px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${P.textMuted2};`
+          `font-size:11px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${E.textMuted2};`
         );
-        for (const [F, $] of R)
-          D.appendChild(j("div", "", `${F}: ${String($)}`));
-        L.appendChild(D);
+        for (const [M, $] of R)
+          q.appendChild(j("div", "", `${M}: ${String($)}`));
+        L.appendChild(q);
       }
       L.appendChild(
         j(
           "div",
-          `font-size:11px;color:${P.textMuted2};overflow-wrap:anywhere;`,
+          `font-size:11px;color:${E.textMuted2};overflow-wrap:anywhere;`,
           `gufe key: ${n["gufe-key"]}`
         )
       );
     }, Z = () => {
-      if (a(), f === "info") {
+      if (c(), f === "info") {
         J();
         return;
       }
@@ -6559,10 +6555,10 @@ class Hc extends Se {
         T();
         return;
       }
-      b.appendChild(ae("Loading 3D viewer...")), nr().then(() => {
-        C && (b.replaceChildren(), f === "colored" ? N() : f === "lines" ? z() : f === "overlay" ? A() : E());
+      w.appendChild(ae("Loading 3D viewer...")), nr().then(() => {
+        S && (w.replaceChildren(), f === "colored" ? N() : f === "lines" ? z() : f === "overlay" ? A() : P());
       }).catch((L) => {
-        b.replaceChildren(ae(`3D render failed: ${ge(L)}`, !0));
+        w.replaceChildren(ae(`3D render failed: ${ge(L)}`, !0));
       });
     };
     return Z(), {
@@ -6571,13 +6567,13 @@ class Hc extends Se {
           L.viewer && (L.viewer.resize(), L.viewer.render());
       },
       cleanup() {
-        C = !1, a();
+        S = !1, c();
       }
     };
   }
 }
 Ce("gufe-atom-mapping", Hc);
-const Jc = ["Force-directed", "Circular", "Radial"], Qe = 38, cn = 200, Wc = 4, Yc = 14, Xc = 18, Ho = 1.5, Zc = 6.5, Qc = 0.9, el = 14, zn = { size: 8, clearance: 8 }, In = { fontSize: 10, padding: 3, backgroundOpacity: 0.92 }, tl = { padding: 4 }, Jo = { captions: 0.5, depictions: 1.1 }, ln = 200, nl = 24, Dn = { node: 0.12, edge: 0.06 }, rl = 1.2, $e = {
+const Gc = ["Force-directed", "Circular", "Radial"], Qe = 38, cn = 200, Jc = 4, Wc = 14, Yc = 18, Go = 1.5, Xc = 6.5, Zc = 0.9, Qc = 14, zn = { size: 8, clearance: 8 }, In = { fontSize: 10, padding: 3, backgroundOpacity: 0.92 }, el = { padding: 4 }, Jo = { captions: 0.5, depictions: 1.1 }, ln = 200, tl = 24, qn = { node: 0.12, edge: 0.06 }, nl = 1.2, $e = {
   linkBaseDistance: 18,
   linkScoreBonus: 10,
   linkStrength: 0.5,
@@ -6590,10 +6586,10 @@ const Jc = ["Force-directed", "Circular", "Radial"], Qe = 38, cn = 200, Wc = 4, 
   drift: 0.04,
   tickMultiplier: 2
 };
-function ol(e) {
+function rl(e) {
   const t = j(
     "div",
-    `position:absolute;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s ease;padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.5;max-width:260px;background:${P.tooltipBg};border:1px solid ${P.tooltipBorder};color:${P.textPrimary};box-shadow:0 4px 14px rgba(0,0,0,0.28);`
+    `position:absolute;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s ease;padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.5;max-width:260px;background:${E.tooltipBg};border:1px solid ${E.tooltipBorder};color:${E.textPrimary};box-shadow:0 4px 14px rgba(0,0,0,0.28);`
   );
   return e.appendChild(t), {
     show(n, o, i) {
@@ -6607,7 +6603,7 @@ function ol(e) {
     }
   };
 }
-function il(e) {
+function ol(e) {
   const t = /* @__PURE__ */ new Map();
   return (n) => {
     const o = t.get(n);
@@ -6629,50 +6625,50 @@ function il(e) {
     return r.appendChild(ie("path", { d: "M0,-5L10,0L0,5", fill: n })), e.appendChild(r), i;
   };
 }
-function sl(e) {
+function il(e) {
   const t = parseInt(e.replace("#", ""), 16);
   return [t >> 16 & 255, t >> 8 & 255, t & 255];
 }
-function al(e) {
-  const [t, n] = P.netEdgeRamp.map(sl), o = Math.max(0, Math.min(1, e ?? 0.5));
-  return `rgb(${t.map((r, c) => Math.round(r + (n[c] - r) * o)).join(",")})`;
+function sl(e) {
+  const [t, n] = E.netEdgeRamp.map(il), o = Math.max(0, Math.min(1, e ?? 0.5));
+  return `rgb(${t.map((r, s) => Math.round(r + (n[s] - r) * o)).join(",")})`;
 }
-const Ee = et, cl = (e, t) => e.length > t ? `${e.slice(0, t - 1)}...` : e;
-function ll(e) {
+const Ee = et, al = (e, t) => e.length > t ? `${e.slice(0, t - 1)}...` : e;
+function cl(e) {
   const t = /* @__PURE__ */ new Set();
   let n = /* @__PURE__ */ new Set();
-  const o = (r, c) => {
-    if (t.has(c) || n.has(c)) return;
-    const s = e.nodes[c], d = s.sdf && fi(r, s.sdf, cn);
+  const o = (r, s) => {
+    if (t.has(s) || n.has(s)) return;
+    const a = e.nodes[s], d = a.sdf && fi(r, a.sdf, cn);
     if (!d) {
-      n.add(c);
+      n.add(s);
       return;
     }
     const y = new DOMParser().parseFromString(d, "image/svg+xml").documentElement;
     if (!y || y.nodeName.toLowerCase() === "parsererror") {
-      n.add(c);
+      n.add(s);
       return;
     }
-    const m = (Qe - Wc) * 2 / cn, S = e.depictionGroups[c];
-    S.setAttribute(
+    const m = (Qe - Jc) * 2 / cn, C = e.depictionGroups[s];
+    C.setAttribute(
       "transform",
       `translate(${-m * cn / 2},${-m * cn / 2}) scale(${m})`
     );
-    let w = 0;
+    let b = 0;
     for (const v of Array.from(y.childNodes)) {
       if (v.nodeType !== 1) continue;
       const _ = v.nodeName.toLowerCase();
       if (!(_ === "defs" || _ === "metadata" || _ === "title")) {
         if (_ === "rect") {
-          const b = (v.getAttribute("fill") ?? "").toLowerCase();
-          if (b === "#ffffff" || b === "white" || b === "rgb(255,255,255)") continue;
+          const w = (v.getAttribute("fill") ?? "").toLowerCase();
+          if (w === "#ffffff" || w === "white" || w === "rgb(255,255,255)") continue;
         }
-        S.appendChild(document.importNode(v, !0)), w++;
+        C.appendChild(document.importNode(v, !0)), b++;
       }
     }
-    w ? t.add(c) : n.add(c);
+    b ? t.add(s) : n.add(s);
   };
-  return { apply: (r, c, s) => {
+  return { apply: (r, s, a) => {
     const d = r >= Jo.captions;
     for (const v of e.captions)
       v.setAttribute("display", d ? "inline" : "none");
@@ -6682,51 +6678,51 @@ function ll(e) {
       e.depictionGroups[v].setAttribute("display", _ ? "inline" : "none"), e.initials[v].setAttribute("display", _ ? "none" : "inline");
     }
     if (!y) return;
-    const { width: m, height: S } = e.viewport(), w = [];
+    const { width: m, height: C } = e.viewport(), b = [];
     e.nodes.forEach((v, _) => {
       if (t.has(_) || n.has(_)) return;
-      const b = v.x * r + c, f = v.y * r + s;
-      b < -ln || f < -ln || b > m + ln || f > S + ln || w.push(_);
-    }), w.length && e.rdkit().then((v) => {
+      const w = v.x * r + s, f = v.y * r + a;
+      w < -ln || f < -ln || w > m + ln || f > C + ln || b.push(_);
+    }), b.length && e.rdkit().then((v) => {
       if (v)
-        for (const _ of w) {
+        for (const _ of b) {
           o(v, _);
-          const b = t.has(_);
-          e.depictionGroups[_].setAttribute("display", b ? "inline" : "none"), e.initials[_].setAttribute("display", b ? "none" : "inline");
+          const w = t.has(_);
+          e.depictionGroups[_].setAttribute("display", w ? "inline" : "none"), e.initials[_].setAttribute("display", w ? "none" : "inline");
         }
     }).catch(() => {
     });
   }, drawn: () => t.size };
 }
-function dl(e, t, n, o, i) {
-  const r = (c) => i === "keys" ? c["gufe-key"] : Ee(c);
-  return o === "ligands" ? e.filter((c) => n.has(c["gufe-key"])).map(r).join(", ") : t.filter((c) => n.has(c.from["gufe-key"]) && n.has(c.to["gufe-key"])).map((c) => `${r(c.from)}, ${r(c.to)}`).join(`
+function ll(e, t, n, o, i) {
+  const r = (s) => i === "keys" ? s["gufe-key"] : Ee(s);
+  return o === "ligands" ? e.filter((s) => n.has(s["gufe-key"])).map(r).join(", ") : t.filter((s) => n.has(s.from["gufe-key"]) && n.has(s.to["gufe-key"])).map((s) => `${r(s.from)}, ${r(s.to)}`).join(`
 `);
 }
-function ul(e, t) {
+function dl(e, t) {
   navigator.clipboard?.writeText(e).catch(() => Wo(e, t)), navigator.clipboard || Wo(e, t);
 }
 function Wo(e, t) {
   const n = j("textarea", "width:100%;height:80px;font-size:11px;box-sizing:border-box;");
   n.value = e, n.readOnly = !0, t.appendChild(n), n.select();
 }
-function fl(e, t) {
+function ul(e, t) {
   const n = URL.createObjectURL(new Blob([e], { type: "text/plain" })), o = j("a", "display:none;");
   o.href = n, o.download = t, document.body.appendChild(o), o.click(), o.remove(), URL.revokeObjectURL(n);
 }
-function pl(e) {
+function fl(e) {
   const t = j(
     "div",
-    `display:flex;flex-direction:column;gap:8px;width:236px;padding:10px;min-height:0;background:${P.panelBg};border-right:1px solid ${P.splitBorder};`
+    `display:flex;flex-direction:column;gap:8px;width:236px;padding:10px;min-height:0;background:${E.panelBg};border-right:1px solid ${E.splitBorder};`
   ), n = j("input", `${dn}width:100%;box-sizing:border-box;`);
   n.type = "search", n.placeholder = "Search ligands", n.setAttribute("aria-label", "Search ligands by name, SMILES or gufe key"), t.appendChild(n);
-  const o = j("div", `display:flex;align-items:center;gap:8px;font-size:11px;color:${P.textMuted};`), i = j("span", `min-width:28px;color:${P.textPrimary};`, "0.00"), r = j("input", "flex:1;");
+  const o = j("div", `display:flex;align-items:center;gap:8px;font-size:11px;color:${E.textMuted};`), i = j("span", `min-width:28px;color:${E.textPrimary};`, "0.00"), r = j("input", "flex:1;");
   r.type = "range", r.min = "0", r.max = "1", r.step = "0.01", r.value = "0", r.setAttribute("aria-label", "Hide mappings scoring below this"), o.appendChild(j("span", "", "score >=")), o.appendChild(r), o.appendChild(i), t.appendChild(o);
-  const c = j("div", `font-size:11px;color:${P.textMuted2};`);
-  t.appendChild(c);
-  const s = j("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
+  const s = j("div", `font-size:11px;color:${E.textMuted2};`);
   t.appendChild(s);
-  const d = j("div", "display:flex;flex-direction:column;gap:6px;"), y = j("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${P.textMuted};`);
+  const a = j("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
+  t.appendChild(a);
+  const d = j("div", "display:flex;flex-direction:column;gap:6px;"), y = j("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${E.textMuted};`);
   y.appendChild(j("span", "", "copy as"));
   const m = j("select", `${dn}flex:1;`);
   for (const [f, g] of [
@@ -6737,179 +6733,179 @@ function pl(e) {
     u.value = f, m.appendChild(u);
   }
   y.appendChild(m), d.appendChild(y);
-  const S = j("div", "display:flex;gap:4px;"), w = [
+  const C = j("div", "display:flex;gap:4px;"), b = [
     ["Ligands", "ligands", "Copy the selected ligand names, comma separated"],
     ["Edges", "edges", "Copy the selected edges, one pair per line"]
   ];
-  for (const [f, g, u] of w) {
+  for (const [f, g, u] of b) {
     const h = j("button", `${Be}flex:1;`, f);
-    h.title = u, h.onclick = (C) => {
-      const a = m.value, l = dl(e.nodes, e.edges, e.selected, g, a);
-      l && (C.shiftKey ? fl(l, `selected-${g}.txt`) : ul(l, d));
-    }, S.appendChild(h);
+    h.title = u, h.onclick = (S) => {
+      const c = m.value, l = ll(e.nodes, e.edges, e.selected, g, c);
+      l && (S.shiftKey ? ul(l, `selected-${g}.txt`) : dl(l, d));
+    }, C.appendChild(h);
   }
-  d.appendChild(S), d.appendChild(
-    j("div", `font-size:10px;color:${P.textMuted2};`, "Shift-click to save as a file instead.")
+  d.appendChild(C), d.appendChild(
+    j("div", `font-size:10px;color:${E.textMuted2};`, "Shift-click to save as a file instead.")
   ), t.appendChild(d);
   const v = j("button", `${Be}width:100%;`, "Clear selection");
   v.onclick = () => {
-    e.selected.clear(), b(), e.refresh();
+    e.selected.clear(), w(), e.refresh();
   }, t.appendChild(v);
   const _ = (f) => {
     const g = e.query.text.trim().toLowerCase();
     return g ? Ee(f).toLowerCase().includes(g) || (f.smiles ?? "").toLowerCase().includes(g) || f["gufe-key"].toLowerCase().includes(g) : !0;
-  }, b = () => {
-    s.replaceChildren();
+  }, w = () => {
+    a.replaceChildren();
     const f = e.nodes.map((g, u) => ({ node: g, index: u })).filter(({ node: g }) => _(g));
-    c.textContent = `${f.length} of ${e.nodes.length} ligands`;
+    s.textContent = `${f.length} of ${e.nodes.length} ligands`;
     for (const { node: g, index: u } of f) {
-      const h = g["gufe-key"], C = j(
+      const h = g["gufe-key"], S = j(
         "button",
-        `display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;text-align:left;font-family:inherit;font-size:11px;cursor:pointer;width:100%;min-width:0;border:1px solid ${e.selected.has(h) ? P.cardBorderActive : P.cardBorder};background:${e.selected.has(h) ? P.cardBgActive : P.cardBg};color:${P.textPrimary};`
-      ), a = j("span", "flex:1;min-width:0;overflow-wrap:anywhere;", Ee(g));
-      a.title = `${Ee(g)}
-${g.smiles ?? ""}`, C.appendChild(a), C.onclick = (l) => {
-        l.shiftKey || l.metaKey || l.ctrlKey ? e.selected.has(h) ? e.selected.delete(h) : e.selected.add(h) : (e.selected.clear(), e.selected.add(h), e.focus(u)), b(), e.refresh();
-      }, s.appendChild(C);
+        `display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;text-align:left;font-family:inherit;font-size:11px;cursor:pointer;width:100%;min-width:0;border:1px solid ${e.selected.has(h) ? E.cardBorderActive : E.cardBorder};background:${e.selected.has(h) ? E.cardBgActive : E.cardBg};color:${E.textPrimary};`
+      ), c = j("span", "flex:1;min-width:0;overflow-wrap:anywhere;", Ee(g));
+      c.title = `${Ee(g)}
+${g.smiles ?? ""}`, S.appendChild(c), S.onclick = (l) => {
+        l.shiftKey || l.metaKey || l.ctrlKey ? e.selected.has(h) ? e.selected.delete(h) : e.selected.add(h) : (e.selected.clear(), e.selected.add(h), e.focus(u)), w(), e.refresh();
+      }, a.appendChild(S);
     }
-    f.length || s.appendChild(j("div", `font-size:11px;padding:8px;color:${P.textMuted2};`, "Nothing matches."));
+    f.length || a.appendChild(j("div", `font-size:11px;padding:8px;color:${E.textMuted2};`, "Nothing matches."));
   };
   return n.oninput = () => {
-    e.query.text = n.value, b(), e.refresh();
+    e.query.text = n.value, w(), e.refresh();
   }, r.oninput = () => {
     e.filter.minScore = Number(r.value), i.textContent = e.filter.minScore.toFixed(2), e.refresh();
-  }, b(), t;
+  }, w(), t;
 }
-class hl extends Se {
+class pl extends Se {
   placeholder() {
     return "Waiting for a LigandNetwork payload...";
   }
   renderView(t, n) {
     const o = dt(n), i = [];
     let r = 0;
-    for (const G of n.nodes ?? []) {
-      const U = Ae(o, G, "SmallMoleculeComponentViz");
+    for (const H of n.nodes ?? []) {
+      const U = Ae(o, H, "SmallMoleculeComponentViz");
       if (!U) {
         r++;
         continue;
       }
       i.push({ ...U, x: 0, y: 0 });
     }
-    const c = new Map(i.map((G) => [G["gufe-key"], G])), s = [];
+    const s = new Map(i.map((H) => [H["gufe-key"], H])), a = [];
     let d = 0;
-    for (const G of n.edges ?? []) {
-      const U = c.get(G.componentA), Y = c.get(G.componentB);
+    for (const H of n.edges ?? []) {
+      const U = s.get(H.componentA), Y = s.get(H.componentB);
       if (!U || !Y) {
         d++;
         continue;
       }
-      s.push({ ...G, index: s.length, from: U, to: Y });
+      a.push({ ...H, index: a.length, from: U, to: Y });
     }
-    const y = Te(n.name || "Ligand network", "LigandNetwork");
-    y.statsEl.appendChild(ce("ligands", String(i.length))), y.statsEl.appendChild(ce("mappings", String(s.length))), t.appendChild(y);
+    const y = Te(n.name || "Ligand network");
+    y.statsEl.appendChild(ce("ligands", String(i.length))), y.statsEl.appendChild(ce("mappings", String(a.length))), t.appendChild(y);
     const m = j("div", "flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden;");
     t.appendChild(m);
-    const S = /* @__PURE__ */ new Set(), w = { minScore: 0 }, v = { text: "" };
+    const C = /* @__PURE__ */ new Set(), b = { minScore: 0 }, v = { text: "" };
     let _ = () => {
     };
-    const b = _i(
+    const w = _i(
       y,
-      () => pl({
+      () => fl({
         nodes: i,
-        edges: s,
-        selected: S,
-        filter: w,
+        edges: a,
+        selected: C,
+        filter: b,
         query: v,
         refresh: () => _(),
-        focus: (G) => p(G)
+        focus: (H) => p(H)
       }),
       { label: "Search, filter and select ligands", onToggle: () => L() }
     );
-    m.appendChild(b.panel);
-    const f = j("div", `flex:1 1 58%;min-width:0;display:flex;flex-direction:column;background:${P.netCanvasBg};`), g = j("div", `flex:1 1 42%;min-width:0;display:flex;flex-direction:column;background:${P.appBg};`);
-    m.appendChild(f), m.appendChild(j("div", `width:1px;flex-shrink:0;background:${P.splitBorder};`)), m.appendChild(g);
-    const u = j("div", `flex:1;position:relative;overflow:hidden;min-height:0;background:${P.netCanvasBg};`);
+    m.appendChild(w.panel);
+    const f = j("div", `flex:1 1 58%;min-width:0;display:flex;flex-direction:column;background:${E.netCanvasBg};`), g = j("div", `flex:1 1 42%;min-width:0;display:flex;flex-direction:column;background:${E.appBg};`);
+    m.appendChild(f), m.appendChild(j("div", `width:1px;flex-shrink:0;background:${E.splitBorder};`)), m.appendChild(g);
+    const u = j("div", `flex:1;position:relative;overflow:hidden;min-height:0;background:${E.netCanvasBg};`);
     f.appendChild(u);
     const h = this.#t(
-      (G) => L(G),
+      (H) => L(H),
       () => J()
     );
     f.appendChild(h.bar);
-    const C = this.#e(g, o);
+    const S = this.#e(g, o);
     if (!i.length)
       return u.appendChild(
         ae(
           r ? "None of this network's ligands are in its registry." : "This network has no ligands."
         )
-      ), C.message("Nothing to show."), {};
-    r && qe(
+      ), S.message("Nothing to show."), {};
+    r && De(
       u,
       `${r} ligand${r === 1 ? "" : "s"} named by this network are not in its registry`
-    ), d && qe(u, `${d} mapping${d === 1 ? "" : "s"} name a ligand this network does not contain`);
-    const a = rr().catch((G) => (console.warn("[gufe-viz] RDKit failed to load:", ge(G)), null)), l = ol(u);
+    ), d && De(u, `${d} mapping${d === 1 ? "" : "s"} name a ligand this network does not contain`);
+    const c = rr().catch((H) => (console.warn("[gufe-viz] RDKit failed to load:", ge(H)), null)), l = rl(u);
     let p = () => {
-    }, x = s.length ? 0 : -1, E = null, N = "Force-directed", z = !1, A = !0, T = () => {
+    }, k = a.length ? 0 : -1, P = null, N = "Force-directed", z = !1, A = !0, T = () => {
     }, J = () => {
     };
-    const Z = (G) => {
-      x = G, C.show(s[G] ?? null), T();
-    }, L = (G = N) => {
-      N = G, E?.(), E = null, u.querySelector("svg")?.remove();
+    const Z = (H) => {
+      k = H, S.show(a[H] ?? null), T();
+    }, L = (H = N) => {
+      N = H, P?.(), P = null, u.querySelector("svg")?.remove();
       const U = u.clientWidth || 800, Y = u.clientHeight || 600;
-      ml(i, U, Y, N, s);
+      hl(i, U, Y, N, a);
       const V = () => {
         if (!A) return;
-        const R = this.#r(u, i, s, U, Y, Z, a, l);
-        T = () => R.setSelected(x), J = R.reset, E = R.cleanup, p = (D) => R.focusOn(D), _ = () => {
-          const D = v.text.trim().toLowerCase(), F = S.size > 0 || D.length > 0, $ = /* @__PURE__ */ new Set();
-          for (const H of i) {
-            const W = H["gufe-key"], oe = S.has(W) || D.length > 0 && (Ee(H).toLowerCase().includes(D) || (H.smiles ?? "").toLowerCase().includes(D) || W.toLowerCase().includes(D));
-            (!F || oe) && $.add(W);
+        const R = this.#r(u, i, a, U, Y, Z, c, l);
+        T = () => R.setSelected(k), J = R.reset, P = R.cleanup, p = (q) => R.focusOn(q), _ = () => {
+          const q = v.text.trim().toLowerCase(), M = C.size > 0 || q.length > 0, $ = /* @__PURE__ */ new Set();
+          for (const G of i) {
+            const W = G["gufe-key"], oe = C.has(W) || q.length > 0 && (Ee(G).toLowerCase().includes(q) || (G.smiles ?? "").toLowerCase().includes(q) || W.toLowerCase().includes(q));
+            (!M || oe) && $.add(W);
           }
-          const k = /* @__PURE__ */ new Set();
-          s.forEach((H, W) => {
-            (H.score ?? 0) < w.minScore || !$.has(H.from["gufe-key"]) || !$.has(H.to["gufe-key"]) || k.add(W);
+          const x = /* @__PURE__ */ new Set();
+          a.forEach((G, W) => {
+            (G.score ?? 0) < b.minScore || !$.has(G.from["gufe-key"]) || !$.has(G.to["gufe-key"]) || x.add(W);
           });
-          const I = F || w.minScore > 0;
-          R.setEmphasis(I ? $ : null, I ? k : null);
+          const I = M || b.minScore > 0;
+          R.setEmphasis(I ? $ : null, I ? x : null);
         }, T(), _(), R.fit();
       };
       if (N !== "Force-directed" || z) {
         V();
         return;
       }
-      gl(i, s, U, Y).then((R) => {
+      ml(i, a, U, Y).then((R) => {
         if (A) {
           if (R) {
             V();
             return;
           }
-          z = !0, h.picker.value = "Circular", qe(u, "d3 could not be loaded - showing the circular layout instead"), L("Circular");
+          z = !0, h.picker.value = "Circular", De(u, "d3 could not be loaded - showing the circular layout instead"), L("Circular");
         }
       }, V);
     };
-    return L(), C.show(s[x] ?? null), {
+    return L(), S.show(a[k] ?? null), {
       onResize: () => L(),
       cleanup: () => {
-        A = !1, l.remove(), E?.();
+        A = !1, l.remove(), P?.();
       }
     };
   }
   #t(t, n) {
     const o = j(
       "div",
-      `display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;background:${P.toolbarBg};border-top:1px solid ${P.toolbarBorder};`
-    ), i = j("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${P.textMuted};`);
+      `display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;background:${E.toolbarBg};border-top:1px solid ${E.toolbarBorder};`
+    ), i = j("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${E.textMuted};`);
     i.appendChild(j("span", "", "score")), i.appendChild(
       j(
         "span",
-        `width:40px;height:4px;border-radius:2px;background:linear-gradient(to right,${P.netEdgeRamp.join(",")});`
+        `width:40px;height:4px;border-radius:2px;background:linear-gradient(to right,${E.netEdgeRamp.join(",")});`
       )
-    ), i.appendChild(j("span", "", "0 -> 1")), o.appendChild(i), o.appendChild(j("label", `font-size:12px;margin-left:auto;color:${P.textMuted};`, "Layout"));
+    ), i.appendChild(j("span", "", "0 -> 1")), o.appendChild(i), o.appendChild(j("label", `font-size:12px;margin-left:auto;color:${E.textMuted};`, "Layout"));
     const r = j("select", dn);
-    for (const c of Jc) {
-      const s = j("option", "", c);
-      s.value = c, r.appendChild(s);
+    for (const s of Gc) {
+      const a = j("option", "", s);
+      a.value = s, r.appendChild(a);
     }
     return r.onchange = () => t(r.value), o.appendChild(r), o.appendChild(ir(n, "Reset pan and zoom")), { bar: o, picker: r };
   }
@@ -6925,53 +6921,53 @@ class hl extends Se {
   #e(t, n) {
     const o = j("div", "flex:1;min-height:0;display:flex;flex-direction:column;");
     t.appendChild(o);
-    const i = (c) => o.replaceChildren(ae(c));
-    return { show: (c) => {
-      if (!c) {
+    const i = (s) => o.replaceChildren(ae(s));
+    return { show: (s) => {
+      if (!s) {
         i("Click an edge to see its mapping.");
         return;
       }
-      const s = document.createElement("gufe-atom-mapping");
-      s.style.cssText = "flex:1;min-width:0;min-height:0;display:flex;", s.payload = yi(c, n), o.replaceChildren(s);
+      const a = document.createElement("gufe-atom-mapping");
+      a.style.cssText = "flex:1;min-width:0;min-height:0;display:flex;", a.payload = yi(s, n), o.replaceChildren(a);
     }, message: i };
   }
   /** Build the SVG for the current node positions. Returns the handles the
    * caller needs afterwards: selection, depictions, and teardown. */
-  #r(t, n, o, i, r, c, s, d) {
+  #r(t, n, o, i, r, s, a, d) {
     const y = ie("svg", { width: i, height: r, style: "display:block;touch-action:none;" }), m = ie("g");
     y.appendChild(m), t.appendChild(y);
-    const S = ie("defs"), w = il(S);
-    y.appendChild(S);
-    const v = [], _ = ie("g"), b = ie("g"), f = ie("g", { "pointer-events": "none" }), g = [], u = [], h = ie("g");
-    m.append(_, b, f, h);
+    const C = ie("defs"), b = ol(C);
+    y.appendChild(C);
+    const v = [], _ = ie("g"), w = ie("g"), f = ie("g", { "pointer-events": "none" }), g = [], u = [], h = ie("g");
+    m.append(_, w, f, h);
     for (const A of o) {
-      const T = al(A.score), J = Ho + (A.score ?? 0.5) * (Zc - Ho), Z = ie("line", {
-        stroke: P.netHaloColor,
+      const T = sl(A.score), J = Go + (A.score ?? 0.5) * (Xc - Go), Z = ie("line", {
+        stroke: E.netHaloColor,
         // Sized from the edge underneath, so a thick edge does not outgrow its
         // own halo and a thin one is not swamped by it.
-        "stroke-width": J + tl.padding * 2,
+        "stroke-width": J + el.padding * 2,
         "stroke-linecap": "round",
         opacity: 0,
         "pointer-events": "none"
       }), L = ie("line", {
         stroke: T,
         "stroke-width": J,
-        "stroke-opacity": Qc,
+        "stroke-opacity": Zc,
         // A mapping runs from A to B, and the arrow is what says which is which.
-        "marker-end": `url(#${w(T)})`,
+        "marker-end": `url(#${b(T)})`,
         "pointer-events": "none"
-      }), G = ie("line", { stroke: "transparent", "stroke-width": el, style: "cursor:pointer;" });
-      G.addEventListener("click", (R) => {
-        R.stopPropagation(), c(A.index);
-      }), G.addEventListener("mousemove", (R) => {
+      }), H = ie("line", { stroke: "transparent", "stroke-width": Qc, style: "cursor:pointer;" });
+      H.addEventListener("click", (R) => {
+        R.stopPropagation(), s(A.index);
+      }), H.addEventListener("mousemove", (R) => {
         d.show(
-          `<div style="font-weight:700;color:${P.titleColor};">${Ne(Ee(A.from))} -&gt; ${Ne(Ee(A.to))}</div>` + (A.score == null ? `<div style="color:${P.textMuted2};">no score</div>` : `<div style="margin-top:4px;">score <b>${A.score.toFixed(3)}</b></div>`) + `<div style="margin-top:4px;font-size:10px;color:${P.textMuted2};">Click to see the mapping</div>`,
+          `<div style="font-weight:700;color:${E.titleColor};">${Ne(Ee(A.from))} -&gt; ${Ne(Ee(A.to))}</div>` + (A.score == null ? `<div style="color:${E.textMuted2};">no score</div>` : `<div style="margin-top:4px;">score <b>${A.score.toFixed(3)}</b></div>`) + `<div style="margin-top:4px;font-size:10px;color:${E.textMuted2};">Click to see the mapping</div>`,
           R.offsetX,
           R.offsetY
         );
-      }), G.addEventListener("mouseleave", () => d.hide()), v.push(Z), _.append(Z, L), b.appendChild(G);
+      }), H.addEventListener("mouseleave", () => d.hide()), v.push(Z), _.append(Z, L), w.appendChild(H);
       const U = ie("rect", {
-        fill: P.netLabelBg,
+        fill: E.netLabelBg,
         opacity: A.score == null ? 0 : In.backgroundOpacity,
         rx: 3,
         ry: 3
@@ -6980,50 +6976,50 @@ class hl extends Se {
         "dominant-baseline": "middle",
         "font-size": In.fontSize,
         "font-weight": 600,
-        fill: P.netEdgeLabel
+        fill: E.netEdgeLabel
       });
       Y.textContent = A.score == null ? "" : A.score.toFixed(2);
       const V = ie("g", { class: "gufe-edge-label" });
       V.append(U, Y), f.appendChild(V), g.push(U), u.push(Y);
     }
-    const C = [], a = [], l = [], p = n.map((A) => {
+    const S = [], c = [], l = [], p = n.map((A) => {
       const T = ie("g", { class: "gufe-node", style: "cursor:grab;" });
-      T.addEventListener("mousemove", (G) => {
+      T.addEventListener("mousemove", (H) => {
         d.show(
-          `<div style="font-weight:700;color:${P.titleColor};">${Ne(Ee(A))}</div>` + (A.smiles ? `<div style="margin-top:3px;font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;">${Ne(A.smiles)}</div>` : "") + `<div style="margin-top:3px;font-size:10px;color:${P.textMuted2};overflow-wrap:anywhere;">${Ne(A["gufe-key"])}</div>`,
-          G.offsetX,
-          G.offsetY
+          `<div style="font-weight:700;color:${E.titleColor};">${Ne(Ee(A))}</div>` + (A.smiles ? `<div style="margin-top:3px;font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;">${Ne(A.smiles)}</div>` : "") + `<div style="margin-top:3px;font-size:10px;color:${E.textMuted2};overflow-wrap:anywhere;">${Ne(A["gufe-key"])}</div>`,
+          H.offsetX,
+          H.offsetY
         );
       }), T.addEventListener("mouseleave", () => d.hide()), T.appendChild(
         ie("circle", {
           r: Qe,
-          fill: P.netNodeFill,
-          stroke: P.netNodeStroke,
+          fill: E.netNodeFill,
+          stroke: E.netNodeStroke,
           "stroke-width": 1.5
         })
       );
       const J = ie("g", { class: "gufe-node-depiction", "pointer-events": "none" });
-      T.appendChild(J), C.push(J);
+      T.appendChild(J), S.push(J);
       const Z = ie("text", {
         "text-anchor": "middle",
         "dominant-baseline": "middle",
-        "font-size": Xc,
+        "font-size": Yc,
         "font-weight": 700,
-        fill: P.netInitials,
+        fill: E.netInitials,
         "pointer-events": "none"
       });
-      Z.textContent = Ee(A).slice(0, 2).toUpperCase(), T.appendChild(Z), a.push(Z);
+      Z.textContent = Ee(A).slice(0, 2).toUpperCase(), T.appendChild(Z), c.push(Z);
       const L = ie("text", {
         class: "gufe-node-caption",
         "text-anchor": "middle",
         y: Qe + 14,
         "font-size": 11,
         "font-weight": 600,
-        fill: P.netNodeLabel,
+        fill: E.netNodeLabel,
         "pointer-events": "none"
       });
-      return L.textContent = cl(Ee(A), Yc), L.setAttribute("display", "none"), l.push(L), T.appendChild(L), h.appendChild(T), T;
-    }), x = () => {
+      return L.textContent = al(Ee(A), Wc), L.setAttribute("display", "none"), l.push(L), T.appendChild(L), h.appendChild(T), T;
+    }), k = () => {
       u.forEach((A, T) => {
         if (!A.textContent) return;
         let J;
@@ -7035,9 +7031,9 @@ class hl extends Se {
         const Z = In.padding;
         g[T].setAttribute("x", String(J.x - Z)), g[T].setAttribute("y", String(J.y - Z)), g[T].setAttribute("width", String(J.width + Z * 2)), g[T].setAttribute("height", String(J.height + Z * 2));
       });
-    }, E = () => {
+    }, P = () => {
       o.forEach((A, T) => {
-        for (const Z of [v[T], _.children[T * 2 + 1], b.children[T]]) {
+        for (const Z of [v[T], _.children[T * 2 + 1], w.children[T]]) {
           const L = Z;
           L.setAttribute("x1", String(A.from.x)), L.setAttribute("y1", String(A.from.y)), L.setAttribute("x2", String(A.to.x)), L.setAttribute("y2", String(A.to.y));
         }
@@ -7047,15 +7043,15 @@ class hl extends Se {
         );
       }), n.forEach((A, T) => p[T].setAttribute("transform", `translate(${A.x},${A.y})`));
     };
-    E(), x();
-    const N = ll({
+    P(), k();
+    const N = cl({
       nodes: n,
       captions: l,
-      initials: a,
-      depictionGroups: C,
-      rdkit: () => s,
+      initials: c,
+      depictionGroups: S,
+      rdkit: () => a,
       viewport: () => ({ width: i, height: r })
-    }), z = this.#n(y, m, n, p, E, N.apply);
+    }), z = this.#n(y, m, n, p, P, N.apply);
     return {
       setSelected(A) {
         v.forEach((T, J) => T.setAttribute("opacity", J === A ? "0.95" : "0"));
@@ -7070,10 +7066,10 @@ class hl extends Se {
       setEmphasis(A, T) {
         p.forEach((J, Z) => {
           const L = !A || A.has(n[Z]["gufe-key"]);
-          J.setAttribute("opacity", L ? "1" : String(Dn.node));
+          J.setAttribute("opacity", L ? "1" : String(qn.node));
         }), o.forEach((J, Z) => {
-          const L = !T || T.has(Z), G = L ? "0.9" : String(Dn.edge);
-          _.children[Z * 2 + 1].setAttribute("stroke-opacity", G), f.children[Z].setAttribute("opacity", L ? "1" : String(Dn.edge));
+          const L = !T || T.has(Z), H = L ? "0.9" : String(qn.edge);
+          _.children[Z * 2 + 1].setAttribute("stroke-opacity", H), f.children[Z].setAttribute("opacity", L ? "1" : String(qn.edge));
         });
       },
       focusOn(A) {
@@ -7089,61 +7085,61 @@ class hl extends Se {
   }
   /** Wheel zoom, background pan, node drag - ~40 lines instead of d3-zoom and
    * d3-drag, and they keep working when d3 is unreachable. */
-  #n(t, n, o, i, r, c) {
-    let s = 1, d = 0, y = 0;
+  #n(t, n, o, i, r, s) {
+    let a = 1, d = 0, y = 0;
     const m = () => {
-      n.setAttribute("transform", `translate(${d},${y}) scale(${s})`), c(s, d, y);
-    }, S = () => {
+      n.setAttribute("transform", `translate(${d},${y}) scale(${a})`), s(a, d, y);
+    }, C = () => {
       const h = t.getBoundingClientRect();
       return {
         width: h.width || Number(t.getAttribute("width")) || t.clientWidth || 800,
         height: h.height || Number(t.getAttribute("height")) || t.clientHeight || 600
       };
-    }, w = () => {
-      let h = 1 / 0, C = 1 / 0, a = -1 / 0, l = -1 / 0;
+    }, b = () => {
+      let h = 1 / 0, S = 1 / 0, c = -1 / 0, l = -1 / 0;
       for (const N of o)
-        h = Math.min(h, N.x), C = Math.min(C, N.y), a = Math.max(a, N.x), l = Math.max(l, N.y);
-      if (s = 1, d = 0, y = 0, !Number.isFinite(h)) {
+        h = Math.min(h, N.x), S = Math.min(S, N.y), c = Math.max(c, N.x), l = Math.max(l, N.y);
+      if (a = 1, d = 0, y = 0, !Number.isFinite(h)) {
         m();
         return;
       }
-      const p = Qe + nl, { width: x, height: E } = S();
-      s = Math.min(1, x / (a - h + p * 2), E / (l - C + p * 2)), d = x / 2 - (h + a) / 2 * s, y = E / 2 - (C + l) / 2 * s, m();
+      const p = Qe + tl, { width: k, height: P } = C();
+      a = Math.min(1, k / (c - h + p * 2), P / (l - S + p * 2)), d = k / 2 - (h + c) / 2 * a, y = P / 2 - (S + l) / 2 * a, m();
     }, _ = or(t, {
       onZoom: (h) => {
-        const C = t.getBoundingClientRect(), a = h.clientX - C.left, l = h.clientY - C.top, p = Math.min(5 / s, Math.max(0.15 / s, Math.exp(-h.deltaY * 2e-3)));
-        d = a - (a - d) * p, y = l - (l - y) * p, s *= p, m();
+        const S = t.getBoundingClientRect(), c = h.clientX - S.left, l = h.clientY - S.top, p = Math.min(5 / a, Math.max(0.15 / a, Math.exp(-h.deltaY * 2e-3)));
+        d = c - (c - d) * p, y = l - (l - y) * p, a *= p, m();
       },
       hint: "Click the graph or hold Ctrl to zoom"
     });
-    let b = null;
+    let w = null;
     const f = (h) => {
-      b = { x: h.clientX - d, y: h.clientY - y };
+      w = { x: h.clientX - d, y: h.clientY - y };
     }, g = (h) => {
-      b && (d = h.clientX - b.x, y = h.clientY - b.y, m());
+      w && (d = h.clientX - w.x, y = h.clientY - w.y, m());
     }, u = () => {
-      b = null;
+      w = null;
     };
-    return t.addEventListener("pointerdown", f), t.addEventListener("pointermove", g), t.addEventListener("pointerup", u), t.addEventListener("pointercancel", u), t.addEventListener("pointerleave", u), i.forEach((h, C) => {
-      let a = null;
+    return t.addEventListener("pointerdown", f), t.addEventListener("pointermove", g), t.addEventListener("pointerup", u), t.addEventListener("pointercancel", u), t.addEventListener("pointerleave", u), i.forEach((h, S) => {
+      let c = null;
       h.addEventListener("pointerdown", (p) => {
-        p.stopPropagation(), a = { x: p.clientX - o[C].x * s, y: p.clientY - o[C].y * s }, h.setPointerCapture(p.pointerId);
+        p.stopPropagation(), c = { x: p.clientX - o[S].x * a, y: p.clientY - o[S].y * a }, h.setPointerCapture(p.pointerId);
       }), h.addEventListener("pointermove", (p) => {
-        a && (o[C].x = o[C].fx = (p.clientX - a.x) / s, o[C].y = o[C].fy = (p.clientY - a.y) / s, r());
+        c && (o[S].x = o[S].fx = (p.clientX - c.x) / a, o[S].y = o[S].fy = (p.clientY - c.y) / a, r());
       });
       const l = () => {
-        a = null;
+        c = null;
       };
       h.addEventListener("pointerup", l), h.addEventListener("pointercancel", l);
     }), {
-      fit: w,
+      fit: b,
       // Back to the view it opened on, which is the framed one. An identity
       // transform would be "reset" only in the sense that a blank canvas is.
-      reset: w,
+      reset: b,
       /** Bring a graph point to the middle, zooming in enough to read it. */
-      centreOn(h, C) {
-        const { width: a, height: l } = S();
-        s = Math.max(s, rl), d = a / 2 - h * s, y = l / 2 - C * s, m();
+      centreOn(h, S) {
+        const { width: c, height: l } = C();
+        a = Math.max(a, nl), d = c / 2 - h * a, y = l / 2 - S * a, m();
       },
       cleanup() {
         _.cleanup(), t.removeEventListener("pointerdown", f), t.removeEventListener("pointermove", g), t.removeEventListener("pointerup", u), t.removeEventListener("pointercancel", u), t.removeEventListener("pointerleave", u);
@@ -7151,56 +7147,56 @@ class hl extends Se {
     };
   }
 }
-function ml(e, t, n, o, i) {
-  const r = t / 2, c = n / 2, s = (d, y) => {
-    d.forEach((m, S) => {
-      const w = 2 * Math.PI * S / Math.max(1, d.length) - Math.PI / 2;
-      m.x = r + y * Math.cos(w), m.y = c + y * Math.sin(w), m.fx = o === "Force-directed" ? void 0 : m.x, m.fy = o === "Force-directed" ? void 0 : m.y;
+function hl(e, t, n, o, i) {
+  const r = t / 2, s = n / 2, a = (d, y) => {
+    d.forEach((m, C) => {
+      const b = 2 * Math.PI * C / Math.max(1, d.length) - Math.PI / 2;
+      m.x = r + y * Math.cos(b), m.y = s + y * Math.sin(b), m.fx = o === "Force-directed" ? void 0 : m.x, m.fy = o === "Force-directed" ? void 0 : m.y;
     });
   };
   if (o === "Radial" && e.length) {
-    const d = new Map(e.map((b) => [b["gufe-key"], []]));
-    for (const b of i)
-      d.get(b.from["gufe-key"]).push(b.to["gufe-key"]), d.get(b.to["gufe-key"]).push(b.from["gufe-key"]);
-    const y = new Map(e.map((b) => [b["gufe-key"], b])), m = e.reduce(
-      (b, f) => d.get(f["gufe-key"]).length > d.get(b["gufe-key"]).length ? f : b
-    ), S = /* @__PURE__ */ new Set([m["gufe-key"]]);
-    let w = [m["gufe-key"]], v = 0;
+    const d = new Map(e.map((w) => [w["gufe-key"], []]));
+    for (const w of i)
+      d.get(w.from["gufe-key"]).push(w.to["gufe-key"]), d.get(w.to["gufe-key"]).push(w.from["gufe-key"]);
+    const y = new Map(e.map((w) => [w["gufe-key"], w])), m = e.reduce(
+      (w, f) => d.get(f["gufe-key"]).length > d.get(w["gufe-key"]).length ? f : w
+    ), C = /* @__PURE__ */ new Set([m["gufe-key"]]);
+    let b = [m["gufe-key"]], v = 0;
     const _ = Math.min(t, n) * 0.18;
-    for (; w.length; ) {
-      s(
-        w.map((f) => y.get(f)),
+    for (; b.length; ) {
+      a(
+        b.map((f) => y.get(f)),
         v === 0 ? 0 : v * _ + 40
       );
-      const b = [];
-      for (const f of w)
+      const w = [];
+      for (const f of b)
         for (const g of d.get(f))
-          S.has(g) || (S.add(g), b.push(g));
-      w = b, v++;
+          C.has(g) || (C.add(g), w.push(g));
+      b = w, v++;
     }
-    s(e.filter((b) => !S.has(b["gufe-key"])), Math.min(t, n) * 0.45);
+    a(e.filter((w) => !C.has(w["gufe-key"])), Math.min(t, n) * 0.45);
     return;
   }
-  s(e, Math.min(t, n) * 0.34);
+  a(e, Math.min(t, n) * 0.34);
 }
-async function gl(e, t, n, o) {
+async function ml(e, t, n, o) {
   let i;
   try {
     if (i = await di(), typeof i?.forceSimulation != "function") return !1;
   } catch {
     return !1;
   }
-  const r = t.map((d) => ({ source: d.from["gufe-key"], target: d.to["gufe-key"], score: d.score })), c = i.forceSimulation(e).force(
+  const r = t.map((d) => ({ source: d.from["gufe-key"], target: d.to["gufe-key"], score: d.score })), s = i.forceSimulation(e).force(
     "link",
     i.forceLink(r).id((d) => d["gufe-key"]).distance((d) => $e.linkBaseDistance + (1 - (d.score ?? 0.5)) * $e.linkScoreBonus).strength($e.linkStrength)
   ).force(
     "charge",
     i.forceManyBody().strength($e.chargeStrength).distanceMin($e.chargeDistanceMin).distanceMax($e.chargeDistanceMax)
-  ).force("center", i.forceCenter(n / 2, o / 2).strength($e.centerStrength)).force("collision", i.forceCollide(Qe + $e.collisionPadding).iterations($e.collisionIterations)).force("x", i.forceX(n / 2).strength($e.drift)).force("y", i.forceY(o / 2).strength($e.drift)).stop(), s = Math.ceil(Math.log(c.alphaMin()) / Math.log(1 - c.alphaDecay()));
-  for (let d = 0; d < s * $e.tickMultiplier; d++) c.tick();
+  ).force("center", i.forceCenter(n / 2, o / 2).strength($e.centerStrength)).force("collision", i.forceCollide(Qe + $e.collisionPadding).iterations($e.collisionIterations)).force("x", i.forceX(n / 2).strength($e.drift)).force("y", i.forceY(o / 2).strength($e.drift)).stop(), a = Math.ceil(Math.log(s.alphaMin()) / Math.log(1 - s.alphaDecay()));
+  for (let d = 0; d < a * $e.tickMultiplier; d++) s.tick();
   return !0;
 }
-Ce("gufe-ligand-network", hl);
+Ce("gufe-ligand-network", pl);
 const st = { width: 148, height: 46, radius: 10 }, Xe = {
   linkDistance: 220,
   linkStrength: 0.4,
@@ -7209,31 +7205,31 @@ const st = { width: 148, height: 46, radius: 10 }, Xe = {
   collisionIterations: 3,
   tickMultiplier: 2
 }, at = et;
-function yl(e, t) {
+function gl(e, t) {
   return e.length > t ? `${e.slice(0, t - 1)}...` : e;
 }
-function vl(e, t, n) {
+function yl(e, t, n) {
   const o = Math.max(90, Math.min(t, n) * 0.36);
   e.forEach((i, r) => {
-    const c = 2 * Math.PI * r / Math.max(1, e.length) - Math.PI / 2;
-    i.x = t / 2 + o * Math.cos(c), i.y = n / 2 + o * Math.sin(c);
+    const s = 2 * Math.PI * r / Math.max(1, e.length) - Math.PI / 2;
+    i.x = t / 2 + o * Math.cos(s), i.y = n / 2 + o * Math.sin(s);
   });
 }
-async function $l(e, t, n, o) {
+async function vl(e, t, n, o) {
   let i;
   try {
     if (i = await di(), typeof i?.forceSimulation != "function") return !1;
   } catch {
     return !1;
   }
-  const r = t.map((d) => ({ source: d.from["gufe-key"], target: d.to["gufe-key"] })), c = i.forceSimulation(e).force(
+  const r = t.map((d) => ({ source: d.from["gufe-key"], target: d.to["gufe-key"] })), s = i.forceSimulation(e).force(
     "link",
     i.forceLink(r).id((d) => d["gufe-key"]).distance(Xe.linkDistance).strength(Xe.linkStrength)
-  ).force("charge", i.forceManyBody().strength(Xe.chargeStrength)).force("center", i.forceCenter(n / 2, o / 2)).force("collision", i.forceCollide(Xe.collisionRadius).iterations(Xe.collisionIterations)).stop(), s = Math.ceil(Math.log(c.alphaMin()) / Math.log(1 - c.alphaDecay()));
-  for (let d = 0; d < s * Xe.tickMultiplier; d++) c.tick();
+  ).force("charge", i.forceManyBody().strength(Xe.chargeStrength)).force("center", i.forceCenter(n / 2, o / 2)).force("collision", i.forceCollide(Xe.collisionRadius).iterations(Xe.collisionIterations)).stop(), a = Math.ceil(Math.log(s.alphaMin()) / Math.log(1 - s.alphaDecay()));
+  for (let d = 0; d < a * Xe.tickMultiplier; d++) s.tick();
   return !0;
 }
-class bl extends Se {
+class $l extends Se {
   placeholder() {
     return "Waiting for an AlchemicalNetwork payload...";
   }
@@ -7248,64 +7244,64 @@ class bl extends Se {
       }
       i.push({ ...p, x: 0, y: 0 });
     }
-    const c = new Map(i.map((l) => [l["gufe-key"], l])), s = [];
+    const s = new Map(i.map((l) => [l["gufe-key"], l])), a = [];
     let d = 0;
     for (const l of n.edges ?? []) {
-      const p = c.get(l.stateA), x = c.get(l.stateB);
-      if (!p || !x) {
+      const p = s.get(l.stateA), k = s.get(l.stateB);
+      if (!p || !k) {
         d++;
         continue;
       }
-      s.push({ ...l, index: s.length, from: p, to: x });
+      a.push({ ...l, index: a.length, from: p, to: k });
     }
     const y = (l) => {
       const p = Ae(o, l.protocol, "ProtocolViz");
       return p?.gufe_type || p?.name || "";
-    }, m = new Set(s.map(y).filter(Boolean)), S = Te(n.name || "Alchemical network", "AlchemicalNetwork");
-    S.statsEl.appendChild(ce("systems", String(i.length))), S.statsEl.appendChild(ce("transformations", String(s.length))), m.size && S.statsEl.appendChild(ce("protocol", [...m].join(", "))), t.appendChild(S);
-    const w = j("div", "flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden;");
-    t.appendChild(w);
-    const v = j("div", `flex:1 1 62%;min-width:0;position:relative;overflow:hidden;background:${P.netCanvasBg};`);
-    w.appendChild(v), w.appendChild(j("div", `width:1px;flex-shrink:0;background:${P.splitBorder};`));
-    const _ = j("div", `flex:1 1 38%;min-width:0;display:flex;flex-direction:column;background:${P.appBg};`);
-    w.appendChild(_);
-    const b = this.#t(_, o, y);
+    }, m = new Set(a.map(y).filter(Boolean)), C = Te(n.name || "Alchemical network");
+    C.statsEl.appendChild(ce("systems", String(i.length))), C.statsEl.appendChild(ce("transformations", String(a.length))), m.size && C.statsEl.appendChild(ce("protocol", [...m].join(", "))), t.appendChild(C);
+    const b = j("div", "flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden;");
+    t.appendChild(b);
+    const v = j("div", `flex:1 1 62%;min-width:0;position:relative;overflow:hidden;background:${E.netCanvasBg};`);
+    b.appendChild(v), b.appendChild(j("div", `width:1px;flex-shrink:0;background:${E.splitBorder};`));
+    const _ = j("div", `flex:1 1 38%;min-width:0;display:flex;flex-direction:column;background:${E.appBg};`);
+    b.appendChild(_);
+    const w = this.#t(_, o, y);
     if (!i.length)
       return v.appendChild(
         ae(
           r ? "None of this network's chemical systems are in its registry." : "This network has no chemical systems."
         )
-      ), b.message("Nothing to show."), {};
-    r && qe(
+      ), w.message("Nothing to show."), {};
+    r && De(
       v,
       `${r} chemical system${r === 1 ? "" : "s"} named by this network are not in its registry`
-    ), d && qe(
+    ), d && De(
       v,
       `${d} transformation${d === 1 ? "" : "s"} name a system this network does not contain`
     );
     let f = !0, g = !1, u = null, h = () => {
     };
-    const C = (l, p) => {
-      u = { kind: l, index: p }, b.show(l === "node" ? i[p] : s[p], l), h();
-    }, a = () => {
+    const S = (l, p) => {
+      u = { kind: l, index: p }, w.show(l === "node" ? i[p] : a[p], l), h();
+    }, c = () => {
       v.querySelector("svg")?.remove();
       const l = v.clientWidth || 800, p = v.clientHeight || 600;
-      vl(i, l, p);
-      const x = () => {
+      yl(i, l, p);
+      const k = () => {
         if (!f) return;
-        const E = this.#e(v, i, s, l, p, C);
-        h = () => E.setSelected(u), h();
+        const P = this.#e(v, i, a, l, p, S);
+        h = () => P.setSelected(u), h();
       };
       if (g) {
-        x();
+        k();
         return;
       }
-      $l(i, s, l, p).then((E) => {
-        f && (E || (g = !0, qe(v, "d3 could not be loaded - showing the circular layout instead")), x());
-      }, x);
+      vl(i, a, l, p).then((P) => {
+        f && (P || (g = !0, De(v, "d3 could not be loaded - showing the circular layout instead")), k());
+      }, k);
     };
-    return a(), C("node", 0), {
-      onResize: () => a(),
+    return c(), S("node", 0), {
+      onResize: () => c(),
       cleanup: () => {
         f = !1;
       }
@@ -7316,33 +7312,33 @@ class bl extends Se {
     t.appendChild(
       j(
         "div",
-        `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${P.labelFg};background:${P.labelBg};`,
+        `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${E.labelFg};background:${E.labelBg};`,
         "Selected"
       )
     );
     const i = j("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;");
     t.appendChild(i);
-    const r = (d) => i.replaceChildren(ae(d)), c = (d, y) => {
+    const r = (d) => i.replaceChildren(ae(d)), s = (d, y) => {
       const m = j(
         "div",
-        `padding:10px 14px;border-bottom:1px solid ${P.toolbarBorder};display:flex;flex-direction:column;gap:4px;`
+        `padding:10px 14px;border-bottom:1px solid ${E.toolbarBorder};display:flex;flex-direction:column;gap:4px;`
       );
-      return m.appendChild(j("div", `font-size:13px;font-weight:600;color:${P.textPrimary};`, d)), m.appendChild(j("div", `font-size:11px;color:${P.textMuted2};`, y)), m;
+      return m.appendChild(j("div", `font-size:13px;font-weight:600;color:${E.textPrimary};`, d)), m.appendChild(j("div", `font-size:11px;color:${E.textMuted2};`, y)), m;
     };
     return { show: (d, y) => {
       if (i.replaceChildren(), y === "node") {
-        const w = d;
-        i.appendChild(c(at(w), "ChemicalSystem"));
-        const v = j("div", "display:flex;flex-direction:column;gap:6px;padding:12px 14px;"), _ = Object.entries(w.components ?? {});
-        for (const [b, f] of _) {
+        const b = d;
+        i.appendChild(s(at(b), "ChemicalSystem"));
+        const v = j("div", "display:flex;flex-direction:column;gap:6px;padding:12px 14px;"), _ = Object.entries(b.components ?? {});
+        for (const [w, f] of _) {
           const g = Le(n, f), u = j(
             "div",
-            `display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;min-width:0;background:${P.cardBg};border:1px solid ${P.cardBorder};`
+            `display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;min-width:0;background:${E.cardBg};border:1px solid ${E.cardBorder};`
           );
-          u.appendChild(j("span", `font-size:12px;font-weight:700;color:${P.textPrimary};`, b)), u.appendChild(
+          u.appendChild(j("span", `font-size:12px;font-weight:700;color:${E.textPrimary};`, w)), u.appendChild(
             j(
               "span",
-              `font-size:11px;color:${P.textMuted};overflow-wrap:anywhere;min-width:0;`,
+              `font-size:11px;color:${E.textMuted};overflow-wrap:anywhere;min-width:0;`,
               g ? g.name || "(unnamed)" : "(not in the registry)"
             )
           );
@@ -7351,19 +7347,19 @@ class bl extends Se {
           );
           h.style.marginLeft = "auto", u.appendChild(h), v.appendChild(u);
         }
-        _.length || v.appendChild(j("div", `font-size:12px;color:${P.textMuted2};`, "This system lists no components.")), i.appendChild(v), i.appendChild(
+        _.length || v.appendChild(j("div", `font-size:12px;color:${E.textMuted2};`, "This system lists no components.")), i.appendChild(v), i.appendChild(
           j(
             "div",
-            `padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${P.textMuted2};overflow-wrap:anywhere;`,
-            w["gufe-key"]
+            `padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${E.textMuted2};overflow-wrap:anywhere;`,
+            b["gufe-key"]
           )
         );
         return;
       }
       const m = d;
-      i.appendChild(c(m.name || "Unnamed transformation", "Transformation"));
-      const S = j("div", "display:flex;flex-direction:column;gap:8px;padding:12px 14px;");
-      for (const [w, v] of [
+      i.appendChild(s(m.name || "Unnamed transformation", "Transformation"));
+      const C = j("div", "display:flex;flex-direction:column;gap:8px;padding:12px 14px;");
+      for (const [b, v] of [
         ["State A", at(m.from)],
         ["State B", at(m.to)],
         ["Protocol", o(m) || "-"]
@@ -7372,162 +7368,162 @@ class bl extends Se {
         _.appendChild(
           j(
             "span",
-            `flex:0 0 76px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${P.textMuted2};`,
-            w
+            `flex:0 0 76px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${E.textMuted2};`,
+            b
           )
-        ), _.appendChild(j("span", `flex:1;min-width:0;font-size:12px;color:${P.textPrimary};overflow-wrap:anywhere;`, v)), S.appendChild(_);
+        ), _.appendChild(j("span", `flex:1;min-width:0;font-size:12px;color:${E.textPrimary};overflow-wrap:anywhere;`, v)), C.appendChild(_);
       }
-      i.appendChild(S), i.appendChild(
+      i.appendChild(C), i.appendChild(
         j(
           "div",
-          `padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${P.textMuted2};overflow-wrap:anywhere;`,
+          `padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${E.textMuted2};overflow-wrap:anywhere;`,
           m["gufe-key"]
         )
       );
     }, message: r };
   }
   /** Build the SVG for the current positions, and hand back the selection hook. */
-  #e(t, n, o, i, r, c) {
-    const s = ie("svg", { width: i, height: r, style: "display:block;" });
-    t.appendChild(s);
+  #e(t, n, o, i, r, s) {
+    const a = ie("svg", { width: i, height: r, style: "display:block;" });
+    t.appendChild(a);
     const d = ie("g"), y = ie("g");
-    s.append(d, y);
+    a.append(d, y);
     const m = [];
-    o.forEach((w, v) => {
+    o.forEach((b, v) => {
       const _ = ie("line", {
-        x1: w.from.x,
-        y1: w.from.y,
-        x2: w.to.x,
-        y2: w.to.y,
-        stroke: P.netEdgeLine,
+        x1: b.from.x,
+        y1: b.from.y,
+        x2: b.to.x,
+        y2: b.to.y,
+        stroke: E.netEdgeLine,
         "stroke-width": 2,
         "stroke-linecap": "round",
         style: "cursor:pointer;"
       });
-      hn(_, w.name || "transformation"), _.addEventListener("click", () => c("edge", v)), d.appendChild(_), m.push(_);
-      const b = ie("line", {
-        x1: w.from.x,
-        y1: w.from.y,
-        x2: w.to.x,
-        y2: w.to.y,
+      hn(_, b.name || "transformation"), _.addEventListener("click", () => s("edge", v)), d.appendChild(_), m.push(_);
+      const w = ie("line", {
+        x1: b.from.x,
+        y1: b.from.y,
+        x2: b.to.x,
+        y2: b.to.y,
         stroke: "transparent",
         "stroke-width": 16,
         style: "cursor:pointer;"
       });
-      b.addEventListener("click", () => c("edge", v)), d.appendChild(b);
+      w.addEventListener("click", () => s("edge", v)), d.appendChild(w);
     });
-    const S = [];
-    return n.forEach((w, v) => {
-      const _ = ie("g", { style: "cursor:pointer;" }), b = ie("rect", {
-        x: w.x - st.width / 2,
-        y: w.y - st.height / 2,
+    const C = [];
+    return n.forEach((b, v) => {
+      const _ = ie("g", { style: "cursor:pointer;" }), w = ie("rect", {
+        x: b.x - st.width / 2,
+        y: b.y - st.height / 2,
         width: st.width,
         height: st.height,
         rx: st.radius,
-        fill: P.cardBg,
-        stroke: P.cardBorder,
+        fill: E.cardBg,
+        stroke: E.cardBorder,
         "stroke-width": 2
       });
-      _.appendChild(b), S.push(b);
+      _.appendChild(w), C.push(w);
       const f = ie("text", {
-        x: w.x,
-        y: w.y - 2,
+        x: b.x,
+        y: b.y - 2,
         "text-anchor": "middle",
-        fill: P.netNodeLabel,
+        fill: E.netNodeLabel,
         "font-size": 12,
         "font-weight": 700,
         "font-family": "ui-sans-serif,system-ui,sans-serif"
       });
-      f.textContent = yl(at(w), 20), _.appendChild(f);
-      const g = Object.keys(w.components ?? {}).length, u = ie("text", {
-        x: w.x,
-        y: w.y + 14,
+      f.textContent = gl(at(b), 20), _.appendChild(f);
+      const g = Object.keys(b.components ?? {}).length, u = ie("text", {
+        x: b.x,
+        y: b.y + 14,
         "text-anchor": "middle",
-        fill: P.netInitials,
+        fill: E.netInitials,
         "font-size": 10,
         "font-family": "ui-sans-serif,system-ui,sans-serif"
       });
-      u.textContent = `${g} component${g === 1 ? "" : "s"}`, _.appendChild(u), hn(_, at(w)), _.addEventListener("click", () => c("node", v)), y.appendChild(_);
+      u.textContent = `${g} component${g === 1 ? "" : "s"}`, _.appendChild(u), hn(_, at(b)), _.addEventListener("click", () => s("node", v)), y.appendChild(_);
     }), {
-      setSelected(w) {
-        S.forEach((v, _) => {
-          const b = w?.kind === "node" && w.index === _;
-          v.setAttribute("stroke", b ? P.cardBorderActive : P.cardBorder), v.setAttribute("stroke-width", b ? "3" : "2");
+      setSelected(b) {
+        C.forEach((v, _) => {
+          const w = b?.kind === "node" && b.index === _;
+          v.setAttribute("stroke", w ? E.cardBorderActive : E.cardBorder), v.setAttribute("stroke-width", w ? "3" : "2");
         }), m.forEach((v, _) => {
-          const b = w?.kind === "edge" && w.index === _;
-          v.setAttribute("stroke", b ? P.netHaloColor : P.netEdgeLine), v.setAttribute("stroke-width", b ? "4" : "2");
+          const w = b?.kind === "edge" && b.index === _;
+          v.setAttribute("stroke", w ? E.netHaloColor : E.netEdgeLine), v.setAttribute("stroke-width", w ? "4" : "2");
         });
       }
     };
   }
 }
-Ce("gufe-alchemical-network", bl);
-function wl(e) {
+Ce("gufe-alchemical-network", $l);
+function bl(e) {
   return e.name || e.type.replace(/Viz$/, "");
 }
-function _l(e) {
+function wl(e) {
   return e.type === "UnknownComponentViz" ? e.gufe_type : e.type.replace(/Viz$/, "");
 }
-class Sl extends Se {
+class _l extends Se {
   placeholder() {
     return "Waiting for a ChemicalSystem payload...";
   }
   renderView(t, n) {
     const o = dt(n), i = [], r = [];
-    for (const [_, b] of Object.entries(n.components ?? {})) {
-      const f = Le(o, b);
+    for (const [_, w] of Object.entries(n.components ?? {})) {
+      const f = Le(o, w);
       f ? i.push([_, f]) : r.push(_);
     }
-    const c = Te(n.name || "Chemical system", "ChemicalSystem");
-    if (c.statsEl.appendChild(ce("components", String(i.length))), t.appendChild(c), !i.length)
+    const s = Te(n.name || "Chemical system");
+    if (s.statsEl.appendChild(ce("components", String(i.length))), t.appendChild(s), !i.length)
       return t.appendChild(
         ae(
           r.length ? "None of this system's components are in its registry." : "This chemical system has no components."
         )
       ), {};
-    const s = j("div", "flex:1;min-height:0;position:relative;display:flex;flex-direction:row;");
-    t.appendChild(s), r.length && qe(
-      s,
+    const a = j("div", "flex:1;min-height:0;position:relative;display:flex;flex-direction:row;");
+    t.appendChild(a), r.length && De(
+      a,
       `${r.length} component${r.length === 1 ? "" : "s"} named by this system (${r.join(", ")}) are not in its registry`
     );
     const d = j(
       "div",
-      `flex:0 0 220px;min-width:0;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:10px;background:${P.panelBg};border-right:1px solid ${P.splitBorder};`
+      `flex:0 0 220px;min-width:0;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:10px;background:${E.panelBg};border-right:1px solid ${E.splitBorder};`
     );
-    s.appendChild(d);
+    a.appendChild(d);
     const y = j("div", "flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;");
-    s.appendChild(y);
+    a.appendChild(y);
     const m = j("div", "flex:1;min-height:0;display:flex;");
     y.appendChild(m);
-    const S = document.createElement("gufe-view");
-    S.style.cssText = "flex:1;min-width:0;min-height:0;", m.appendChild(S);
-    const w = [], v = (_) => {
-      w.forEach((b, f) => {
+    const C = document.createElement("gufe-view");
+    C.style.cssText = "flex:1;min-width:0;min-height:0;", m.appendChild(C);
+    const b = [], v = (_) => {
+      b.forEach((w, f) => {
         const g = f === _;
-        b.style.background = g ? P.cardBgActive : P.cardBg, b.style.borderColor = g ? P.cardBorderActive : P.cardBorder;
-      }), S.payload = i[_][1];
+        w.style.background = g ? E.cardBgActive : E.cardBg, w.style.borderColor = g ? E.cardBorderActive : E.cardBorder;
+      }), C.payload = i[_][1];
     };
-    return i.forEach(([_, b], f) => {
+    return i.forEach(([_, w], f) => {
       const g = j(
         "button",
-        `display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px;text-align:left;border:1px solid ${P.cardBorder};border-radius:8px;background:${P.cardBg};cursor:pointer;font-family:inherit;font-size:12px;width:100%;`
+        `display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px;text-align:left;border:1px solid ${E.cardBorder};border-radius:8px;background:${E.cardBg};cursor:pointer;font-family:inherit;font-size:12px;width:100%;`
       );
-      g.appendChild(j("span", `font-weight:700;color:${P.textPrimary};`, _)), g.appendChild(j("span", `font-size:11px;color:${P.textMuted};`, wl(b))), g.appendChild(lt(_l(b))), g.onclick = () => v(f), w.push(g), d.appendChild(g);
+      g.appendChild(j("span", `font-weight:700;color:${E.textPrimary};`, _)), g.appendChild(j("span", `font-size:11px;color:${E.textMuted};`, bl(w))), g.appendChild(lt(wl(w))), g.onclick = () => v(f), b.push(g), d.appendChild(g);
     }), v(0), {
-      onResize: () => S.resize?.(),
+      onResize: () => C.resize?.(),
       // Removing the nested view fires its own `disconnectedCallback`, which is
       // where whatever it mounted releases its viewers.
-      cleanup: () => S.remove()
+      cleanup: () => C.remove()
     };
   }
 }
-Ce("gufe-chemical-system", Sl);
-class Cl extends Se {
+Ce("gufe-chemical-system", _l);
+class Sl extends Se {
   placeholder() {
     return "Waiting for a Protocol payload...";
   }
   renderView(t, n) {
-    const o = Te(n.gufe_type || n.name || "Protocol", "Protocol");
+    const o = Te(n.gufe_type || n.name || "Protocol");
     o.statsEl.appendChild(lt(n.gufe_type)), t.appendChild(o);
     const i = j(
       "div",
@@ -7538,28 +7534,28 @@ class Cl extends Se {
     return r.style.maxWidth = "460px", r.appendChild(Pe("gufe class", n.gufe_type, !0)), n.name && r.appendChild(Pe("Name", n.name)), r.appendChild(Pe("gufe key", n["gufe-key"], !0)), r.appendChild(
       j(
         "div",
-        `padding-top:10px;font-size:11px;line-height:1.6;color:${P.textMuted2};`,
+        `padding-top:10px;font-size:11px;line-height:1.6;color:${E.textMuted2};`,
         "A Protocol's settings are not carried in this payload: they are large, deeply nested, and nothing draws them yet."
       )
     ), i.appendChild(r), {};
   }
 }
-Ce("gufe-protocol", Cl);
-const _e = { width: 340, height: 260, padding: 14, radius: 12 }, kl = 150, xl = 40, El = 24;
-function Pl(e) {
+Ce("gufe-protocol", Sl);
+const _e = { width: 340, height: 260, padding: 14, radius: 12 }, Cl = 150, kl = 40, xl = 24;
+function El(e) {
   let t = e >>> 0;
   return () => (t = t * 1664525 + 1013904223 >>> 0, t / 4294967296);
 }
-function Al(e) {
+function Pl(e) {
   const t = /-?\d+(\.\d+)?([eE][-+]?\d+)?/.exec(e ?? "");
   if (!t) return null;
   const n = Number(t[0]);
   return Number.isFinite(n) ? n : null;
 }
-function Rl(e) {
-  return e == null || e <= 0 ? 0 : Math.max(1, Math.min(El, Math.round(e * xl)));
+function Al(e) {
+  return e == null || e <= 0 ? 0 : Math.max(1, Math.min(xl, Math.round(e * kl)));
 }
-function Ml(e) {
+function Rl(e) {
   const t = ie("svg", {
     viewBox: `0 0 ${_e.width} ${_e.height}`,
     style: "width:100%;height:100%;max-width:100%;",
@@ -7572,27 +7568,27 @@ function Ml(e) {
       width: _e.width - 2,
       height: _e.height - 2,
       rx: _e.radius,
-      fill: P.boxFill,
-      stroke: P.boxStroke,
+      fill: E.boxFill,
+      stroke: E.boxStroke,
       "stroke-width": 1.5
     })
   );
-  const n = Pl(1597463007), o = () => ({
+  const n = El(1597463007), o = () => ({
     x: _e.padding + n() * (_e.width - 2 * _e.padding),
     y: _e.padding + n() * (_e.height - 2 * _e.padding)
   });
-  for (let c = 0; c < kl; c++) {
-    const { x: s, y: d } = o();
-    t.appendChild(ie("circle", { cx: s, cy: d, r: 2.4, fill: P.textMuted2, "fill-opacity": 0.45 }));
+  for (let s = 0; s < Cl; s++) {
+    const { x: a, y: d } = o();
+    t.appendChild(ie("circle", { cx: a, cy: d, r: 2.4, fill: E.textMuted2, "fill-opacity": 0.45 }));
   }
-  const i = Rl(Al(e.ion_concentration)), r = [
-    [e.positive_ion, P.diffAdded],
-    [e.negative_ion, P.diffRemoved]
+  const i = Al(Pl(e.ion_concentration)), r = [
+    [e.positive_ion, E.diffAdded],
+    [e.negative_ion, E.diffRemoved]
   ];
-  for (const [c, s] of r)
+  for (const [s, a] of r)
     for (let d = 0; d < i; d++) {
-      const { x: y, y: m } = o(), S = ie("circle", { cx: y, cy: m, r: 5.5, fill: s, "fill-opacity": 0.85 });
-      t.appendChild(hn(S, c));
+      const { x: y, y: m } = o(), C = ie("circle", { cx: y, cy: m, r: 5.5, fill: a, "fill-opacity": 0.85 });
+      t.appendChild(hn(C, s));
     }
   return t;
 }
@@ -7601,8 +7597,8 @@ class Fl extends Se {
     return "Waiting for a SolventComponent payload...";
   }
   renderView(t, n) {
-    const o = Te(n.name || "Solvent", "SolventComponent");
-    o.statsEl.appendChild(ce("neutralized", n.neutralize ? "yes" : "no")), o.statsEl.appendChild(ce(n.positive_ion, "", P.diffAdded)), o.statsEl.appendChild(ce(n.negative_ion, "", P.diffRemoved)), t.appendChild(o);
+    const o = Te(n.name || "Solvent");
+    o.statsEl.appendChild(ce("neutralized", n.neutralize ? "yes" : "no")), o.statsEl.appendChild(ce(n.positive_ion, "", E.diffAdded)), o.statsEl.appendChild(ce(n.negative_ion, "", E.diffRemoved)), t.appendChild(o);
     const i = j(
       "div",
       "flex:1;min-height:0;display:flex;flex-wrap:wrap;gap:16px;padding:16px;overflow:auto;align-items:flex-start;"
@@ -7610,30 +7606,30 @@ class Fl extends Se {
     t.appendChild(i);
     const r = un();
     r.style.flex = "1 1 320px", r.appendChild(Pe("SMILES", n.smiles, !0)), r.appendChild(Pe("Positive ion", n.positive_ion)), r.appendChild(Pe("Negative ion", n.negative_ion)), r.appendChild(Pe("Ion concentration", n.ion_concentration)), r.appendChild(Pe("Neutralize", n.neutralize ? "yes" : "no")), i.appendChild(r);
-    const c = un();
-    return c.style.flex = "1 1 340px", c.style.alignItems = "center", c.appendChild(Ml(n)), c.appendChild(
+    const s = un();
+    return s.style.flex = "1 1 340px", s.style.alignItems = "center", s.appendChild(Rl(n)), s.appendChild(
       j(
         "div",
-        `padding-top:10px;font-size:11px;text-align:center;color:${P.textMuted2};`,
+        `padding-top:10px;font-size:11px;text-align:center;color:${E.textMuted2};`,
         "Schematic only: the dots show which ions are present, not how many."
       )
-    ), i.appendChild(c), {};
+    ), i.appendChild(s), {};
   }
 }
 Ce("gufe-solvent", Fl);
 const Un = {
-  unchanged: P.diffUnchanged,
-  changed: P.diffChanged,
-  added: P.diffAdded,
-  removed: P.diffRemoved
+  unchanged: E.diffUnchanged,
+  changed: E.diffChanged,
+  added: E.diffAdded,
+  removed: E.diffRemoved
 };
-function Nl(e, t) {
+function Ml(e, t) {
   return e && !t ? "removed" : !e && t ? "added" : e === t ? "unchanged" : "changed";
 }
-function jl(e, t) {
+function Nl(e, t) {
   return [.../* @__PURE__ */ new Set([...Object.keys(e.components ?? {}), ...Object.keys(t.components ?? {})])].sort();
 }
-function Ol(e) {
+function jl(e) {
   if (!e) return null;
   const t = e.type === "UnknownComponentViz" ? e.gufe_type : e.type.replace(/Viz$/, "");
   return { name: e.name || "(unnamed)", type: t };
@@ -7641,60 +7637,60 @@ function Ol(e) {
 function Yo(e, t) {
   const n = j(
     "div",
-    `flex:1 1 50%;min-width:0;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;background:${P.cardBg};border:1px solid ${P.cardBorder};`
-  ), o = Ol(e);
-  return o ? (n.style.borderColor = t === "unchanged" ? P.cardBorder : Un[t], n.appendChild(j("span", `font-size:12px;font-weight:600;color:${P.textPrimary};`, o.name)), n.appendChild(lt(o.type)), n) : (n.style.background = "transparent", n.style.borderStyle = "dashed", n.appendChild(j("span", `font-size:12px;color:${P.textMuted2};`, "absent")), n);
+    `flex:1 1 50%;min-width:0;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;background:${E.cardBg};border:1px solid ${E.cardBorder};`
+  ), o = jl(e);
+  return o ? (n.style.borderColor = t === "unchanged" ? E.cardBorder : Un[t], n.appendChild(j("span", `font-size:12px;font-weight:600;color:${E.textPrimary};`, o.name)), n.appendChild(lt(o.type)), n) : (n.style.background = "transparent", n.style.borderStyle = "dashed", n.appendChild(j("span", `font-size:12px;color:${E.textMuted2};`, "absent")), n);
 }
-function Tl(e, t) {
+function Ol(e, t) {
   const n = Le(t, e.componentA), o = Le(t, e.componentB);
   return `${n ? et(n) : "A"} to ${o ? et(o) : "B"}`;
 }
-class zl extends Se {
+class Tl extends Se {
   placeholder() {
     return "Waiting for a Transformation payload...";
   }
   renderView(t, n) {
-    const o = dt(n), i = Ae(o, n.stateA, "ChemicalSystemViz"), r = Ae(o, n.stateB, "ChemicalSystemViz"), c = Ae(o, n.protocol, "ProtocolViz"), s = n.mappings ?? [], d = Te(n.name || "Transformation", "Transformation");
-    if (d.statsEl.appendChild(ce("protocol", c?.gufe_type || c?.name || "-")), d.statsEl.appendChild(ce("mappings", String(s.length))), t.appendChild(d), !i || !r)
+    const o = dt(n), i = Ae(o, n.stateA, "ChemicalSystemViz"), r = Ae(o, n.stateB, "ChemicalSystemViz"), s = Ae(o, n.protocol, "ProtocolViz"), a = n.mappings ?? [], d = Te(n.name || "Transformation");
+    if (d.statsEl.appendChild(ce("protocol", s?.gufe_type || s?.name || "-")), d.statsEl.appendChild(ce("mappings", String(a.length))), t.appendChild(d), !i || !r)
       return t.appendChild(
         ae("This transformation names two chemical systems, and its registry does not hold them.")
       ), {};
-    const y = jl(i, r), m = j("div", "flex:0 0 auto;max-height:45%;overflow:auto;padding:12px 14px;");
+    const y = Nl(i, r), m = j("div", "flex:0 0 auto;max-height:45%;overflow:auto;padding:12px 14px;");
     t.appendChild(m);
-    const S = j("div", "display:flex;gap:10px;padding:0 0 6px 120px;");
+    const C = j("div", "display:flex;gap:10px;padding:0 0 6px 120px;");
     for (const [f, g] of [
       ["State A", i],
       ["State B", r]
     ])
-      S.appendChild(
+      C.appendChild(
         j(
           "div",
-          `flex:1 1 50%;min-width:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${P.textMuted2};`,
+          `flex:1 1 50%;min-width:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${E.textMuted2};`,
           `${f}${g.name ? ` - ${g.name}` : ""}`
         )
       );
-    m.appendChild(S);
+    m.appendChild(C);
     for (const f of y) {
-      const g = i.components?.[f], u = r.components?.[f], h = Nl(g, u), C = Le(o, g), a = Le(o, u), l = j("div", "display:flex;align-items:stretch;gap:10px;padding:4px 0;"), p = j("div", "flex:0 0 110px;display:flex;align-items:center;gap:6px;min-width:0;");
+      const g = i.components?.[f], u = r.components?.[f], h = Ml(g, u), S = Le(o, g), c = Le(o, u), l = j("div", "display:flex;align-items:stretch;gap:10px;padding:4px 0;"), p = j("div", "flex:0 0 110px;display:flex;align-items:center;gap:6px;min-width:0;");
       p.appendChild(
         j("span", `width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${Un[h]};`)
       );
-      const x = j("span", `font-size:12px;font-weight:700;color:${P.textPrimary};overflow-wrap:anywhere;`, f);
-      x.title = h, p.appendChild(x), l.appendChild(p), l.appendChild(Yo(C, h)), l.appendChild(Yo(a, h)), m.appendChild(l);
+      const k = j("span", `font-size:12px;font-weight:700;color:${E.textPrimary};overflow-wrap:anywhere;`, f);
+      k.title = h, p.appendChild(k), l.appendChild(p), l.appendChild(Yo(S, h)), l.appendChild(Yo(c, h)), m.appendChild(l);
     }
-    const w = j(
+    const b = j(
       "div",
-      `display:flex;flex-wrap:wrap;gap:12px;padding:8px 0 0;font-size:11px;color:${P.textMuted};`
+      `display:flex;flex-wrap:wrap;gap:12px;padding:8px 0 0;font-size:11px;color:${E.textMuted};`
     );
     for (const f of ["unchanged", "changed", "added", "removed"])
-      w.appendChild(ce(f, "", Un[f]));
-    m.appendChild(w);
+      b.appendChild(ce(f, "", Un[f]));
+    m.appendChild(b);
     const v = j(
       "div",
-      `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${P.labelFg};background:${P.labelBg};`,
+      `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${E.labelFg};background:${E.labelBg};`,
       "Atom mapping"
     );
-    if (t.appendChild(v), !s.length)
+    if (t.appendChild(v), !a.length)
       return t.appendChild(
         ae(
           "This transformation carries no atom mapping - nothing here maps one small molecule onto another."
@@ -7702,22 +7698,22 @@ class zl extends Se {
       ), {};
     const _ = document.createElement("gufe-atom-mapping");
     _.style.cssText = "flex:1;min-height:0;min-width:0;";
-    const b = (f) => {
-      _.payload = yi(s[f], o);
+    const w = (f) => {
+      _.payload = yi(a[f], o);
     };
-    if (b(0), s.length > 1) {
+    if (w(0), a.length > 1) {
       const f = j(
         "div",
-        `display:flex;align-items:center;gap:8px;padding:6px 10px;flex-shrink:0;font-size:11px;background:${P.toolbarBg};border-bottom:1px solid ${P.toolbarBorder};color:${P.textMuted};`
+        `display:flex;align-items:center;gap:8px;padding:6px 10px;flex-shrink:0;font-size:11px;background:${E.toolbarBg};border-bottom:1px solid ${E.toolbarBorder};color:${E.textMuted};`
       );
       f.appendChild(
         mn(
-          s.map((g, u) => ({
+          a.map((g, u) => ({
             id: String(u),
-            label: g.name || Tl(g, o)
+            label: g.name || Ol(g, o)
           })),
           "0",
-          (g) => b(Number(g))
+          (g) => w(Number(g))
         )
       ), t.appendChild(f);
     }
@@ -7727,13 +7723,13 @@ class zl extends Se {
     };
   }
 }
-Ce("gufe-transformation", zl);
-class Il extends Se {
+Ce("gufe-transformation", Tl);
+class zl extends Se {
   placeholder() {
     return "Waiting for a component payload...";
   }
   renderView(t, n) {
-    const o = Te(n.name || "Unnamed component", "Component");
+    const o = Te(n.name || "Unnamed component");
     o.statsEl.appendChild(lt(n.gufe_type)), t.appendChild(o);
     const i = j("div", "flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:24px;");
     t.appendChild(i);
@@ -7741,20 +7737,20 @@ class Il extends Se {
     return r.style.maxWidth = "460px", r.appendChild(
       j(
         "div",
-        `font-size:14px;font-weight:600;padding-bottom:6px;color:${P.textPrimary};`,
+        `font-size:14px;font-weight:600;padding-bottom:6px;color:${E.textPrimary};`,
         `There is no visualization for ${n.gufe_type}.`
       )
     ), r.appendChild(
       j(
         "div",
-        `font-size:12px;line-height:1.6;padding-bottom:10px;color:${P.textMuted};`,
+        `font-size:12px;line-height:1.6;padding-bottom:10px;color:${E.textMuted};`,
         "gufe lets a project define its own Component subclasses, so this is a component this build has never been taught to draw - not a broken payload. Everything gufe knows about it that survives serialization is below."
       )
     ), r.appendChild(Pe("Name", n.name || "(unnamed)")), r.appendChild(Pe("gufe class", n.gufe_type, !0)), i.appendChild(r), {};
   }
 }
-Ce("gufe-unknown-component", Il);
-function Kl(e, t) {
+Ce("gufe-unknown-component", zl);
+function Ul(e, t) {
   let n = e.querySelector("gufe-view");
   return n || (n = document.createElement("gufe-view"), n.style.cssText = "display:block;width:100%;height:100%;", e.appendChild(n)), t !== void 0 && (n.payload = t), n;
 }
@@ -7763,49 +7759,49 @@ export {
   Ci as DEBUG_ATTRIBUTE,
   ki as DEBUG_GLOBAL,
   yc as DEFAULT_ZOOM_BOUNDS,
-  bl as GufeAlchemicalNetwork,
+  $l as GufeAlchemicalNetwork,
   Hc as GufeAtomMapping,
-  Sl as GufeChemicalSystem,
+  _l as GufeChemicalSystem,
   Se as GufeElement,
-  hl as GufeLigandNetwork,
-  Ic as GufeProtein,
-  Cl as GufeProtocol,
+  pl as GufeLigandNetwork,
+  zc as GufeProtein,
+  Sl as GufeProtocol,
   Ac as GufeSmallMolecule,
   Fl as GufeSolvent,
-  zl as GufeTransformation,
-  Il as GufeUnknownComponent,
+  Tl as GufeTransformation,
+  zl as GufeUnknownComponent,
   fc as GufeView,
   ct as MAPPING_COLORS,
-  Ll as MAPPING_RAMP_3D,
-  Ul as MAPPING_RAMP_NAME,
-  Dl as PAYLOAD_TYPES,
+  Bl as MAPPING_RAMP_3D,
+  Ll as MAPPING_RAMP_NAME,
+  Il as PAYLOAD_TYPES,
   ql as SCHEMA_TYPES,
   Qn as VIEW_TAGS,
-  Vc as applyRT,
+  Dc as applyRT,
   vc as boundedZoom,
   dt as buildRegistry,
   _i as chromeMenu,
   Pi as debugEnabled,
   Ce as defineElement,
   ci as describeProblem,
-  Nl as diffStatus,
-  Bl as dispatchProblem,
+  Ml as diffStatus,
+  Vl as dispatchProblem,
   et as entryLabel,
   dc as formatIssues,
   or as guardWheel,
   qc as kabsch,
-  Gc as liftFor,
+  Kc as liftFor,
   Ri as logPayload,
   Le as lookup,
   Ae as lookupOfType,
   yi as mappingPayloadFor,
-  Kl as mount,
-  Al as parseConcentration,
+  Ul as mount,
+  Pl as parseConcentration,
   Ai as payloadJson,
   ir as resetControl,
-  dl as selectionText,
+  ll as selectionText,
   Ko as uniqueAtoms,
-  Vl as validateAs,
+  Dl as validateAs,
   lc as validatePayload,
   ui as viewerInteraction,
   bc as wheelFactor

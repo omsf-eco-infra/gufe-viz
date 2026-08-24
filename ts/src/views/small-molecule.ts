@@ -38,7 +38,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     const smiles = payload.smiles;
     const charge = payload.total_charge;
 
-    host.appendChild(headerStrip(name || "Unnamed molecule", "SmallMoleculeComponent"));
+    host.appendChild(headerStrip(name || "Unnamed molecule"));
 
     const split = el("div", "flex:1;display:flex;flex-direction:row;overflow:hidden;min-height:0;");
     host.appendChild(split);

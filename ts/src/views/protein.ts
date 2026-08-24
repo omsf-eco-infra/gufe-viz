@@ -51,13 +51,6 @@ const PROTEIN_COLOR_SCHEMES = [
 /** Every payload this view draws: one PDB string and a name, three types. */
 export type PdbPayload = ProteinComponentViz | SolvatedPDBComponentViz | ProteinMembraneComponentViz;
 
-/** What the gufe class was called, for the subtitle. */
-const GUFE_CLASS: Record<PdbPayload["type"], string> = {
-  ProteinComponentViz: "ProteinComponent",
-  SolvatedPDBComponentViz: "SolvatedPDBComponent",
-  ProteinMembraneComponentViz: "ProteinMembraneComponent",
-};
-
 export class GufeProtein extends GufeElement<PdbPayload> {
   protected override placeholder(): string {
     return "Waiting for a ProteinComponent payload...";
@@ -66,7 +59,6 @@ export class GufeProtein extends GufeElement<PdbPayload> {
   protected renderView(host: HTMLDivElement, payload: PdbPayload): ViewHandle {
     const pdb = payload.pdb;
     const name = payload.name ?? "";
-    const gufeClass = GUFE_CLASS[payload.type] ?? "ProteinComponent";
     // A solvated or membrane system is defined by what surrounds the protein,
     // so it opens with that shown; a bare protein does not, because a few
     // thousand crystallographic waters would bury it.
@@ -88,7 +80,6 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     toolbar.appendChild(
       el("span", `font-weight:700;font-size:14px;letter-spacing:.02em;color:${T.titleColor};`, name || "Protein"),
     );
-    toolbar.appendChild(el("span", `font-size:11px;color:${T.textMuted2};`, gufeClass));
 
     const groupLabel = (text: string) => el("span", `font-size:11px;color:${T.textMuted};`, text);
 

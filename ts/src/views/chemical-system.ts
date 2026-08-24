@@ -52,7 +52,7 @@ export class GufeChemicalSystem extends GufeElement<ChemicalSystemViz> {
       else unresolved.push(label);
     }
 
-    const bar = headerStrip(payload.name || "Chemical system", "ChemicalSystem");
+    const bar = headerStrip(payload.name || "Chemical system");
     bar.statsEl.appendChild(statChip("components", String(entries.length)));
     host.appendChild(bar);
 

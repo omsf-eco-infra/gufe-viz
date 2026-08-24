@@ -143,7 +143,6 @@ export function centredMessage(text: string, isError = false): HTMLDivElement {
 
 export interface HeaderStrip extends HTMLDivElement {
   titleEl: HTMLSpanElement;
-  subtitleEl: HTMLSpanElement;
   statsEl: HTMLDivElement;
   /**
    * Where `chromeMenu` puts its button: first in the strip, so the control sits
@@ -153,15 +152,22 @@ export interface HeaderStrip extends HTMLDivElement {
   toggleEl: HTMLDivElement;
 }
 
-/** The standard header strip: bold title, muted subtitle, right-aligned stats. */
-export function headerStrip(title: string, subtitle?: string): HeaderStrip {
+/**
+ * The standard header strip: a menu slot, a bold title, right-aligned stats.
+ *
+ * Deliberately no subtitle. It used to carry the gufe class name beside the
+ * title, which said the same thing twice in two fonts - "Ligand network
+ * LigandNetwork" - and told a reader nothing the title had not. What a payload
+ * is belongs in the payload's own name; what type it is, the view already is.
+ */
+export function headerStrip(title: string): HeaderStrip {
   const bar = el(
     "div",
     "display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:9px 14px;flex-shrink:0;" +
       `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};`,
   ) as HeaderStrip;
+  bar.className = "gufe-header";
   bar.titleEl = el("span", `font-weight:700;font-size:15px;color:${T.titleColor};letter-spacing:.02em;`, title);
-  bar.subtitleEl = el("span", `font-size:12px;color:${T.textMuted2};`, subtitle || "");
   bar.statsEl = el(
     "div",
     `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${T.textMuted};`,
@@ -173,7 +179,6 @@ export function headerStrip(title: string, subtitle?: string): HeaderStrip {
   // First, so the menu button is at the top left wherever a view carries one.
   bar.appendChild(bar.toggleEl);
   bar.appendChild(bar.titleEl);
-  bar.appendChild(bar.subtitleEl);
   bar.appendChild(bar.statsEl);
   return bar;
 }

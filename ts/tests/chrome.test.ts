@@ -18,7 +18,7 @@ describe("chromeMenu", () => {
 
   beforeEach(() => {
     document.body.replaceChildren();
-    header = headerStrip("A view", "SomeType");
+    header = headerStrip("A view");
     document.body.appendChild(header);
   });
 

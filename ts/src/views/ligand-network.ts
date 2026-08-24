@@ -643,7 +643,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       edges.push({ ...edge, index: edges.length, from, to });
     }
 
-    const bar = headerStrip(payload.name || "Ligand network", "LigandNetwork");
+    const bar = headerStrip(payload.name || "Ligand network");
     bar.statsEl.appendChild(statChip("ligands", String(nodes.length)));
     bar.statsEl.appendChild(statChip("mappings", String(edges.length)));
     host.appendChild(bar);

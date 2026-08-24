@@ -105,7 +105,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
     const protocol = lookupOfType<ProtocolViz>(registry, payload.protocol, "ProtocolViz");
     const mappings = payload.mappings ?? [];
 
-    const bar = headerStrip(payload.name || "Transformation", "Transformation");
+    const bar = headerStrip(payload.name || "Transformation");
     // A Protocol has no name of its own, so the class name is what identifies it.
     bar.statsEl.appendChild(statChip("protocol", protocol?.gufe_type || protocol?.name || "-"));
     bar.statsEl.appendChild(statChip("mappings", String(mappings.length)));
