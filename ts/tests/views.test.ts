@@ -512,6 +512,50 @@ describe("<gufe-atom-mapping>", () => {
     expect(engines.depicted.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("puts five models in one 3D scene, as gufe's layout does", async () => {
+    const engines = seedFakeEngines();
+    mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+    await flush();
+    // molA shifted left, molB shifted right, then both again unshifted in the
+    // middle: the outer pair carries the spheres, the middle pair is the overlay.
+    const viewer = engines.viewers[0];
+    expect(viewer.calls.filter((c) => c.startsWith("addModel")).length).toBe(4);
+  });
+
+  it("marks each mapped pair with one colour in two places", async () => {
+    const engines = seedFakeEngines();
+    mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+    await flush();
+
+    const spheres = engines.viewers[0].shapes.filter((s) => s.kind === "sphere");
+    expect(spheres.length).toBeGreaterThan(0);
+    // Two spheres per pair, and the pair's two spheres share a colour - that
+    // sharing is the whole signal.
+    expect(spheres.length % 2).toBe(0);
+    const byColour = new Map<string, number>();
+    for (const sphere of spheres) {
+      const colour = String(sphere.spec.color);
+      byColour.set(colour, (byColour.get(colour) ?? 0) + 1);
+    }
+    for (const count of byColour.values()) expect(count).toBe(2);
+  });
+
+  it("draws a line between each mapped pair, and can be told not to", async () => {
+    const engines = seedFakeEngines();
+    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+    await flush();
+    const viewer = engines.viewers[0];
+
+    const lines = () => viewer.shapes.filter((s) => s.kind === "cylinder");
+    expect(lines().length).toBeGreaterThan(0);
+    expect(lines().every((l) => l.spec.dashed === true)).toBe(true);
+
+    const button = Array.from(node.querySelectorAll("button")).find((b) => b.textContent === "Lines");
+    expect(button).toBeTruthy();
+    button!.click();
+    expect(lines().length).toBe(0);
+  });
+
   it("survives a registry that does not hold its endpoints", async () => {
     const payload = structuredClone(readExample("ligand_atom_mapping.json")) as {
       componentA: string;

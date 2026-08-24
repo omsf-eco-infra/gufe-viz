@@ -24,6 +24,7 @@
  */
 
 import {
+  BTN_CSS,
   buttonGroup,
   centredMessage,
   EM_DASH,
@@ -31,16 +32,24 @@ import {
   errText,
   headerStrip,
   statChip,
+  viewerHost,
 } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
-import { loadRDKit, type RDKitModule } from "../shared/engines.js";
-import { depictHighlightedSVG, parseSDF, placeDepiction } from "../shared/sdf.js";
+import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer } from "../shared/engines.js";
+import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
+import { mappedPairs, maxExtentX, shiftedSDF, SHIFT_FACTOR, type Point } from "../shared/mapping3d.js";
+import { depictHighlightedSVG, ensureSDFTerminator, parseSDF, placeDepiction } from "../shared/sdf.js";
 import { MAPPING_COLORS } from "../shared/atom-colors.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
 const DEPICT_SIZE = 420;
+
+/** gufe's sphere, kept to its dimensions so the two pictures read the same. */
+const SPHERE = { radius: 0.6, alpha: 0.8 };
+/** Our addition: the line joining a mapped pair across the gap. */
+const LINK = { radius: 0.05, dashed: true, opacity: 0.75 };
 
 const MODES = [
   { id: "changes", label: "Changes", title: "Highlight what differs, as gufe draws it" },
@@ -218,9 +227,12 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     toolbar.appendChild(legend);
     host.appendChild(toolbar);
 
-    // --- the two depictions ---
-    const split = el("div", "flex:1;min-height:0;display:flex;flex-direction:row;");
-    host.appendChild(split);
+    // --- 2D and 3D, side by side ---
+    const columns = el("div", "flex:1;min-height:0;display:flex;flex-direction:column;");
+    host.appendChild(columns);
+
+    const split = el("div", "flex:1 1 55%;min-height:0;display:flex;flex-direction:row;");
+    columns.appendChild(split);
 
     const pane = (title: string): HTMLDivElement => {
       const wrap = el("div", "flex:1 1 50%;min-width:0;display:flex;flex-direction:column;");
@@ -241,9 +253,106 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       return box;
     };
 
+    const paneLabel = (text: string) =>
+      el(
+        "div",
+        `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
+        text,
+      );
+
     const boxA = pane(nameA);
     split.appendChild(el("div", `width:1px;flex-shrink:0;background:${T.splitBorder};`));
     const boxB = pane(nameB);
+
+    // --- the 3D overlay ---
+    //
+    // gufe's layout, mirrored: molA shifted left, molB shifted right, and both
+    // again unshifted in the middle. The shifted copies carry the spheres, so a
+    // mapped pair is one colour appearing twice across the gap; the middle pair
+    // is where you look to see how the structures actually sit together.
+    const lower = el("div", "flex:1 1 45%;min-height:180px;display:flex;flex-direction:column;position:relative;");
+    columns.appendChild(el("div", `height:1px;flex-shrink:0;background:${T.splitBorder};`));
+    columns.appendChild(lower);
+    lower.appendChild(paneLabel("3D overlay"));
+    const host3D = viewerHost();
+    lower.appendChild(host3D.wrap);
+
+    const coordsA = parseSDF(from.sdf, nameA).coords as Point[];
+    const coordsB = parseSDF(to.sdf, nameB).coords as Point[];
+    const shift = maxExtentX(coordsA, coordsB) * SHIFT_FACTOR;
+    const links = mappedPairs(pairs, coordsA, coordsB, shift);
+
+    let viewer: ThreeDmolViewer | null = null;
+    let interaction: (BoundedZoom & Interaction) | null = null;
+    let showLinks = true;
+
+    const shapes = (): void => {
+      if (!viewer) return;
+      viewer.removeAllShapes();
+      for (const link of links) {
+        for (const centre of [link.a, link.b]) {
+          viewer.addSphere({
+            center: { x: centre[0], y: centre[1], z: centre[2] },
+            radius: SPHERE.radius,
+            color: link.color,
+            alpha: SPHERE.alpha,
+          });
+        }
+        // Not gufe's - asked for directly, because a shared colour across a gap
+        // is harder to follow than a line drawn between the two atoms.
+        if (showLinks) {
+          viewer.addCylinder({
+            start: { x: link.a[0], y: link.a[1], z: link.a[2] },
+            end: { x: link.b[0], y: link.b[1], z: link.b[2] },
+            radius: LINK.radius,
+            color: link.color,
+            dashed: LINK.dashed,
+            opacity: LINK.opacity,
+          });
+        }
+      }
+      viewer.render();
+    };
+
+    const controls = el(
+      "div",
+      "position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;" +
+        `background:${T.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`,
+    );
+    const linkBtn = el("button", BTN_CSS, "Lines");
+    linkBtn.title = "Draw a line between each mapped pair";
+    linkBtn.style.background = T.btnBgActive;
+    linkBtn.onclick = () => {
+      showLinks = !showLinks;
+      linkBtn.style.background = showLinks ? T.btnBgActive : T.btnBg;
+      shapes();
+    };
+    controls.appendChild(linkBtn);
+    controls.appendChild(resetControl(() => interaction?.reset()));
+    lower.appendChild(controls);
+
+    host3D.container.appendChild(centredMessage("Loading 3D viewer..."));
+    load3Dmol()
+      .then(() => {
+        host3D.container.replaceChildren();
+        viewer = ThreeDmol!.createViewer(host3D.container, { backgroundColor: T.viewerBg });
+        // The two shifted copies, which carry the spheres...
+        viewer.addModel(ensureSDFTerminator(shiftedSDF(from.sdf, -shift)), "sdf");
+        viewer.addModel(ensureSDFTerminator(shiftedSDF(to.sdf, shift)), "sdf");
+        // ...and the same two unshifted, which are the overlay proper.
+        viewer.addModel(ensureSDFTerminator(from.sdf), "sdf");
+        viewer.addModel(ensureSDFTerminator(to.sdf), "sdf");
+        // Element colouring is 3Dmol's Jmol scheme, as it is everywhere else:
+        // the ramp says what maps to what, and the sticks say what the atoms are.
+        viewer.setStyle({}, { stick: { radius: 0.12, colorscheme: "Jmol" } });
+        shapes();
+        viewer.zoomTo();
+        viewer.render();
+        interaction = viewerInteraction(host3D.container, viewer);
+      })
+      .catch((e: unknown) => {
+        host3D.container.replaceChildren(centredMessage(`3D render failed: ${errText(e)}`, true));
+      });
 
     // --- the correspondence itself, in numbers ---
     const table = el(
@@ -301,7 +410,25 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         boxB.replaceChildren(centredMessage(message, true));
       });
 
-    return {};
+    return {
+      onResize() {
+        if (viewer) {
+          viewer.resize();
+          viewer.render();
+        }
+      },
+      cleanup() {
+        interaction?.cleanup();
+        interaction = null;
+        if (!viewer) return;
+        try {
+          viewer.clear();
+        } catch {
+          /* already gone */
+        }
+        viewer = null;
+      },
+    };
   }
 }
 

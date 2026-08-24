@@ -34,9 +34,10 @@ RAMP_NAME = "hsv"
 #: why the equivalence below is checked rather than assumed.
 MAX_ATOMIC_NUMBER = 118
 
-#: How many stops to bake. The ramp is resampled in the browser, so this only has
-#: to be dense enough that linear interpolation between stops is invisible.
-RAMP_STOPS = 32
+#: How many stops to bake. The browser interpolates linearly between them while
+#: hsv does not, so this has to be dense enough that the difference is invisible.
+#: A rainbow turns hue fast, which is why it is this many rather than a handful.
+RAMP_STOPS = 128
 
 OUTPUT = Path(__file__).resolve().parent.parent / "ts" / "src" / "shared" / "atom-colors.ts"
 

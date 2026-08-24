@@ -32,6 +32,8 @@ export interface FakeViewer extends ThreeDmolViewer {
    * - and turning a representation off is `setStyle(selection, {})`.
    */
   styles: { selection: unknown; style: unknown }[];
+  /** Spheres and cylinders, as the specs they were given. */
+  shapes: { kind: "sphere" | "cylinder"; spec: Record<string, unknown> }[];
   cleared: boolean;
 }
 
@@ -43,9 +45,11 @@ export function makeFakeViewer(): FakeViewer {
       calls.push(args.length ? `${name}(${JSON.stringify(args[0])})` : name);
     };
   const styles: { selection: unknown; style: unknown }[] = [];
+  const shapes: { kind: "sphere" | "cylinder"; spec: Record<string, unknown> }[] = [];
   const viewer = {
     calls,
     styles,
+    shapes,
     cleared: false,
     addModel: record("addModel"),
     setStyle: (selection: object, style: object) => {
@@ -59,6 +63,18 @@ export function makeFakeViewer(): FakeViewer {
     },
     zoomTo: record("zoomTo"),
     zoom: record("zoom"),
+    addSphere: (spec: Record<string, unknown>) => {
+      calls.push("addSphere");
+      shapes.push({ kind: "sphere", spec });
+    },
+    addCylinder: (spec: Record<string, unknown>) => {
+      calls.push("addCylinder");
+      shapes.push({ kind: "cylinder", spec });
+    },
+    removeAllShapes: () => {
+      calls.push("removeAllShapes");
+      shapes.length = 0;
+    },
     render: record("render"),
     resize: record("resize"),
     spin: record("spin"),

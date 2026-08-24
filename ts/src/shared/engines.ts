@@ -26,6 +26,12 @@ export interface ThreeDmolViewer {
   zoomTo(): void;
   /** Multiply the current zoom. `shared/interact.ts` is what bounds it. */
   zoom(factor: number): void;
+  /** A coloured sphere, which is how a mapped pair is marked. */
+  addSphere(spec: object): unknown;
+  /** A cylinder, dashed when asked - the line drawn between a mapped pair. */
+  addCylinder(spec: object): unknown;
+  /** Drop every sphere and cylinder, leaving the models alone. */
+  removeAllShapes(): void;
   render(): void;
   resize(): void;
   spin(axis: string | false): void;
