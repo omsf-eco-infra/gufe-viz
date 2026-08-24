@@ -1,25 +1,37 @@
 """Build a ligand network of arbitrary size, for measuring rather than for looking at.
 
-The largest committed fixture has three ligands. The network that prompted the
-scale work has 934. Nothing in this repository can currently answer "what happens
-at that size", and every decision about level-of-detail, canvas rendering and
-whether a self-contained page is still the right delivery depends on the answer.
+The real networks in the fixtures have three and ten ligands. The network that
+prompted the scale work has 934. Nothing else in this repository can answer "what
+happens at that size", and every decision about level-of-detail, canvas rendering
+and whether a self-contained page is still the right delivery depends on the
+answer.
 
 **This is a load generator, not chemistry.** The molecules are real, embedded
 RDKit structures, because payload size and depiction cost are exactly what is
 being measured and a fake SDF would measure nothing. The *mappings* are
 synthetic: atoms are paired by index over the common prefix of the two
 molecules, and the score is a deterministic function of the pair. No mapper is
-run, no correspondence is meaningful, and no output of this script should ever
-be committed, shown to a chemist, or mistaken for a fixture.
-
-Deliberately not part of `make_examples.py` and never written into `examples/`.
-Those payloads are committed, byte-stable and checked by CI; this one is large,
-disposable and generated on demand.
+run and no correspondence is meaningful, so nothing this produces may be shown
+to a chemist or read as a result.
 
     pixi run big-network                     # 200 ligands, the default
     pixi run big-network -n 934 -o /tmp/x.json
     pixi run big-network -n 934 --html /tmp/x.html
+
+Its payloads are written to `do-not-commit/`, because they run to megabytes and
+are made fresh whenever a measurement is wanted. One output is committed, and
+only as an input: `--sdf` freezes the ligands as a mol file, and
+`scripts/data/large_network.sdf` is the 200 of them that
+`make_examples.py` turns into `examples/ligand_network_large.json`.
+
+    pixi run big-network -n 200 --sdf scripts/data/large_network.sdf
+
+Frozen rather than re-embedded, because a committed fixture has to be
+byte-identical on every platform. A conformer straight out of ETKDG and MMFF is a
+float64 array that a gufe key hashes in full, and over 200 molecules there are
+coordinates sitting close enough to a rounding boundary that `_quantize` refuses
+them. Reading four-decimal coordinates back from a mol file has neither problem,
+and takes the embedding out of CI.
 """
 
 from __future__ import annotations
@@ -123,8 +135,10 @@ def _molecules(count: int, seed: int):
 
     Embedding dominates the runtime here - roughly a second per few dozen
     molecules - which is why progress is printed. Coordinates are deliberately
-    *not* quantized: that matters for committed fixtures, whose gufe keys have to
-    match across platforms, and this output is never committed.
+    *not* quantized: that matters for a fixture, whose gufe keys have to match
+    across platforms, and nothing here is one. The fixture is built from the mol
+    file `write_sdf` freezes, whose four decimals do the same job with no
+    rounding boundary to fall foul of.
     """
     from gufe import SmallMoleculeComponent
     from rdkit import Chem
@@ -147,13 +161,17 @@ def _molecules(count: int, seed: int):
     return mols
 
 
-def _mappings(mols, edges_per_node: int):
+def synthetic_mappings(mols, edges_per_node: int):
     """Synthetic mappings joining the molecules into a connected network.
 
     Each molecule is joined to the next few, which gives a connected graph with a
     predictable edge count. The atom correspondence is index-to-index over the
     shorter of the two molecules: meaningless as chemistry, correctly shaped as a
     payload, and that is all this is for.
+
+    Public because `make_examples.py` calls it: the committed large fixture reads
+    its ligands from a frozen mol file, and the rule that joins them up has to be
+    this one rather than a second copy of it that could drift.
     """
     from gufe import LigandAtomMapping
 
@@ -184,7 +202,12 @@ def _mappings(mols, edges_per_node: int):
     return out
 
 
-def build(count: int, edges_per_node: int, seed: int) -> dict:
+def build(count: int, edges_per_node: int, seed: int) -> tuple[list, dict]:
+    """Return the molecules and the network payload built from them.
+
+    The molecules come back as well as the payload because `--sdf` freezes them,
+    and they are the half of this network that is real.
+    """
     from gufe import LigandNetwork
     from gufe_viz import payload_for
 
@@ -192,13 +215,27 @@ def build(count: int, edges_per_node: int, seed: int) -> dict:
     mols = _molecules(count, seed)
     print(f"  {len(mols)} molecules embedded")
 
-    mappings = _mappings(mols, edges_per_node)
+    mappings = synthetic_mappings(mols, edges_per_node)
     print(f"  {len(mappings)} mappings")
 
     network = LigandNetwork(edges=mappings, nodes=mols)
     payload = payload_for(network)
     print(f"  {len(payload['nodes'])} nodes, {len(payload['edges'])} edges in the payload")
-    return payload
+    return mols, payload
+
+
+def write_sdf(mols, path: pathlib.Path) -> None:
+    """Freeze `mols` as a mol file, the form `make_examples.py` reads.
+
+    Only the molecules: the mappings are a rule rather than data, and
+    :func:`synthetic_mappings` applies it to whatever comes back out of the file.
+    """
+    from rdkit import Chem
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with Chem.SDWriter(str(path)) as writer:
+        for mol in mols:
+            writer.write(mol.to_rdkit())
 
 
 def _report(payload: dict, json_bytes: int, html_bytes: int | None) -> None:
@@ -217,7 +254,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="make-big-network",
         description="Generate a large synthetic ligand network, to measure against.",
-        epilog="A load generator. The mappings are not real; never commit the output.",
+        epilog="A load generator. The mappings are not real, and no measurement of it is a result.",
     )
     parser.add_argument("-n", "--ligands", type=int, default=200, help="how many ligands (default: 200)")
     parser.add_argument(
@@ -243,18 +280,28 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="also write a standalone page, so first paint can be timed in a browser",
     )
+    parser.add_argument(
+        "--sdf",
+        type=pathlib.Path,
+        default=None,
+        help="also freeze the ligands as a mol file, the input make_examples.py reads",
+    )
     args = parser.parse_args(argv)
 
     if args.ligands < 2:
         raise SystemExit("a network needs at least two ligands")
 
-    payload = build(args.ligands, args.edges_per_node, args.seed)
+    mols, payload = build(args.ligands, args.edges_per_node, args.seed)
 
     destination = args.output or REPO / "do-not-commit" / f"big_network_{args.ligands}.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(payload)
     destination.write_text(text, encoding="utf-8")
     print(f"\nwrote {destination}")
+
+    if args.sdf is not None:
+        write_sdf(mols, args.sdf)
+        print(f"wrote {args.sdf} ({args.sdf.stat().st_size:,} bytes)")
 
     html_bytes = None
     if args.html is not None:

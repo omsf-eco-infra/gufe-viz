@@ -1,0 +1,109 @@
+Participants
+
+    @Jennifer Clark 
+
+    Dion Whitehead
+
+    @Lily Wang 
+
+Goals
+
+     
+
+Discussion topics
+
+Notes
+
+Notes
+
+    LW: What are the next steps for these dashboards?
+
+        DW: this came out of a bigger project, metapage.io
+
+            Your dashboard works in notebooks, but I think there are options that are more interesting and useful
+
+            framesjs.io is a workflow that runs in the browser and connects to other pieces in the browser. It is JS but there are other options. mtfm.io runs Docker containers
+
+            I have a public workqueue and this is a client that connects the Docker code to the workqueue. That queue can be hosted on a laptop or cloud
+
+            Everything on framesjs.io is stored forever (currently).
+
+    DW: Mandate from OMSF to make visualizations easy and 
+
+        I’m looking for users. I want to make this as easy to use and useful as possible. I could work with you on more specific examples, show people how to use it
+
+    JC: one of the primary things is that we gave an example of output from our benchmarking package, yammbs. It would be cool to have base-level what Finlay does. If we’re happy with the JS version, it would be cool to make a template of that where we could plug into it locally. Next level would be a web app. It’s tricky because these files live on Zenodo, so it would have to be a Docker container. We are a bit compute-limited at the moment, but the ability of being able to spin up this dashboard with any yammbs output would be useful
+
+        LW: agree with JC, this may be the wrong use case but we would need to change this every time we had a new FF
+
+        DW: had originally scoped out time-limited retention. I think it would not take a lot of effort to do some of this. <shows how you could change the inputs in the framesjs.io sidebar> It’s set up to be reusable in that way. If the raw data is on Zenodo and it’s not processed, we would essentially need a URL bar.
+
+        JC: I would imagine that unless there’s also a library you could scroll through, people would find it easier to use the cli and do up a new URL all over again.
+
+        DW: how do you imagine most people would be using this?
+
+        JC: probably CLI
+
+        LW: agree, wider community may appreciate GUI
+
+        JC: our normal workflow is one FF per file, the file I passed to you has multiple FFs in the one file. Would it be possible to work with multiple files? We have a lot of things on Zenodo but there’s not necessarily a clean list.
+
+        DW: there’s a couple ways this could work out that could be easier or harder, depending. After YDS runs to upload a yammbs output you have the link?
+
+        LW: Yes
+
+        DW: (JCs interpretation) In that case, you can have that link added to a json list and then just permanently point to that list. 
+
+        DW: If the links are in YDS, you could have a script pull the links given the ff you want to make a list of the targets
+
+        JC: What about if a CLI took in a list of urls?
+
+        DW: That would be cleaner, and the code could live in an openff tool
+
+    LW: If we made our own tool to make the js what’s the difference with using framejs.io?
+
+        DW: The JS running is very light weight, you could take bits and run it locally, but then you can’t share it in the same way
+
+        LW: framejs is great because you can spin up the visualization and share it easily
+
+    LW: I did have a few issues with the url changing when I make small update
+
+        DW: I’m aware but it sounds like that’s something I should prioritize. I actually do have an application that would take care of it. Accounts would be the easiest way. 
+
+    DW: JC can you send me the automated zenodo feature in YDS?
+
+        JC: Will do, here it is
+
+    LW: We have been looking for a visualization tool and this seems like a solution
+
+    LW: Could you elaborate on the notebook integration?
+
+        DW: Yes I’m working on allowing framejs embedded in a notebook, still working on ergonomics
+
+    JC: when you send a framesjs link, is that going to your CDN? do you need internet access to visualize it?
+
+        DW: the short link, yes. That’s a SHA key for code stored in a bucket. If you wanted no internet access, you can use the long-form of the code embedded in the URL. But the libraries need installation, and large data files need downloading too. Some libraries you can import as es6 imports, but older versions of code need libraries to be injected into the head of the document.
+
+        JC: I’m imagining a world where these visualizations can be done remotely in a Docker container and it could be embedded in a notebook. You could have really complex and large data files that are hosted and processed as a visualization remotely but you could still embed it in a notebook without having to download and process that data locally.
+
+        DW: the devil in the details here is – if you need real-time dynamic slicing of the dataset, the server needs to provide that. This can definitely access and visualize that if you can do that. There are projects for this, e.g. Apache Arrow. Is that what you’re after – a big initial dataset and we process it down, or access chunks of it at a time from a larger dataset?
+
+        DW: I think the Docker idea would definitely generate some ergonomics. You would need a live server to handle huge datasets. You could also break it down and upload as multiple artifact if it’s smaller. In that case you wouldn’t need any external tools. 
+
+         
+
+    LW: I like the idea of OpenFF putting together a CLI to generate something like this, and then those artifacts could work with framejs and integrate that into YDS
+
+        DW: Sounds good, please keep me in the loop of your pain points so that I can work on those. I’m interested in cool examples
+
+    LW: If we were to play with framejs that wouldn’t effect your bottom line?
+
+        DW: I doubt it, and it would be a welcome problem to have
+
+
+
+Action items
+
+Decisions
+
+ 

@@ -411,6 +411,54 @@ class TestBuilders:
         assert [entry["name"] for entry in named["registry"]] == [entry["smiles"] for entry in named["registry"]]
         assert sorted(e["score"] for e in unnamed["edges"]) == sorted(e["score"] for e in named["edges"])
 
+    def test_the_three_network_sizes_are_all_present_and_well_formed(self):
+        """Three ligands, ten and two hundred, so a view change can be seen at each.
+
+        A view that reads well on three nodes can be unusable on two hundred, and
+        the level-of-detail rule only does anything above a size no fixture used
+        to reach. The sizes are pinned because that is the point of the trio: a
+        regeneration that quietly produced three networks of the same size would
+        still pass everything else in this file.
+        """
+        from .conftest import read_example
+
+        sizes = {
+            "ligand_network.json": (3, 3),
+            "ligand_network_medium.json": (10, 9),
+            "ligand_network_large.json": (200, 594),
+        }
+
+        for name, (nodes, edges) in sizes.items():
+            payload = read_example(name)
+            assert payload["type"] == "LigandNetworkViz", name
+            assert len(payload["nodes"]) == nodes, name
+            assert len(payload["edges"]) == edges, name
+
+            # The registry deduplicates at every size, which is what keeps the
+            # large payload proportional to its ligands rather than to its edges.
+            assert len(payload["registry"]) == nodes, name
+            assert len({entry["gufe-key"] for entry in payload["registry"]}) == nodes, name
+
+            for edge in payload["edges"]:
+                assert edge["componentA"] in payload["nodes"], name
+                assert edge["componentB"] in payload["nodes"], name
+
+            _validate(payload)
+
+    def test_the_two_real_networks_have_scores_a_view_can_colour_by(self):
+        """Every edge of both mapper-planned networks carries a score.
+
+        The large network is not in this: its scores are an arithmetic ramp, and
+        asserting anything about them would be asserting that a load generator
+        still generates load.
+        """
+        from .conftest import read_example
+
+        for name in ("ligand_network.json", "ligand_network_medium.json"):
+            scores = [edge["score"] for edge in read_example(name)["edges"]]
+            assert all(isinstance(score, float) for score in scores), name
+            assert all(0.0 <= score <= 1.0 for score in scores), name
+
     def test_a_score_annotation_becomes_the_edge_score(self):
         """`score` is the one annotation key the edge colouring reads."""
         from gufe_viz.networks import mapping_score

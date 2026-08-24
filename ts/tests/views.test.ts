@@ -192,20 +192,17 @@ describe("<gufe-ligand-network>", () => {
     expect(named.textContent).toContain("CCO");
   });
 
-  it("selects the first mapping and reports it", async () => {
+  it("opens on the first mapping, drawn by the mapping view", async () => {
     const payload = network();
     const node = mount("gufe-ligand-network", payload);
     await flush();
 
-    const edge = payload.edges[0];
-    const text = node.textContent ?? "";
-    expect(text).toContain("score");
-    expect(text).toContain(edge.score!.toFixed(3));
-    // The pane embeds <gufe-atom-mapping>, which opens on its 3D view rather
-    // than on a panel of numbers - those live behind its Info mode now.
-    const embedded = node.querySelector("gufe-atom-mapping")!;
+    // The pane is nothing but the mapping element: no title bar, no heading
+    // repeating the two names, no annotation list. Everything that is not a
+    // molecule lives behind that element's own Info mode.
+    const embedded = node.querySelector("gufe-atom-mapping") as HTMLElement & { payload: { "gufe-key": string } };
     expect(embedded).toBeTruthy();
-    expect(embedded.textContent).toContain("mapped");
+    expect(embedded.payload["gufe-key"]).toBe(payload.edges[0]["gufe-key"]);
   });
 
   it("switches the selection when another mapping is clicked", async () => {
@@ -221,7 +218,8 @@ describe("<gufe-ligand-network>", () => {
     hits[hits.length - 1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flush();
 
-    expect(node.textContent).toContain(last.score!.toFixed(3));
+    const embedded = node.querySelector("gufe-atom-mapping") as HTMLElement & { payload: { "gufe-key": string } };
+    expect(embedded.payload["gufe-key"]).toBe(last["gufe-key"]);
   });
 
   it("drops an edge that names a ligand the network does not contain, and says so", async () => {
@@ -527,6 +525,28 @@ describe("<gufe-atom-mapping>", () => {
     modeButton(node, label).click();
     await flush();
   };
+
+  it("shows the molecules and the switcher, and nothing above them", async () => {
+    // No header strip, no statistics bar. The box labels already name both
+    // ligands, and everything that is not a molecule is behind Info - anything
+    // else here would be saying it a second time.
+    const node = mapping();
+    await flush();
+    const text = node.textContent ?? "";
+
+    expect(text).not.toContain("LigandAtomMapping");
+    expect(text).not.toContain("Selected mapping");
+    expect(text).not.toContain("mapped atoms");
+    expect(text).not.toContain("score");
+  });
+
+  it("names each molecule on its own box, the way the prototype does", async () => {
+    const node = mapping();
+    await flush();
+    const payload = readExample("ligand_atom_mapping.json") as unknown as { registry: { name: string }[] };
+    const names = payload.registry.map((entry) => entry.name).filter(Boolean);
+    for (const name of names) expect(node.textContent).toContain(name);
+  });
 
   it("offers the prototype's six modes, in its order", async () => {
     const node = mapping();

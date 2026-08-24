@@ -864,18 +864,20 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     return { bar: toolbar, picker };
   }
 
-  /** The right-hand pane: what the selected mapping is, in words and pictures. */
+  /**
+   * The right-hand pane: the selected mapping, drawn by the mapping view.
+   *
+   * Deliberately nothing but that element. It carries its own header, names both
+   * ligands on its own box labels, and keeps the counts and annotations behind
+   * its Info mode - so a pane title, a heading repeating the two names, and an
+   * annotation list underneath were all saying a second time what the picture
+   * below them already said.
+   */
   #detailPane(
     host: HTMLDivElement,
     registry: RegistryIndex,
   ): { show(edge: NetEdge | null): void; message(text: string): void } {
-    const title = el(
-      "div",
-      `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
-      "Selected mapping",
-    );
-    const body = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;");
-    host.appendChild(title);
+    const body = el("div", "flex:1;min-height:0;display:flex;flex-direction:column;");
     host.appendChild(body);
 
     const message = (text: string) => body.replaceChildren(centredMessage(text));
@@ -885,38 +887,13 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         message("Click an edge to see its mapping.");
         return;
       }
-      body.replaceChildren();
-
-      const heading = el(
-        "div",
-        `padding:10px 14px;font-size:13px;font-weight:600;color:${T.textPrimary};` +
-          `border-bottom:1px solid ${T.toolbarBorder};`,
-        `${label(edge.from)} -> ${label(edge.to)}`,
-      );
-      body.appendChild(heading);
-
       // The same element the standalone mapping payload renders through, fed
       // the payload `mappingPayloadFor` cuts loose. There is no second drawing
       // path, so the in-context picture and the standalone one cannot drift.
-      const mapping = mappingPayloadFor(edge, registry);
       const embedded = document.createElement("gufe-atom-mapping") as HTMLElement & { payload: unknown };
-      embedded.style.cssText = "flex:1;min-width:0;min-height:220px;display:flex;";
-      embedded.payload = mapping;
-      body.appendChild(embedded);
-
-      const annotations = Object.entries(edge.annotations ?? {}).filter(([key]) => key !== "score");
-      if (annotations.length) {
-        const list = el(
-          "div",
-          "padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" +
-            `color:${T.textMuted2};`,
-        );
-        for (const [key, value] of annotations) {
-          list.appendChild(el("div", "", `${key}: ${String(value)}`));
-        }
-        body.appendChild(list);
-      }
-
+      embedded.style.cssText = "flex:1;min-width:0;min-height:0;display:flex;";
+      embedded.payload = mappingPayloadFor(edge, registry);
+      body.replaceChildren(embedded);
     };
 
     return { show, message };

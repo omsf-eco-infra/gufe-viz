@@ -71,6 +71,17 @@ NOTES = {
     "solvated_pdb": "**Not drawn**, for the same reason as `protein_membrane` above.",
     "ligand_network": "Radial graph of the ligands, with the selected edge's atom mapping on the right.",
     "ligand_network_named": "The same network with the ligands named, so labels replace gufe keys.",
+    "ligand_network_medium": (
+        "Ten TYK2 ligands and the nine mappings OpenFE's RBFE tutorial plans between them: a real "
+        "network at the size a real network starts at, where the layout and the score colouring "
+        "begin to carry information rather than decorate three nodes."
+    ),
+    "ligand_network_large": (
+        "Two hundred ligands and 594 mappings, which is what the level-of-detail rule is for: "
+        "depictions give way to dots and labels drop out as the graph gets denser, and zooming in "
+        "brings them back. **The mappings are synthetic** - paired by atom index, scored by an "
+        "arithmetic ramp - so this is a picture of the view under load, not of any chemistry."
+    ),
     "chemical_system": "No view yet: the dispatcher's panel, which is what the degradation rule looks like.",
     "ligand_atom_mapping": "No view yet - the standalone mapping viewer is Phase 4.",
     "solvent": "No view yet - a solvent component is a specification, so its view is a settings card.",

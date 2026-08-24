@@ -1,0 +1,993 @@
+Dion
+whatever um what if you say yeah so yeah thanks elisa so yeah the really the goals here is um i'm only here till the end of september so i really want to capture as much sort of feedback and ideas and requests um as possible uh while i'm here um you know so i want to get um just give you a quick update where we are, you know, critique of existing visualizations, what I'm missing, or if there's any sort of understanding that would help me, how people sort of use these visualizations, and any new ideas that you have. You know, I can knock out examples and ideas pretty quickly,
+
+So yeah, don't kind of hold back. So yeah, how can you give me feedback? So a lot of these examples I'm using this from JS app, you just go to a link, you can just clone it, make adjustments, send me the link. You can use AI for this, useful, just DM me on Slack. Or get me to help you with pretty helpful um yeah so i just want to gather as much feedback as possible um to integrate this before i leave um so so where we are um the goal is to unify and open it the the ways we do visualization so that you can on the command line say hey display or visualize whatever that command will eventually be um this open at the object and it will open up a browser um with the or it will it'll create a basically embedded HTML and you'll get the visualization you can interact with. And it will also use exactly the same kind of visualization machinery, but also for embedding it in a notebook. So we're going to have one unified visualization system and one unified set of examples and please interrupt me at any time so hopefully we'll have the core infrastructure um by the next two weeks um and while that's going ongoing and then after that i'll be working on these specific visualization components so i'll you know i'll have a good month uh maybe more to sort of get all this feedback and integrate it. But yeah, please use me while I'm here.
+
+Yeah, so one of the bigger ones I started with was the network topology.
+
+So yeah, does anyone have any ideas here
+
+about what sort of level of granularity?
+
+I'm kind of leaving it a bit open-ended
+
+because I'm not sure how, where people are
+
+in terms of what they're looking for,
+
+what they're seeking, what they're unhappy with,
+
+how and where they want to sort of give feedback, what kind of ideas.
+
+So I was just going to go through these sort of examples we have and just sort of, yeah,
+
+sort of prompt and see where we go.
+
+So if I click on this link...
+
+So if you wanted to...
+
+So one of the questions I have is how much configurability
+
+and what the default visualizations should be for some of these, for example.
+
+This isn't the final state of this.
+
+for example, the overlay is not how it is in the existing example, so I'm working on that.
+
+So kind of one of the questions I have, and if you all want to just go away and think about it,
+
+and then give me feedback later, that's great. But one of the questions I have here is,
+
+what should the initial state be for some of these? What's the most common way you want to look at it?
+
+how configurable you want this to be.
+
+Some of these ways of representing things, we can go pretty much into a lot of the weeds here,
+
+and I've made subsequent examples where I can offer the way to customize how these look in
+
+pretty specific ways or maybe the default setting but also maybe you want to have more advanced ways
+
+of looking at it in the actual sort of user visualization not just for the defaults
+
+yeah this is definitely one of my favorite ones for the the network i think this one's really good
+
+for the the default i'm used to our 2d style one but that's just because i look at adam happens
+
+like all the time so yeah this is just it's very similar it's just slightly different that it makes
+
+me like think for a second because of the different color scheme that i'm used to which is very minor
+
+but um yeah yeah uh so actually yeah i have a um the jumping
+
+Yeah, exactly. The one over the left.
+
+Yeah, yeah, exactly.
+
+So this is one of my questions is, you know,
+
+is this default exactly how you want it?
+
+Because I basically, you know, I, if I go here,
+
+this is me trying to get the example that I had exactly right.
+
+So if there are customizations that you want to the default,
+
+I can also make them at that sort of granularity and get it like exactly right.
+
+Or maybe there are changes that you would want to perhaps see there or make available.
+
+I know it's pretty in the weeds, some of these things, like specific colors, specific changes.
+
+So this might be one where you might want to kind of go and think about it and what is maybe more or less helpful.
+
+but if I don't have any to yeah if I'm yeah I mean I think there's the the point here
+
+going back to to Josh's point I think what's really important is that the two match right so
+
+there there is in inherent there's intention on the colors right so for example when we tell our
+
+users like okay well a blue atom mapping is an element change for example and the red is a unique
+
+atom. If we change our entire ecosystem to a different set of colors, that's okay, but they
+
+do have to match. And we do anticipate there are folks who are not going to be able to, who are
+
+going to want to keep using this 2D, like the node-based samples dilution because they might
+
+not be able to use Frame.js or whatever it is. So that's really, at least in my opinion, that's the
+
+infrastructure okay sure uh sorry the the this visualization yeah yeah yeah this is using rd
+
+cook under the hood as well um it just doesn't have the same defaults for this for this round
+
+um yeah okay so yeah so the goal then for this then is just to get it exactly as it currently
+
+exists yeah or if you know if for some reason you know you turn around and you say well actually
+
+blue and red are. I think there are valid reasons for changing the colors. Like, I don't know how
+
+colorblind friendly blue and red are, for example. And maybe that's a thing we have to think about
+
+changing. But yeah. I guess... Yeah, I think maybe code-wise, if as long as everything is controlled
+
+in the same place, that then if we do want to update it, like if this can be like a variable
+
+that we change that would be the best but um but yeah i think i think that as a consideration of
+
+consistency i i do want to go back to the ligand network um if we could um could you pull up the
+
+the example that we were saying we liked yeah thank you um because i have thoughts and questions
+
+about what is like the most intuitive way
+
+to sort of show a network
+
+and what scale people are typically looking at.
+
+And I'm thinking about how Connector
+
+used to do network visualization.
+
+I feel like we've had like a few different iterations of this
+
+and I'm curious what people like
+
+and what they don't like.
+
+Would a network that...
+
+So I guess off the top of my head, my dream way that this would work would be that it's a network that just is like nodes and edges where the edges are colored by their score.
+
+So like the edge weight.
+
+And then when you hover on them or click on them, then it opens up the thing on the right.
+
+But I'm curious because if we expect the Liggin names to get very long, is there just not really a clean way of showing all of them?
+
+Or is it something where if you zoom in enough, then it shows the Liggin names?
+
+Because that would be really cool if you zoom out and it kind of shows less specific.
+
+Yeah, like if you zoom out to here and then it just becomes like edges and nodes so that you can get a sense of like the overall structure of it.
+
+And then as you zoom in now, maybe like kind of like a Google Maps thing, like as you zoom in, then you maybe the like names pop up.
+
+I don't know how useful it is to have the chemical structures included there.
+
+I guess that's a question for Hannah and Josh who sort of dig around in things more.
+
+Is it useful to have them at the network level like this or is it just noise?
+
+Yeah, it depends if you've got other features. Sorry Hannah, you go ahead.
+
+No, you. Like yeah, I would say it's definitely useful, like especially if you're working in
+
+in drug discovery, like you don't know necessarily all your ligand names, what they are. But if
+
+you're in that project, you definitely know the structure. So, yeah.
+
+Yeah, I was going to agree. And also if there was a way to search for like specific ligands,
+
+I don't know how advanced the visualization can be, but if I said, give me all of the edges
+
+Yeah, I was actually going to say that as well, Josh, of like, if there could be a bar on the left that just has all of the ligand names that you can scroll through and click on them, and it takes you to that spot in the network.
+
+Yeah, it takes you to it or just de-highlights all the edges that are not selected, if that makes sense.
+
+So yeah, if I select all of these ligands, it just highlights all the edges that are relevant.
+
+Or if I could filter by something like a low map score, if I just say anything less than 0.5,
+
+and it would bring up all of those edges, those are the interesting ones where I might need to look at the mapping,
+
+I might need to do something about them.
+
+The rest, yeah, probably is okay, but I don't know.
+
+Playing on this search thing, one thing that at scale, you know, when we get to 1,000
+
+ligands, like having the mappings that like it kind of goes also, that's this thing of
+
+like maybe as you zoom out, the visualization has to change.
+
+Like at scale, what folks tend to like is to see, for example, like a more intuitive
+
+way of looking at scaffolds, right?
+
+So it may not be necessarily that we have to calculate
+
+scaffolds ahead of time, but if there is a way to inject
+
+some kind of label, like, okay, well, these nodes,
+
+I mean, maybe we can just read that out of the graph, right?
+
+Like if there is a specific node,
+
+set of node attributes can have us as like,
+
+oh, this is this scaffold, then we can use
+
+and visualize that as like, you know, the different colors.
+
+So that's easier to then lay them out.
+
+That could be quite useful.
+
+yeah what line do we draw between like a visualization tool and something
+
+to help me like a gui almost to help me do the next step yeah i think well so i want to
+
+talk about that a bit, which is that we are converting from Python to JavaScript
+
+and converting Goofy tokenizables into JavaScript-friendly representations.
+
+And so that is inherently a little bit lossy.
+
+And so the way that things are written right now,
+
+it is not easy to go from here back into Goofy tokenizable land.
+
+That's something that we might work on in the future.
+
+But I want us to dream big, but I also want us to stay in visualization land and not creep into analysis happening on the JavaScript side or some thing like that.
+
+I think Irifin brings up a good point.
+
+And so I think maybe just thinking of things as filtering, labeling, etc.
+
+And then like maybe it is something
+
+where we should make it very easy
+
+that if you run an analysis script
+
+that does add scaffold as an attribute to a node,
+
+then you can group by that.
+
+Yeah, my suggestion here is like predetermined
+
+because these are login networks.
+
+So login networks do have ability
+
+to have extra metadata.
+
+If we have that metadata available,
+
+like essentially what I'm saying is
+
+if we can color these points by metadata.
+
+Like if, for example, there's an easy way to say,
+
+well, okay, well, here's a common metadata point
+
+that all these nodes have,
+
+or maybe we just collect them all and we say,
+
+okay, well, you know, I want to color my data points
+
+by this metadata, if it's available.
+
+Otherwise, it's just great.
+
+That's what I'm suggesting.
+
+Yeah, I think that's a more useful way of phrasing it to me.
+
+So thank you.
+
+The other way you can go about this is,
+
+and if Dion said that it's running on the backend,
+
+if the smiles are available or whatever's available on backend,
+
+you could also then do, you know,
+
+if it's possible doing a search query of just saying, okay, well,
+
+I want this smarts, like color by this smarts.
+
+That could also be really useful.
+
+When you say color by the smarts,
+
+you're meaning like you enter a smart string and those ones.
+
+Yeah, like anything that matches.
+
+Essentially, it's the filter function.
+
+But sometimes it's filter, but really it's color,
+
+because you want to also see the stuff that's missing.
+
+Right, right.
+
+So even though staying in the visualization land,
+
+Alyssa, I'm just curious to what Josh would want to do next.
+
+Like what would the export?
+
+Or what would the sort of next step be,
+
+out of curiosity. Yeah, so it's related to a different project we're working on where we're
+
+trying to add edges to a network by name. So I would just click on two ligands and add an edge.
+
+So we'll just write back the ligand network with that extra bond in or edge, basically.
+
+I imagine there's other ways around it. Whenever we plan a network, we normally do a maximal network.
+
+So what you could do is hide the maximal network in the network, only display the selected edges,
+
+and then when you say add the edge, all it's doing is then transferring the maximal edge
+
+to the selected edges. So there's no computation that has to be done,
+
+all you're doing is just changing the file that's written out at the end.
+
+That might break things, like that won't scale well.
+
+That won't scale well. Like if we have to store the maximal network, if we have to have the maximal
+
+network in the metadata here, that is going to bog things down.
+
+The maximal network's in the background. You would just load in the actual selected edges to visualize
+
+here. But then when I say I want an edge between EGM 50 and 47, it just checks the maximal network
+
+if that edge is possible and just brings that into the visualization. And then it might say
+
+no math is impossible and that's fine. Yeah I think we're in GUI land now and I like,
+
+I like it because I like what you're thinking about but I also am like I think that sometimes
+
+this visualization can give you the sense that you're working with a GUI when you're not.
+
+Yeah.
+
+because it's like you you don't have direct access to the data in the way that it feels like you might
+
+because like like every time it moves between python and javascript there's like lossy
+
+and like
+
+so maybe i'm dreaming too small maybe this is possible but i don't know that it's possible for
+
+like v1 here um because i i want to be able to do those things but i also am thinking like do we need
+
+to think about it more as like you use the visualization to select the nodes that you want
+
+to operate on and then x and then you port that somehow whether it's copying or saving it as a
+
+file or something of just and the file would just be like the keys it wouldn't include all of the
+
+metadata it wouldn't include it wouldn't include the actual goof like enough to actually reconstruct
+
+a goofy object but it would essentially be the pointers to those goofy objects and that might be
+
+enough for us to go from visualization to like updating and reconstructing a network without
+
+this becoming a GUI yeah so plan ligand network from names I think all it needs is like a css
+
+like node names separated by a comment so yeah even if it just exactly box that you could copy
+
+and paste into a file and then we can refigure the cli to do that bit exactly i i think that
+
+i think that's the framework that's closer to like what we should be thinking about given the tools
+
+that we have right now given given that it's not a gui thinking about like how do we how do we
+
+make sure that like all of the data is actually is being handled by open fe and just the labels
+
+and things are being dumped by this because i'm very afraid of then trying to make sure that we
+
+can always round trip from python to javascript because we can't right now um but i think like
+
+because i'm also thinking about like this network building stuff and i think that we can come up
+
+with a scheme to make that a less painful process.
+
+Yeah, I think so.
+
+Because when we're asking people to add edges by name,
+
+they need to visualize it somehow to be able to do that.
+
+I don't know how else they're going to do it.
+
+And our current method, I mean, it works if the network's small enough,
+
+but it doesn't scale well.
+
+Yeah, for sure.
+
+So yeah, I guess if you could have like edge selection and node selection, like queries, and then you could dump those selections, like if there's a button to like write those selections and they just get written as whatever format, data format of your choice, that could be a really clean way to do it that then makes it clear to the user that this is not a GUI.
+
+Because I don't want to obfuscate it so much that then users get frustrated because they're like, well, why can't I just do this?
+
+It looks like I should be able to do this.
+
+Yeah, it's a good future direction, though.
+
+I mean, having a round trip, having a little mini web server connected directly to the tool would allow you that kind of read right back.
+
+But that's when we need someone on staff that does GUI work.
+
+Yeah, okay.
+
+And I would love that, but we don't have the resources.
+
+Nick Scrum.
+
+I don't know if anyone's spoken to Alex at GSK recently,
+
+but I'm sure his job was to make something like this internally for them.
+
+So it might be worth reaching out of him as well.
+
+that's a really good point yeah we talked to them a while back but haven't followed up
+
+yeah haven't heard much
+
+um i want to just circle a little bit sort of back to the because you mentioned this in another
+
+it might have been your list another meeting um what happens what happens when the network is massive
+
+um what what are you imagining would be useful and it can be a different visualization right
+
+when you zoom out a lot what what what would you imagine is useful
+
+when the network is quite quite quite big
+
+I think still having that search bar that you could search by
+
+ligand name so like node name or like like I think that's where filtering could be really
+
+useful where like the visualization itself doesn't show that much until you zoom into some
+
+threshold and you can zoom into that threshold by query like searching and then clicking and then
+
+saying and then zooming in on that like it maybe it just like highlights an edge and then you can
+
+go over and zoom into it yeah it's also uh this is going back to i think i'm saying about coloring
+
+nerds. That's
+
+where it gets really useful.
+
+Because then you can more easily
+
+just, I don't know,
+
+if you have metadata associated,
+
+like, okay.
+
+Like, even coloring,
+
+like, also maybe even
+
+coloring by, because at that
+
+point, seeing edges is going to be really
+
+hard. So
+
+if you then use, yeah,
+
+you just need a way of
+
+also being able to highlight edges
+
+quite easily.
+
+oh what did you just send josh it's a visualization of a network that's got
+
+uh 934 leggings in so this is like an example where it gets messy yeah but this is this is
+
+yeah i'm imagining like oh what if zooming in actually just like change the visualization but
+
+But I love that the edges...
+
+Well, actually, I wanted to...
+
+This brings me to the next thing,
+
+which is that we've been talking about ligand networks this whole time.
+
+But a lot of the conversation that we're having
+
+is actually around alchemical networks.
+
+And what Josh sent here is all alchemical networks
+
+because it's labeled by protocol.
+
+And so how do we want to handle the alchemical network versus a network visualization?
+
+Yeah, if it could detect that all there's protocols involved and then there's another option to color edges by protocol type or something like that, that would be quite good.
+
+And then again, filter edges by different protocol types. That would be very useful.
+
+Do we want to have fundamentally different visualizations for alchemical networks versus ligand networks that have a lot of shared behavior?
+
+Or do you want to have a single sort of, I guess that's sort of a Dion decision or Dion conversation.
+
+because
+
+maybe to orient Dion
+
+an alchemical network
+
+is a ligand network that has
+
+additional information on it
+
+I think it's the best way to
+
+but like the edges
+
+and nodes are different goofy
+
+tokenizables
+
+and so that makes me think that maybe it should
+
+just be a different
+
+probably a different
+
+is it the edges and nodes are different yeah so with ligand networks the edges are atom mappings
+
+and the nodes are um ligands and with alchemical networks the edges are transformations and the
+
+nodes are chemical systems and so that's where i think that we maybe should just have them be
+
+completely separate visualizations but that they have a lot of shared behavior yep that's something
+
+about right
+
+and visualizing an alchemical network is we're gonna have more thoughts and questions about it
+
+but it could be something where where we try to make it more simple like what josh sent where
+
+you don't have like this sidebar or whatever like you don't need to dig into every bit of
+
+metadata with your alchemical network maybe that's really more about just seeing
+
+the status of the edges and the protocols that you're using and the connectivity and all of that
+
+and then if you want to actually look at like
+
+yeah i'm i'm not sure i don't hold that opinion strongly but i do want to
+
+make sure that we're talking about
+
+legal networks and alchemical networks separately.
+
+Yeah, I'll need to get some data sets,
+
+Especially some big-- especially some of the bigger ones.
+
+I think that one thing that I'll probably need help with
+
+is to visualize some of these more dense ones.
+
+I'll definitely need some-
+
+yeah, that'll succeed.
+
+Yeah, and then this also does make me think
+
+that for most of our visualizations,
+
+I'm thinking about notebook versus browser experience.
+
+And this is something that...
+
+Well, I guess we should talk about it here.
+
+Where when you run.view,
+
+I feel like that should really be pretty contained to...
+
+That should not try to do everything,
+
+that should just be sort of like on a per component basis that like or per groupity
+
+openizable basis that like atom mapping should show the atom mapping ligand network maybe just
+
+shows that bit on the let like like not try to have this entire experience ported up into a
+
+jupiter notebook because i feel like that like every time you want to just look at
+
+a ligand network in your notebook if we're trying to do something like this that could be a nightmare
+
+wait so this would be if if i was looking at this in a notebook it would be different
+
+i'm i'm wondering if it should just be the subset that you're looking at right here and not like
+
+where your mouse is right here and not have you know the query and the drop down and everything
+
+just because like i'm like will that just not all sort of like cram into a jupiter notebook in a
+
+reasonable way question i mean the jupiter notebooks are so let me just go to
+
+um this is not the visualizations these are just this is just the machinery
+
+yeah and like i i defer to you on that but i guess what i'm saying is like
+
+if if it makes sense to trim it down and not have all these things that we're talking about
+
+just for the notebook visualization i think that's a reasonable yeah we could have like a little
+
+hamburger at the top that kind of toggles some of the more bigger elements in the notebook view
+
+maybe so it's there but it's just a different way of
+
+maybe um so if you wanted to dig into it you could but in that view it's maybe more constrained
+
+yeah yeah I guess I'm saying that like I don't think that it's worth our time to try to make
+
+sure that the notebook experience is like to make sure that everything we were talking about with our
+
+big dreams of the in-browser navigation stuff where you have a lot more real estate it's I don't think
+
+that we necessarily need to be able to reproduce that exactly in a notebook.
+
+I think it's fair to be like the notebook gives you the smaller visualizations
+
+that maybe without all of the interactivity and browsing
+
+and selecting and labeling and exporting.
+
+And it's like, okay, if you want to do that level of inspection,
+
+then just run OpenFEBO on the command line.
+
+like I I'm fine with that being sort of like like drawing a line around what's reasonable to show
+
+as a widget yeah yeah especially if they are um
+
+like here's my example of just this is something you know this
+
+it can be made smaller but then it might be too small yeah i think i would rather i would rather
+
+err on the side of like just show less in the notebook rather than try to find a way to
+
+restructure everything to make it all of like all of the same feature parity or whatever
+
+because i'm thinking of like from the user experience when people are in a notebook it's
+
+a lot of like oh I just want to see what I'm working with here and I'm playing around and
+
+I'm moving on to the next thing and when people are working in a browser like I think it's I think
+
+it's reasonable to have different expectations in a notebook versus a browser would you want it to
+
+be um it was still unclear I'm not sure with my question so you would would you still want to like
+
+just absolutely limit it or have it so that if they click somewhere some small thing they get that
+
+I experience in the notebook or it's just not available?
+
+I think it would be fine for it to not be available but I'm also open to other
+
+people's thoughts. I just I want us to be able to be really ambitious with what we're doing here
+
+and I don't want it to be limited by what we can then backwards cram into a notebook.
+
+So I've got another visualization that's a note to myself, I'll get another visualization to do of this other kind.
+
+Does anyone else have anything to kind of add to this part about the network to quality visualization?
+
+okay i'll move on then um uh so i think we did talk about this at the beginning so this one
+
+i'm just going to get it um exactly like it is in the um existing visualization
+
+So the next two, you know, in this links there, so how are these representations, are they,
+
+do they need to be improved on?
+
+Are they good the way they are?
+
+default to making these exactly like how they are in the existing examples but yeah if there are any
+
+improvements that I can make with some of these.
+
+I have a really tiny nitpick with the current view 3D, which is like, you can zoom out until
+
+it becomes just a little speck. And then it feels like you've lost it. And when you scroll through a
+
+notebook, it's the same trackpad motion as zooming out. And so when you scroll through a notebook,
+
+it'll just like get stuck on that one and keep zooming out into infinity and until you move your
+
+cursor over to a different part of the notebook and if there could just be like a way to like limit
+
+that you can only zoom out until it hit until like just threshold it so that you don't end up going
+
+into the black hole um that would improve my user experience and it feels so tiny but it would make
+
+me so happy alissa it's a tiny thing in this context but it's a huge problem in the entire
+
+concept of a touch screen user interface.
+
+Yes, thank you.
+
+Dion can't fix that.
+
+But maybe he can fix a very tiny aspect of the notebook visualization.
+
+Just looking at the colors, I know you're going to get the colors similar, but just on the right
+
+one, it looks like it's coloring, for example, hydrogen's more yellowy and then the central
+
+atoms more purple. The original view of 3D visualization had kind of the intent there was
+
+to have it more continuous as you move along the molecules just so it was easier to see
+
+similar colors because atoms were closer to each other. So you probably don't want yellow for like
+
+hydrogens as separate like because otherwise it's you didn't have to sort of jump across
+
+the molecule to convey hydrogens if that makes sense let me just try to explain it to make sure
+
+i understand it because i'm interested so you want similar colors to be closer um but this is not
+
+quite not exactly on the periodic table just the sort of atoms that we're dealing with here yeah so
+
+the the original view 3d yeah so it's like it's it's purely so the the idea here is it so it's to
+
+to help you see which atoms are mapped to each other.
+
+So it's got nothing to do with the element of the atom.
+
+It is purely like, yeah,
+
+it's meant to be like a contiguous color
+
+that you go across the molecules.
+
+So it is very much just like similar colors
+
+for close enough.
+
+Like if you start with state A,
+
+it's just a contiguous color scale based on how close,
+
+like how you progress along that molecule.
+
+And then the idea is that molecule B
+
+is then just using those colors for like putting them
+
+on where they correspond in the mapping.
+
+I see.
+
+So it allows you to see more easily
+
+where things are different.
+
+Yes, exactly.
+
+Okay.
+
+But you said that the original color scheme,
+
+that's good, right?
+
+The original V3, I'm biased.
+
+I think it's okay, but I'm also biased
+
+because I'm the one that originally wrote it.
+
+So it's...
+
+I don't know.
+
+I guess Josh and Hannah can weigh in on this.
+
+It's good.
+
+I think it's generally good.
+
+I've had cases where the colors were so similar.
+
+I think the red and the purple also that it was...
+
+and it was a very crucial
+
+part of the transformation
+
+one of our bugs that we found
+
+that it took me
+
+looking at it a couple times to see the difference
+
+but I'm not sure
+
+how one could make the colour
+
+scheme more
+
+yeah
+
+like it's
+
+to make it even easier to detect
+
+differences. Maybe if for example
+
+purple and red are not close to each
+
+other generally so if it's
+
+somehow mixing
+
+the colors more? I don't know. Because I guess it's kind of like a rainbow, but if the rainbow
+
+was like mixed up more? Rainbow's just also not the best intensity skill to use.
+
+I'm just like, could we use a different color map?
+
+yeah i think maybe one one thing that i like quite i quite like that you showed in your previous
+
+network mapping one was that you had the ability to just directly have lines go between the
+
+matching atoms that seems like it would it would really help there yeah
+
+What are you talking about?
+
+It's true.
+
+It will be interesting to see.
+
+Something like this?
+
+Yeah.
+
+But yeah, do some color blindness checks would be good.
+
+Yes.
+
+that in general win as lots of colors, red and green.
+
+Are they the worst ones to use?
+
+Or are they the best ones for colorblind people?
+
+I can't tell.
+
+I think they're the worst.
+
+I think you're the worst, yeah.
+
+Yeah.
+
+Thanks, Hanna.
+
+So this plus colors, are you thinking of this one?
+
+Yeah, I think that would look good.
+
+Again, I'm biased, so please let the people weigh in.
+
+So what I can do with some of these ideas
+
+is I can throw them together, and then I'll
+
+make a Slack channel, and I'll just post them there,
+
+and just get feedback that way.
+
+And I just iterate quickly.
+
+I don't want to go through a whole development stuff.
+
+I just want to sort of get some quick feedback.
+
+That brings up a good question of which Slack channel.
+
+Or just a small group of just people here or?
+
+Yeah, I'll just make a channel with our team called Biz Conversations.
+
+And does that work for everyone?
+
+And maybe add in, I'm wondering if I don't like Yvonne might be good.
+
+That's a sub tier.
+
+Yeah.
+
+Yeah, I was going to think like core devs plus Deon.
+
+Yes.
+
+Yeah, similar thing to this one.
+
+I mean, this visualization, any changes or improvements
+
+that could be made here?
+
+really is for there's different protein views in the different sets of things
+
+but I'll just like a fun one for now and I think my kind of high-level question is
+
+what sort of how configurable sort of good or do we want the kind of protein
+
+protein and ligand views to be this defaults, how configurable, any thoughts or ideas there?
+
+I think Irfan you brought up that having, oh wait maybe you already said this,
+
+yeah that having the protein and the ligand together is more useful
+
+but sorry i distracted making this channel yeah um yeah definitely having multiple components in
+
+with being more useful than just the protein i think i'd love to another word about a time but
+
+my general take is we probably will never be able to replace like timeball and so
+
+just being able to very quickly see, okay, well, the leggings are about here. That seems reasonable
+
+to me. I don't know that I want like distance selections or stuff like that. That seems
+
+to be going to be... I also think that like having less complexity for our lower value visualizations
+
+is fine. Like, I think it's fine that when you have a protein component, like, yeah, you probably
+
+want to see it you want to know that it's the one that you think that you're looking at and so just
+
+like having a very simple visualization for that is probably nice but like i don't think that we
+
+need to have try to like have full interactivity on every single thing i think that like just having
+
+the protein shown in a consistent way each time is great and then having like a chemical system
+
+show is great, but I don't think that we should try to replace
+
+pie mole when we just want to show an image of the protein.
+
+Great.
+
+OK, we're out of time.
+
+Thanks, everyone.
+
+And yeah, any other questions or comments,
+
+Liz is going to have the Slack group.
+
+And I'll post any new examples or if I want feedback
+
+on any officializations.
+
+See you.
+
+Thanks so much for
+
+coming along.
+
+Yeah, thank you for coming by.
+
+Yeah, thanks.
+
+Thanks.
+
+Cheers.
+

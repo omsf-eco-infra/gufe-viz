@@ -1,5 +1,19 @@
 /**
- * `<gufe-atom-mapping>` - one mapping between two ligands, six ways.
+ * `<gufe-atom-mapping>` - THE ATOM MATCHING VISUALIZATION.
+ *
+ * One `LigandAtomMapping`: which atom of ligand A becomes which atom of ligand
+ * B. This is the single element for that question, and every view that shows a
+ * *pair of ligands* mounts it rather than drawing its own:
+ *
+ *   `<gufe-ligand-network>`   the detail pane, for the selected edge
+ *   `<gufe-transformation>`   the mapping the transformation carries
+ *   `<gufe-view>`             a mapping payload on its own
+ *
+ * All three hand it the same payload shape - `mappingPayloadFor` below is what
+ * cuts an edge loose into one - so there is one drawing path and the in-context
+ * picture cannot drift from the standalone one.
+ *
+ * Six ways to look at it:
  *
  * This is a port of the viewer panel in the framejs prototype at
  * /j/019f2b55e1f57722af0293acbda78362, which is where the modes, the switcher,
@@ -15,8 +29,11 @@
  *   Info     the mapping in numbers - counts, the correspondence, annotations
  *
  * Info is last because it is a reading of the picture rather than a picture, and
- * it replaces the always-visible statistics panel an earlier version carried.
- * Nothing is lost, it just stops taking room from the molecules.
+ * it is where everything that is not a molecule now lives: the name, the type,
+ * the gufe key, the counts, the correspondence and the annotations. There is
+ * deliberately no header strip and no statistics bar - the prototype has
+ * neither, the box labels already name both ligands, and anything else above
+ * the molecules is saying a second time what Info says properly.
  *
  * **The one deliberate divergence is 2D.** The prototype colours core atoms grey
  * and each molecule's unique atoms by side. gufe colours by *meaning* - an
@@ -29,15 +46,7 @@
  * the transformation view both do.
  */
 
-import {
-  buttonGroup,
-  centredMessage,
-  EM_DASH,
-  el,
-  errText,
-  headerStrip,
-  statChip,
-} from "../shared/dom.js";
+import { buttonGroup, centredMessage, EM_DASH, el, errText, statChip } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer } from "../shared/engines.js";
 import { guardWheel, type Interaction } from "../shared/interact.js";
@@ -191,9 +200,6 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     const from = lookupOfType<SmallMoleculeComponentViz>(registry, payload.componentA, "SmallMoleculeComponentViz");
     const to = lookupOfType<SmallMoleculeComponentViz>(registry, payload.componentB, "SmallMoleculeComponentViz");
 
-    const bar = headerStrip(payload.name || "Atom mapping", "LigandAtomMapping");
-    host.appendChild(bar);
-
     if (!from || !to) {
       host.appendChild(
         centredMessage("This mapping names two molecules, and its registry does not hold them."),
@@ -219,9 +225,6 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     for (const [a, b] of pairs) flipped.set(b, a);
     const uniquesA = uniqueAtoms(pairs, molA.symbols, molB.symbols);
     const uniquesB = uniqueAtoms(flipped, molB.symbols, molA.symbols);
-
-    bar.statsEl.appendChild(statChip("mapped", String(pairs.size)));
-    bar.statsEl.appendChild(statChip("score", payload.score == null ? EM_DASH : payload.score.toFixed(3)));
 
     // --- the stage, and the floating switcher over it ---
     const wrapper = el("div", "position:relative;flex:1;min-height:0;display:flex;flex-direction:column;");
@@ -512,6 +515,18 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     const renderInfo = (): void => {
       const body = el("div", "flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px;");
       stage.appendChild(body);
+
+      // With no header strip, Info is where the payload identifies itself.
+      const heading = el("div", "display:flex;flex-direction:column;gap:2px;");
+      heading.appendChild(
+        el(
+          "div",
+          `font-size:15px;font-weight:700;color:${T.titleColor};`,
+          payload.name || `${nameA} to ${nameB}`,
+        ),
+      );
+      heading.appendChild(el("div", `font-size:12px;color:${T.textMuted2};`, "LigandAtomMapping"));
+      body.appendChild(heading);
 
       const counts = el("div", "display:flex;flex-wrap:wrap;gap:8px 16px;font-size:11px;");
       counts.appendChild(statChip("mapped atoms", String(pairs.size)));

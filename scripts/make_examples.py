@@ -5,9 +5,12 @@
 vitest, the drag-and-drop dev page and the gallery. If they drift, everything
 fails at once, which is the point.
 
-Everything here comes from gufe's own test data, so the fixtures are real
+Most of it comes from gufe's own test data, so the fixtures are real
 serializations of real objects rather than something hand-typed that happens to
-satisfy the schema.
+satisfy the schema. The two inputs gufe does not ship live in ``scripts/data/``:
+the ten-ligand TYK2 network from OpenFE's RBFE tutorial, and the frozen ligands
+of the synthetic two-hundred-ligand network. Both are read, never regenerated
+here - see :func:`_tyk2_network` and :func:`_large_network`.
 
 Run with ``pixi run examples``.
 """
@@ -26,8 +29,15 @@ from gufe.tokenization import GufeTokenizable
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "python"))
+# `make_big_network` is imported for the rule that joins the large network up.
+# A script run as `python scripts/make_examples.py` already has this on the path;
+# saying so anyway means the import works however this module is reached.
+sys.path.insert(0, str(REPO / "scripts"))
 
 OUT = REPO / "examples"
+
+#: Inputs that gufe does not ship, which this script reads rather than builds.
+DATA = REPO / "scripts" / "data"
 
 
 def _gufe_data() -> pathlib.Path:
@@ -241,6 +251,55 @@ def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
     )
 
 
+def _tyk2_network() -> gufe.LigandNetwork:
+    """Ten TYK2 ligands and the nine mappings OpenFE planned between them.
+
+    From the RBFE tutorial in OpenFE's ExampleNotebooks, where
+    ``openfe plan-rbfe-network`` writes it out of ``tyk2_ligands.sdf``. Committed
+    as ``scripts/data/tyk2_network.graphml`` because neither the ligands nor the
+    planner is a dependency of this repository, and read rather than replanned:
+    a network whose edges came out of a real mapper is the point of it, and
+    re-running one here would need OpenFE and would still not be byte-stable.
+
+    It is the middle of the three sizes: three ligands is the shape of a network,
+    ten is what one looks like, and the level-of-detail work is answering for two
+    hundred. All three are in ``examples/`` so a change to the view can be seen
+    at each.
+    """
+    from gufe import LigandNetwork
+
+    return LigandNetwork.from_graphml((DATA / "tyk2_network.graphml").read_text(encoding="utf-8"))
+
+
+#: Forward edges per ligand in the large network, matching what
+#: ``make_big_network`` was run with. Three is enough to make the graph dense
+#: enough to be worth drawing without tripling the payload.
+_LARGE_EDGES_PER_NODE = 3
+
+
+def _large_network() -> gufe.LigandNetwork:
+    """Two hundred ligands, joined by mappings that are not chemistry.
+
+    **A load fixture.** The molecules are real, embedded structures - that is what
+    makes the payload size and the depiction cost real - but the mappings pair
+    atoms by index and score them with an arithmetic ramp. Nothing about an edge
+    here means anything, and the gallery note says so beside the picture.
+
+    The ligands are read from ``scripts/data/large_network.sdf`` rather than
+    embedded, which is what makes a fixture this size byte-stable: see the note
+    at the top of ``make_big_network.py``, whose ``--sdf`` wrote that file, and
+    whose :func:`synthetic_mappings` is imported here so the edge rule has one
+    home rather than two.
+    """
+    from gufe import LigandNetwork, SmallMoleculeComponent
+    from make_big_network import synthetic_mappings
+    from rdkit import Chem
+
+    supplier = Chem.SDMolSupplier(str(DATA / "large_network.sdf"), removeHs=False)
+    mols = [SmallMoleculeComponent.from_rdkit(mol) for mol in supplier if mol is not None]
+    return LigandNetwork(nodes=mols, edges=synthetic_mappings(mols, _LARGE_EDGES_PER_NODE))
+
+
 def build() -> dict[str, GufeTokenizable]:
     """Return ``{filename: gufe object}``.
 
@@ -277,10 +336,14 @@ def build() -> dict[str, GufeTokenizable]:
         # quietly serialize them as one.
         "solvated_pdb.json": _solvated(data / "181l.pdb", "SolvatedPDBComponent"),
         "protein_membrane.json": _solvated(data / "181l.pdb", "ProteinMembraneComponent"),
-        # Two variants of the third V1 kind: gufe's own fixture, whose molecules
-        # are unnamed, and the same network with names.
+        # The third V1 kind, at three sizes and in four variants. gufe's own
+        # fixture twice over, whose molecules are unnamed and then named; a real
+        # ten-ligand network from OpenFE's tutorial; and a synthetic two hundred,
+        # which is the size the level-of-detail work is for.
         "ligand_network.json": network,
         "ligand_network_named.json": _named_network(network),
+        "ligand_network_medium.json": _tyk2_network(),
+        "ligand_network_large.json": _large_network(),
         # Kinds that have no view yet. Committed now so the schema, both
         # validators and the "no visualization for X yet" panel are all exercised
         # against real data before the views exist.
