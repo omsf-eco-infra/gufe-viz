@@ -368,3 +368,75 @@ describe("<gufe-unknown-component>", () => {
     expect(node.textContent).not.toContain("This build can draw");
   });
 });
+
+describe("<gufe-chemical-system>", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("lists every label, resolved through the registry", async () => {
+    const payload = readExample("chemical_system.json");
+    const node = mount("gufe-chemical-system", payload);
+    await flush();
+
+    const labels = Object.keys((payload as { components: Record<string, string> }).components);
+    expect(labels.length).toBeGreaterThan(1);
+    for (const label of labels) expect(node.textContent).toContain(label);
+    expect(node.textContent).toContain(String(labels.length));
+  });
+
+  it("draws the selected component through a nested dispatcher", async () => {
+    const node = mount("gufe-chemical-system", readExample("chemical_system.json"));
+    await flush();
+    // Composition made structural: this view picks which component, and
+    // <gufe-view> decides how to draw it, exactly as at the top level.
+    const nested = node.querySelector("gufe-view");
+    expect(nested).toBeTruthy();
+    expect(nested!.querySelector("gufe-small-molecule, gufe-solvent, gufe-protein")).toBeTruthy();
+  });
+
+  it("switches component without rebuilding the nested view", async () => {
+    const node = mount("gufe-chemical-system", readExample("chemical_system.json"));
+    await flush();
+    const before = node.querySelector("gufe-view");
+
+    const buttons = Array.from(node.querySelectorAll("button"));
+    buttons[buttons.length - 1].click();
+    await flush();
+
+    expect(node.querySelector("gufe-view")).toBe(before);
+  });
+
+  it("survives a label whose key resolves to nothing, and says so", async () => {
+    const payload = structuredClone(readExample("chemical_system.json")) as {
+      components: Record<string, string>;
+    };
+    const labels = Object.keys(payload.components);
+    payload.components[labels[0]] = "SmallMoleculeComponent-nosuchentry";
+
+    const node = mount("gufe-chemical-system", payload);
+    await flush();
+
+    // The rest of the system still draws; the missing one is reported.
+    expect(node.querySelector("gufe-view")).toBeTruthy();
+    expect(node.textContent).toContain("not in its registry");
+    expect(node.textContent).toContain(labels[0]);
+  });
+
+  it("names the cause when nothing resolves at all", async () => {
+    const payload = structuredClone(readExample("chemical_system.json")) as {
+      components: Record<string, string>;
+    };
+    for (const label of Object.keys(payload.components)) {
+      payload.components[label] = `SmallMoleculeComponent-missing-${label}`;
+    }
+
+    const node = mount("gufe-chemical-system", payload);
+    await flush();
+    expect(node.textContent).toContain("None of this system's components are in its registry");
+  });
+});

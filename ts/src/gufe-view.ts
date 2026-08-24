@@ -44,6 +44,7 @@ export const VIEW_TAGS: Partial<Record<PayloadType, string>> = {
   SmallMoleculeComponentViz: "gufe-small-molecule",
   ProteinComponentViz: "gufe-protein",
   LigandNetworkViz: "gufe-ligand-network",
+  ChemicalSystemViz: "gufe-chemical-system",
   SolventComponentViz: "gufe-solvent",
   UnknownComponentViz: "gufe-unknown-component",
 };

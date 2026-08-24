@@ -67,12 +67,23 @@ describe("the built bundle", () => {
   it("degrades gracefully, from the bundle, on a kind it cannot draw", async () => {
     seedFakeEngines();
 
+    // A declared type with no view is legal by design and renders a panel. Which
+    // types those are shrinks as views land, so the type is chosen from the
+    // bundle's own dispatch table rather than named here - an earlier version
+    // hard-coded a fixture and started failing the day that view was written.
+    const bundle = (await import(pathToFileURL(BUNDLE).href)) as {
+      PAYLOAD_TYPES: readonly string[];
+      VIEW_TAGS: Record<string, string | undefined>;
+    };
+    const undrawn = bundle.PAYLOAD_TYPES.find((type) => !bundle.VIEW_TAGS[type]);
+    if (!undrawn) return; // every declared type draws, which is the goal
+
     document.body.innerHTML = "<gufe-view></gufe-view>";
     const view = document.querySelector("gufe-view") as HTMLElement & { payload: unknown };
-    view.payload = readExample("solvent.json");
+    view.payload = { type: undrawn, "gufe-key": `${undrawn}-0`, name: "" };
     await flush();
 
     expect(view.textContent).toContain("no visualization");
-    expect(view.textContent).toContain("SolventComponent");
+    expect(view.textContent).toContain(undrawn);
   });
 });
