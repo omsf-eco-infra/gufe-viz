@@ -30,6 +30,7 @@ import { svg } from "../shared/svg.js";
 import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG } from "../shared/sdf.js";
+import { FONT, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import { mappingPayloadFor } from "./atom-mapping.js";
@@ -191,7 +192,7 @@ function hoverTooltip(host: HTMLElement): {
   const tip = el(
     "div",
     "position:absolute;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s ease;" +
-      "padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.5;max-width:260px;" +
+      "padding:7px 10px;border-radius:6px;font-size:${FONT.small};line-height:1.5;max-width:260px;" +
       `background:${T.tooltipBg};border:1px solid ${T.tooltipBorder};color:${T.textPrimary};` +
       "box-shadow:0 4px 14px rgba(0,0,0,0.28);",
   );
@@ -415,7 +416,7 @@ function copyOut(text: string, fallbackHost: HTMLElement): void {
 
 /** When the clipboard is unavailable, show the text so it can be copied by hand. */
 function showText(text: string, host: HTMLElement): void {
-  const box = el("textarea", "width:100%;height:80px;font-size:11px;box-sizing:border-box;") as HTMLTextAreaElement;
+  const box = el("textarea", "width:100%;height:80px;font-size:${FONT.small};box-sizing:border-box;") as HTMLTextAreaElement;
   box.value = text;
   box.readOnly = true;
   host.appendChild(box);
@@ -468,7 +469,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   search.setAttribute("aria-label", "Search ligands by name, SMILES or gufe key");
   panel.appendChild(search);
 
-  const scoreRow = el("div", `display:flex;align-items:center;gap:8px;font-size:11px;color:${T.textMuted};`);
+  const scoreRow = el("div", `display:flex;align-items:center;gap:8px;font-size:${FONT.small};color:${T.textMuted};`);
   const scoreValue = el("span", `min-width:28px;color:${T.textPrimary};`, "0.00");
   const score = el("input", "flex:1;") as HTMLInputElement;
   score.type = "range";
@@ -482,7 +483,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   scoreRow.appendChild(scoreValue);
   panel.appendChild(scoreRow);
 
-  const count = el("div", `font-size:11px;color:${T.textMuted2};`);
+  const count = el("div", `font-size:${FONT.small};color:${T.textMuted2};`);
   panel.appendChild(count);
 
   const list = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
@@ -494,7 +495,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   // "Add edge" would set an expectation this cannot meet, and frustrating
   // someone who thinks they should be able to edit is the failure mode.
   const exportBox = el("div", "display:flex;flex-direction:column;gap:6px;");
-  const asRow = el("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${T.textMuted};`);
+  const asRow = el("div", `display:flex;align-items:center;gap:6px;font-size:${FONT.small};color:${T.textMuted};`);
   asRow.appendChild(el("span", "", "copy as"));
   const asPicker = el("select", `${SELECT_CSS}flex:1;`) as HTMLSelectElement;
   for (const [value, text] of [
@@ -527,7 +528,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   }
   exportBox.appendChild(exportRow);
   exportBox.appendChild(
-    el("div", `font-size:10px;color:${T.textMuted2};`, "Shift-click to save as a file instead."),
+    el("div", `font-size:${FONT.tiny};color:${T.textMuted2};`, "Shift-click to save as a file instead."),
   );
   panel.appendChild(exportBox);
 
@@ -559,7 +560,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
       const row = el(
         "button",
         "display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;text-align:left;" +
-          "font-family:inherit;font-size:11px;cursor:pointer;width:100%;min-width:0;" +
+          "font-family:inherit;font-size:${FONT.small};cursor:pointer;width:100%;min-width:0;" +
           `border:1px solid ${parts.selected.has(key) ? T.cardBorderActive : T.cardBorder};` +
           `background:${parts.selected.has(key) ? T.cardBgActive : T.cardBg};color:${T.textPrimary};`,
       );
@@ -586,7 +587,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
     }
 
     if (!shown.length) {
-      list.appendChild(el("div", `font-size:11px;padding:8px;color:${T.textMuted2};`, "Nothing matches."));
+      list.appendChild(el("div", `font-size:${FONT.small};padding:8px;color:${T.textMuted2};`, "Nothing matches."));
     }
   };
 
@@ -835,11 +836,10 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   ): { bar: HTMLDivElement; picker: HTMLSelectElement } {
     const toolbar = el(
       "div",
-      "display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;" +
-        `background:${T.toolbarBg};border-top:1px solid ${T.toolbarBorder};`,
+      TOOLBAR.bottom,
     );
 
-    const legend = el("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${T.textMuted};`);
+    const legend = el("div", `display:flex;align-items:center;gap:6px;font-size:${FONT.small};color:${T.textMuted};`);
     legend.appendChild(el("span", "", "score"));
     legend.appendChild(
       el(
@@ -850,7 +850,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     legend.appendChild(el("span", "", "0 -> 1"));
     toolbar.appendChild(legend);
 
-    toolbar.appendChild(el("label", `font-size:12px;margin-left:auto;color:${T.textMuted};`, "Layout"));
+    toolbar.appendChild(el("label", `font-size:${FONT.body};margin-left:auto;color:${T.textMuted};`, "Layout"));
     const picker = el("select", SELECT_CSS);
     for (const name of LAYOUTS) {
       const option = el("option", "", name);
@@ -969,7 +969,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
             (edge.score == null
               ? `<div style="color:${T.textMuted2};">no score</div>`
               : `<div style="margin-top:4px;">score <b>${edge.score.toFixed(3)}</b></div>`) +
-            `<div style="margin-top:4px;font-size:10px;color:${T.textMuted2};">Click to see the mapping</div>`,
+            `<div style="margin-top:4px;font-size:${FONT.tiny};color:${T.textMuted2};">Click to see the mapping</div>`,
           event.offsetX,
           event.offsetY,
         );
@@ -1013,7 +1013,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
             (node.smiles
               ? `<div style="margin-top:3px;font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;">${esc(node.smiles)}</div>`
               : "") +
-            `<div style="margin-top:3px;font-size:10px;color:${T.textMuted2};overflow-wrap:anywhere;">${esc(node["gufe-key"])}</div>`,
+            `<div style="margin-top:3px;font-size:${FONT.tiny};color:${T.textMuted2};overflow-wrap:anywhere;">${esc(node["gufe-key"])}</div>`,
           event.offsetX,
           event.offsetY,
         );

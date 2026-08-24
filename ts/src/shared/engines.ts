@@ -26,6 +26,22 @@ export interface ThreeDmolViewer {
   zoomTo(): void;
   /** Multiply the current zoom. `shared/interact.ts` is what bounds it. */
   zoom(factor: number): void;
+  /**
+   * How near and how far the camera may get, as distances in the units
+   * `CAMERA_Z` is in. 3Dmol applies these to every way it zooms - wheel, drag
+   * and two-finger pinch - which is why `shared/interact.ts` hands them over
+   * rather than only clamping the wheel it sees.
+   *
+   * Optional so that a host pre-seeding an older build degrades to the clamp
+   * `interact.ts` applies itself, instead of throwing.
+   */
+  setZoomLimits?(lower: number, upper: number): void;
+  /**
+   * Where 3Dmol parks the camera. Distances are measured back from here, so the
+   * zoom clamp needs it; optional for the same reason as above, and 150 is the
+   * value every build has defaulted to.
+   */
+  CAMERA_Z?: number;
   /** A coloured sphere, which is how a mapped pair is marked. */
   addSphere(spec: object): unknown;
   /** A cylinder, dashed when asked - the line drawn between a mapped pair. */
@@ -34,8 +50,11 @@ export interface ThreeDmolViewer {
   removeAllShapes(): void;
   /** Style a subset on top of what `setStyle` already applied. */
   addStyle(selection: object, style: object): void;
-  /** The camera, for keeping two side-by-side viewers pointing the same way. */
-  getView(): unknown;
+  /**
+   * The camera, for keeping two side-by-side viewers pointing the same way.
+   * Index 3 is the camera's z, which is what the zoom clamp reads.
+   */
+  getView(): number[];
   setView(view: unknown): void;
   /** Turn the camera, in degrees about an axis. */
   rotate(angle: number, axis: string): void;

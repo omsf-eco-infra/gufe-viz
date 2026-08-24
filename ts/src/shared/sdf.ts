@@ -11,7 +11,6 @@
 
 import { errText } from "./dom.js";
 import type { RDKitModule } from "./engines.js";
-import { MAPPING_DRAW_OPTIONS } from "./atom-colors.js";
 
 export interface Molecule {
   name: string;
@@ -151,61 +150,4 @@ export function placeDepiction(box: HTMLElement, svg: string, size: number): voi
   if (!svgEl.getAttribute("viewBox")) svgEl.setAttribute("viewBox", `0 0 ${size} ${size}`);
   svgEl.setAttribute("preserveAspectRatio", "xMidYMid meet");
   svgEl.setAttribute("style", "width:100%;height:100%;max-width:100%;max-height:100%;");
-}
-
-/**
- * The same depiction, with `atoms` highlighted.
- *
- * Kept separate from `depictSVG` and drawn with `removeHs: false` deliberately:
- * a mapping's indices are indices into the molecule gufe serialized, so
- * stripping hydrogens first would shift every index above the first one and
- * highlight the wrong atoms with complete confidence.
- *
- * Falls back to an unhighlighted depiction when the RDKit build predates
- * `get_svg_with_highlights` - a plain picture is worth more than an error.
- *
- * `colors` maps an atom index to an RGB triple, which is how the two meanings
- * gufe distinguishes - an element change against an atom unique to its side -
- * end up on the same picture. Atoms listed in `atoms` but absent from `colors`
- * take RDKit's default highlight.
- */
-export function depictHighlightedSVG(
-  RDKit: RDKitModule,
-  source: string,
-  size: number,
-  atoms: number[],
-  colors: Record<number, readonly [number, number, number]> = {},
-): string | null {
-  let rdmol = null;
-  try {
-    rdmol = RDKit.get_mol(source, JSON.stringify({ removeHs: false }));
-    if (!rdmol) return null;
-    if (!rdmol.get_svg_with_highlights) return rdmol.get_svg(size, size) || null;
-    return (
-      rdmol.get_svg_with_highlights(
-        JSON.stringify({
-          atoms,
-          width: size,
-          height: size,
-          // Everything gufe sets, mirrored: a black-and-white element palette,
-          // atom indices, and outline rather than filled highlights. Getting
-          // the highlight colours right while missing these still produces a
-          // picture that does not match what gufe draws.
-          ...MAPPING_DRAW_OPTIONS,
-          highlightAtomColors: colors,
-        }),
-      ) || null
-    );
-  } catch (e) {
-    console.warn("[gufe-viz] depictHighlightedSVG threw -", errText(e));
-    return null;
-  } finally {
-    if (rdmol) {
-      try {
-        rdmol.delete();
-      } catch {
-        /* already freed */
-      }
-    }
-  }
 }

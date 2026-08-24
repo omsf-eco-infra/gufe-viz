@@ -626,7 +626,9 @@ describe("<gufe-atom-mapping>", () => {
     expect(text).toContain("mapped atoms");
     expect(text).toContain("element changes");
     expect(text).toContain("unique to");
-    expect(text).toContain("CORRESPONDENCE");
+    // Uppercased by CSS rather than shouted in the DOM, so the text a
+    // screen reader gets is sentence case.
+    expect(text).toContain("Correspondence");
     expect(text).toContain("gufe key");
   });
 

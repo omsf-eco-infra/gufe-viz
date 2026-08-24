@@ -12,6 +12,7 @@
 import { card, el, fieldRow, headerStrip, statChip } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { svg, titled } from "../shared/svg.js";
+import { FONT } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type { SolventComponentViz } from "../schema/types.js";
 
@@ -136,7 +137,7 @@ export class GufeSolvent extends GufeElement<SolventComponentViz> {
     picture.appendChild(
       el(
         "div",
-        `padding-top:10px;font-size:11px;text-align:center;color:${T.textMuted2};`,
+        `padding-top:10px;font-size:${FONT.small};text-align:center;color:${T.textMuted2};`,
         "Schematic only: the dots show which ions are present, not how many.",
       ),
     );

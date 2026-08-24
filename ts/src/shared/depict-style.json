@@ -1,0 +1,32 @@
+{
+  "version": 1,
+
+  "style": "rdkit",
+
+  "createdDestroyed": true,
+  "modified": true,
+  "destroyedColor": "#DC3220",
+  "createdColor": "#DC3220",
+  "modifiedColor": "#005AB5",
+
+  "boundary": true,
+  "circles": "outline",
+  "circleRadius": 0.3,
+  "circleStroke": 1.2,
+
+  "hydrogens": "show",
+  "elementColors": "mono",
+  "atomNumbers": true,
+  "stereo": false,
+
+  "numScale": 0.5,
+  "labelScale": 0.6,
+  "bondWidth": 2,
+  "markWidth": 2,
+
+  "haloWidth": 10,
+  "haloOpacity": 0.35,
+
+  "customSpec": "",
+  "customColor": "#7C3AED"
+}

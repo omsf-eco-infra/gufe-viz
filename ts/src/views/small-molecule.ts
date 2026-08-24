@@ -10,6 +10,7 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
 import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import { depictSVG, ensureSDFTerminator, parseCounts, placeDepiction } from "../shared/sdf.js";
+import { BUTTON, OVERLAY_CONTROLS, PANE_LABEL, SURFACE } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type { SmallMoleculeComponentViz } from "../schema/types.js";
 
@@ -50,14 +51,13 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     split.appendChild(right);
 
     const paneLabel = (text: string) =>
-      el("div", `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${T.labelFg};` +
-        `background:${T.labelBg};`, text);
+      el("div",PANE_LABEL, text);
 
     left.appendChild(paneLabel("2D"));
     const depictBox = el(
       "div",
       "flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px;" +
-        `background:${T.canvas2DBg};`,
+        `background:${SURFACE.canvas2D};`,
     );
     left.appendChild(depictBox);
 
@@ -68,7 +68,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     // --- info bar ---
     const infoBar = el(
       "div",
-      "flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:12px;" +
+      "flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:${FONT.body};" +
         `background:${T.toolbarBg};border-top:1px solid ${T.toolbarBorder};color:${T.textPrimary};`,
     );
     host.appendChild(infoBar);
@@ -86,7 +86,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
       cell.appendChild(
         el(
           "span",
-          "font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;" +
+          "font-size:${FONT.tiny};font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;" +
             `color:${T.textMuted2};`,
           label,
         ),
@@ -94,7 +94,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
       const v = el(
         "span",
         `user-select:text;cursor:text;color:${T.textPrimary}` +
-          (mono ? ";font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;overflow-wrap:anywhere;" : ""),
+          (mono ? ";font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:${FONT.small};overflow-wrap:anywhere;" : ""),
         value,
       );
       v.title = value;
@@ -133,8 +133,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
 
     const switcher = el(
       "div",
-      "position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;" +
-        `background:${T.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`,
+      OVERLAY_CONTROLS,
     );
     switcher.appendChild(
       buttonGroup(SMALL_MOL_STYLES, style, (id) => {
@@ -149,7 +148,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     spinBtn.title = "Toggle continuous rotation";
     spinBtn.onclick = () => {
       spinning = !spinning;
-      spinBtn.style.background = spinning ? T.btnBgActive : T.btnBg;
+      spinBtn.style.background = spinning ? BUTTON.bgActive : BUTTON.bg;
       try {
         viewer?.spin(spinning ? "y" : false);
       } catch {
@@ -167,7 +166,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     load3Dmol()
       .then(() => {
         host3D.container.replaceChildren();
-        viewer = ThreeDmol!.createViewer(host3D.container, { backgroundColor: T.viewerBg });
+        viewer = ThreeDmol!.createViewer(host3D.container, { backgroundColor: SURFACE.viewer });
         viewer.addModel(ensureSDFTerminator(sdf), "sdf");
         viewer.setStyle({}, SMALL_MOL_SPECS[style]);
         viewer.zoomTo();

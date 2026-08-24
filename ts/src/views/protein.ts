@@ -27,6 +27,7 @@ import {
   type ProteinRepresentation,
   type StatusFn,
 } from "../shared/pdb.js";
+import { BUTTON, FONT, SURFACE, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type {
   ProteinComponentViz,
@@ -72,16 +73,15 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     // --- toolbar ---
     const toolbar = el(
       "div",
-      "display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 14px;flex-shrink:0;font-size:12px;" +
-        `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};color:${T.textPrimary};`,
+      TOOLBAR.top,
     );
     host.appendChild(toolbar);
 
     toolbar.appendChild(
-      el("span", `font-weight:700;font-size:14px;letter-spacing:.02em;color:${T.titleColor};`, name || "Protein"),
+      el("span", `font-weight:700;font-size:${FONT.heading};letter-spacing:.02em;color:${T.titleColor};`, name || "Protein"),
     );
 
-    const groupLabel = (text: string) => el("span", `font-size:11px;color:${T.textMuted};`, text);
+    const groupLabel = (text: string) => el("span", `font-size:${FONT.small};color:${T.textMuted};`, text);
 
     toolbar.appendChild(groupLabel("Style:"));
     toolbar.appendChild(
@@ -115,10 +115,10 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     for (const [key, label, title, onChange] of toggleSpecs) {
       const btn = el("button", BTN_CSS, label);
       btn.title = title;
-      btn.style.background = opts[key] ? T.btnBgActive : T.btnBg;
+      btn.style.background = opts[key] ? BUTTON.bgActive : BUTTON.bg;
       btn.onclick = () => {
         (opts[key] as boolean) = !opts[key];
-        btn.style.background = opts[key] ? T.btnBgActive : T.btnBg;
+        btn.style.background = opts[key] ? BUTTON.bgActive : BUTTON.bg;
         onChange();
       };
       toggles.appendChild(btn);
@@ -126,7 +126,7 @@ export class GufeProtein extends GufeElement<PdbPayload> {
 
     toggles.appendChild(resetControl(() => interaction?.reset()));
 
-    const statsEl = el("span", `margin-left:auto;font-size:11px;white-space:nowrap;color:${T.textMuted2};`);
+    const statsEl = el("span", `margin-left:auto;font-size:${FONT.small};white-space:nowrap;color:${T.textMuted2};`);
     toolbar.appendChild(statsEl);
 
     // --- viewer + status overlay ---
@@ -136,7 +136,7 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     const statusEl = el(
       "div",
       "position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:6px 14px;border-radius:6px;" +
-        "font-size:12px;z-index:20;display:none;pointer-events:none;",
+        "font-size:${FONT.body};z-index:20;display:none;pointer-events:none;",
     );
     pane.wrap.appendChild(statusEl);
 
@@ -172,7 +172,7 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     showStatus("Loading 3D viewer...");
     load3Dmol()
       .then(() => {
-        viewer = ThreeDmol!.createViewer(pane.container, { backgroundColor: T.viewerBg });
+        viewer = ThreeDmol!.createViewer(pane.container, { backgroundColor: SURFACE.viewer });
         viewer.addModel(pdb, "pdb");
         // applyProteinStyles clears the "Loading..." status (or replaces it with
         // the surface-computing message), so there is nothing to hide here.

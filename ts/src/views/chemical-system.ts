@@ -17,6 +17,7 @@
 
 import { centredMessage, el, floatingWarning, headerStrip, statChip, typeBadge } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { FONT } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, lookup } from "../schema/registry.js";
 import type { ChemicalSystemViz, ComponentViz } from "../schema/types.js";
@@ -113,10 +114,10 @@ export class GufeChemicalSystem extends GufeElement<ChemicalSystemViz> {
         "button",
         "display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px;text-align:left;" +
           `border:1px solid ${T.cardBorder};border-radius:8px;background:${T.cardBg};cursor:pointer;` +
-          "font-family:inherit;font-size:12px;width:100%;",
+          "font-family:inherit;font-size:${FONT.body};width:100%;",
       );
       button.appendChild(el("span", `font-weight:700;color:${T.textPrimary};`, label));
-      button.appendChild(el("span", `font-size:11px;color:${T.textMuted};`, componentLabel(component)));
+      button.appendChild(el("span", `font-size:${FONT.small};color:${T.textMuted};`, componentLabel(component)));
       button.appendChild(typeBadge(componentType(component)));
       button.onclick = () => select(index);
       buttons.push(button);

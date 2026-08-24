@@ -15,6 +15,7 @@
 
 import { buttonGroup, centredMessage, el, headerStrip, statChip, typeBadge } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { FONT, PANE_LABEL } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import { mappingPayloadFor } from "./atom-mapping.js";
@@ -74,11 +75,11 @@ function componentCell(component: ComponentViz | undefined, status: DiffStatus):
   if (!described) {
     cell.style.background = "transparent";
     cell.style.borderStyle = "dashed";
-    cell.appendChild(el("span", `font-size:12px;color:${T.textMuted2};`, "absent"));
+    cell.appendChild(el("span", `font-size:${FONT.body};color:${T.textMuted2};`, "absent"));
     return cell;
   }
   cell.style.borderColor = status === "unchanged" ? T.cardBorder : STATUS_COLOR[status];
-  cell.appendChild(el("span", `font-size:12px;font-weight:600;color:${T.textPrimary};`, described.name));
+  cell.appendChild(el("span", `font-size:${FONT.body};font-weight:600;color:${T.textPrimary};`, described.name));
   cell.appendChild(typeBadge(described.type));
   return cell;
 }
@@ -131,7 +132,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
       heads.appendChild(
         el(
           "div",
-          `flex:1 1 50%;min-width:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${T.textMuted2};`,
+          `flex:1 1 50%;min-width:0;font-size:${FONT.small};font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${T.textMuted2};`,
           `${side}${state.name ? ` - ${state.name}` : ""}`,
         ),
       );
@@ -150,7 +151,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
       gutter.appendChild(
         el("span", `width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${STATUS_COLOR[status]};`),
       );
-      const name = el("span", `font-size:12px;font-weight:700;color:${T.textPrimary};overflow-wrap:anywhere;`, label);
+      const name = el("span", `font-size:${FONT.body};font-weight:700;color:${T.textPrimary};overflow-wrap:anywhere;`, label);
       name.title = status;
       gutter.appendChild(name);
       row.appendChild(gutter);
@@ -161,7 +162,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
 
     const legend = el(
       "div",
-      `display:flex;flex-wrap:wrap;gap:12px;padding:8px 0 0;font-size:11px;color:${T.textMuted};`,
+      `display:flex;flex-wrap:wrap;gap:12px;padding:8px 0 0;font-size:${FONT.small};color:${T.textMuted};`,
     );
     for (const status of ["unchanged", "changed", "added", "removed"] as DiffStatus[]) {
       legend.appendChild(statChip(status, "", STATUS_COLOR[status]));
@@ -170,8 +171,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
 
     // --- the mappings ---
     const mappingLabel = el(
-      "div",
-      `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
+      "div",PANE_LABEL,
       "Atom mapping",
     );
     host.appendChild(mappingLabel);
@@ -202,7 +202,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
     if (mappings.length > 1) {
       const picker = el(
         "div",
-        "display:flex;align-items:center;gap:8px;padding:6px 10px;flex-shrink:0;font-size:11px;" +
+        "display:flex;align-items:center;gap:8px;padding:6px 10px;flex-shrink:0;font-size:${FONT.small};" +
           `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};color:${T.textMuted};`,
       );
       picker.appendChild(

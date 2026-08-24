@@ -14,6 +14,7 @@
 
 import { card, el, fieldRow, headerStrip, typeBadge } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { FONT } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type { UnknownComponentViz } from "../schema/types.js";
 
@@ -35,14 +36,14 @@ export class GufeUnknownComponent extends GufeElement<UnknownComponentViz> {
     panel.appendChild(
       el(
         "div",
-        `font-size:14px;font-weight:600;padding-bottom:6px;color:${T.textPrimary};`,
+        `font-size:${FONT.heading};font-weight:600;padding-bottom:6px;color:${T.textPrimary};`,
         `There is no visualization for ${payload.gufe_type}.`,
       ),
     );
     panel.appendChild(
       el(
         "div",
-        `font-size:12px;line-height:1.6;padding-bottom:10px;color:${T.textMuted};`,
+        `font-size:${FONT.body};line-height:1.6;padding-bottom:10px;color:${T.textMuted};`,
         "gufe lets a project define its own Component subclasses, so this is a " +
           "component this build has never been taught to draw - not a broken payload. " +
           "Everything gufe knows about it that survives serialization is below.",

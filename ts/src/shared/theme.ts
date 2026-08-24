@@ -1,7 +1,16 @@
 /**
- * The two colour tables. Every view reads colours from `T` and nothing
- * hard-codes a hex value, which is what makes a theme change one edit rather
- * than thirty.
+ * The interface palette: two colour tables, light and dark.
+ *
+ * This is the raw colour data. Views do not read it directly - they go through
+ * `style.ts`, which is the front door and turns these into the buttons, panels
+ * and text a view actually asks for. Keeping the palette separate from the
+ * component styles means a colour can be retuned without touching a layout, and
+ * a layout without touching a colour.
+ *
+ * Nothing chemical belongs here. The mapping highlights and the pair ramp are
+ * mirrored from gufe in `atom-colors.ts`, and the 3D mode colours from the
+ * framejs prototype in `molecule-colors.ts`. Those say what a picture means;
+ * these only say what it looks like.
  *
  * 3Dmol wants `0x`-prefixed colour strings and CSS wants `#`-prefixed ones, so
  * both forms are carried deliberately rather than converted at each call site.
@@ -56,18 +65,6 @@ export interface Theme {
   viewerBg: string;
   canvas2DBg: string;
 
-  // The atom-mapping 3D modes, from the framejs prototype at
-  // /j/019f2b55e1f57722af0293acbda78362. These are view colours for the 3D
-  // modes and are deliberately *not* the 2D mapping colours: those are gufe's,
-  // mirrored in `atom-colors.ts`, and the two must not be confused.
-  colorCore: string;
-  colorUniqueA: string;
-  colorUniqueB: string;
-  linesMolA: string;
-  linesMolB: string;
-  linesDash: string;
-  overlayMolA: string;
-  overlayMolB: string;
 
   // diff palette (transformation view)
   diffUnchanged: string;
@@ -135,14 +132,6 @@ export const THEMES: { dark: Theme; light: Theme } = {
     viewerBg: "0x1a1a2e",
     canvas2DBg: "#ffffff",
 
-    colorCore: "0xaaaaaa",
-    colorUniqueA: "0xff4d4d",
-    colorUniqueB: "0x4dff88",
-    linesMolA: "0xff8888",
-    linesMolB: "0x88ffaa",
-    linesDash: "0xffee55",
-    overlayMolA: "0xff6666",
-    overlayMolB: "0x66ff99",
 
     diffUnchanged: "#64748b",
     diffChanged: "#d9a300",
@@ -205,14 +194,6 @@ export const THEMES: { dark: Theme; light: Theme } = {
     viewerBg: "0xffffff",
     canvas2DBg: "#ffffff",
 
-    colorCore: "0x888888",
-    colorUniqueA: "0xd62828",
-    colorUniqueB: "0x2a9d4a",
-    linesMolA: "0xd62828",
-    linesMolB: "0x2a9d4a",
-    linesDash: "0xd9a300",
-    overlayMolA: "0xd62828",
-    overlayMolB: "0x2a9d4a",
 
     diffUnchanged: "#94a3b8",
     diffChanged: "#b45309",

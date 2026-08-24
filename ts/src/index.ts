@@ -36,6 +36,23 @@ export { GufeElement, defineElement, type ViewHandle } from "./shared/element.js
 export { CHROME_OPEN_BY_DEFAULT, chromeMenu, type ChromeMenu, type ChromeMenuOptions } from "./shared/dom.js";
 export { MAPPING_COLORS, MAPPING_RAMP_3D, MAPPING_RAMP_NAME } from "./shared/atom-colors.js";
 export {
+  DEFAULT_DEPICT_STYLE,
+  DEPICT_STYLE,
+  DEPICT_STYLE_RANGES,
+  markGroups,
+  markedBonds,
+  normaliseDepictStyle,
+  parseAtomSpec,
+  type CircleStyle,
+  type CustomAtoms,
+  type DepictStyle,
+  type ElementColors,
+  type HydrogenMode,
+  type MarkGroup,
+  type MarkStyle,
+  type Side,
+} from "./shared/depict-style.js";
+export {
   boundedZoom,
   DEFAULT_ZOOM_BOUNDS,
   guardWheel,

@@ -17,6 +17,7 @@ import { centredMessage, el, floatingWarning, headerStrip, statChip, typeBadge }
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { loadD3 } from "../shared/engines.js";
 import { svg, titled } from "../shared/svg.js";
+import { FONT, PANE_LABEL } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type {
@@ -288,8 +289,7 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
   } {
     host.appendChild(
       el(
-        "div",
-        `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
+        "div",PANE_LABEL,
         "Selected",
       ),
     );
@@ -303,8 +303,8 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
         "div",
         `padding:10px 14px;border-bottom:1px solid ${T.toolbarBorder};display:flex;flex-direction:column;gap:4px;`,
       );
-      wrap.appendChild(el("div", `font-size:13px;font-weight:600;color:${T.textPrimary};`, title));
-      wrap.appendChild(el("div", `font-size:11px;color:${T.textMuted2};`, subtitle));
+      wrap.appendChild(el("div", `font-size:${FONT.heading};font-weight:600;color:${T.textPrimary};`, title));
+      wrap.appendChild(el("div", `font-size:${FONT.small};color:${T.textMuted2};`, subtitle));
       return wrap;
     };
 
@@ -322,11 +322,11 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
             "display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;min-width:0;" +
               `background:${T.cardBg};border:1px solid ${T.cardBorder};`,
           );
-          row.appendChild(el("span", `font-size:12px;font-weight:700;color:${T.textPrimary};`, label));
+          row.appendChild(el("span", `font-size:${FONT.body};font-weight:700;color:${T.textPrimary};`, label));
           row.appendChild(
             el(
               "span",
-              `font-size:11px;color:${T.textMuted};overflow-wrap:anywhere;min-width:0;`,
+              `font-size:${FONT.small};color:${T.textMuted};overflow-wrap:anywhere;min-width:0;`,
               component ? component.name || "(unnamed)" : "(not in the registry)",
             ),
           );
@@ -342,13 +342,13 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
           list.appendChild(row);
         }
         if (!entries.length) {
-          list.appendChild(el("div", `font-size:12px;color:${T.textMuted2};`, "This system lists no components."));
+          list.appendChild(el("div", `font-size:${FONT.body};color:${T.textMuted2};`, "This system lists no components."));
         }
         body.appendChild(list);
         body.appendChild(
           el(
             "div",
-            `padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${T.textMuted2};overflow-wrap:anywhere;`,
+            `padding:0 14px 12px;font-size:${FONT.small};font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${T.textMuted2};overflow-wrap:anywhere;`,
             node["gufe-key"],
           ),
         );
@@ -367,18 +367,18 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
         row.appendChild(
           el(
             "span",
-            `flex:0 0 76px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${T.textMuted2};`,
+            `flex:0 0 76px;font-size:${FONT.tiny};font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${T.textMuted2};`,
             label,
           ),
         );
-        row.appendChild(el("span", `flex:1;min-width:0;font-size:12px;color:${T.textPrimary};overflow-wrap:anywhere;`, value));
+        row.appendChild(el("span", `flex:1;min-width:0;font-size:${FONT.body};color:${T.textPrimary};overflow-wrap:anywhere;`, value));
         rows.appendChild(row);
       }
       body.appendChild(rows);
       body.appendChild(
         el(
           "div",
-          `padding:0 14px 12px;font-size:11px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${T.textMuted2};overflow-wrap:anywhere;`,
+          `padding:0 14px 12px;font-size:${FONT.small};font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:${T.textMuted2};overflow-wrap:anywhere;`,
           edge["gufe-key"],
         ),
       );

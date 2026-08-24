@@ -4,6 +4,17 @@
  * keeps the create/update/destroy lifecycle honest.
  */
 
+import {
+  BUTTON,
+  CARD,
+  FONT,
+  HEADER,
+  RADIUS,
+  SELECT,
+  SPACE,
+  TEXT,
+  WEIGHT,
+} from "./style.js";
 import { T } from "./theme.js";
 
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -42,13 +53,12 @@ export function errText(e: unknown): string {
 export const fmt = (n: number): string => n.toLocaleString("en-US");
 export const EM_DASH = "-";
 
-export const BTN_CSS =
-  `background:${T.btnBg};color:${T.btnFg};border:1px solid ${T.btnBorder};` +
-  "padding:4px 9px;font-size:11px;font-weight:bold;border-radius:3px;cursor:pointer;font-family:inherit;";
-
-export const SELECT_CSS =
-  `background:${T.selectBg};color:${T.textPrimary};border:1px solid ${T.selectBorder};` +
-  "border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;font-family:inherit;";
+/**
+ * Kept as the names the views already use, defined once in `style.ts`.
+ * Restyle a button or a dropdown there, not here and not in a view.
+ */
+export const BTN_CSS = BUTTON.base;
+export const SELECT_CSS = SELECT;
 
 export interface ButtonGroupItem {
   id: string;
@@ -75,10 +85,10 @@ export function buttonGroup(
     const btn = el("button", BTN_CSS, item.label);
     btn.title = item.title || item.label;
     btn.onmouseover = () => {
-      btn.style.background = T.btnBgHover;
+      btn.style.background = BUTTON.bgHover;
     };
     btn.onmouseout = () => {
-      btn.style.background = active === item.id ? T.btnBgActive : T.btnBg;
+      btn.style.background = active === item.id ? BUTTON.bgActive : BUTTON.bg;
     };
     btn.onclick = () => {
       group.setActive(item.id);
@@ -90,7 +100,7 @@ export function buttonGroup(
   group.setActive = (id: string) => {
     active = id;
     buttons.forEach((b) => {
-      b.btn.style.background = b.id === active ? T.btnBgActive : T.btnBg;
+      b.btn.style.background = b.id === active ? BUTTON.bgActive : BUTTON.bg;
     });
   };
   group.setActive(active);
@@ -99,14 +109,14 @@ export function buttonGroup(
 
 /** "label <b>value</b>" with an optional colour dot - the stats readouts. */
 export function statChip(label: string, value: string, dotColor?: string): HTMLSpanElement {
-  const chip = el("span", "display:inline-flex;align-items:center;gap:5px;white-space:nowrap;");
+  const chip = el("span", `display:inline-flex;align-items:center;gap:5px;white-space:nowrap;`);
   if (dotColor) {
     chip.appendChild(
       el("span", `width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;`),
     );
   }
   const txt = el("span");
-  txt.innerHTML = `${esc(label)} <b style="color:${T.textPrimary};">${esc(value)}</b>`;
+  txt.innerHTML = `${esc(label)} <b style="color:${TEXT.primary};">${esc(value)}</b>`;
   chip.appendChild(txt);
   return chip;
 }
@@ -114,8 +124,8 @@ export function statChip(label: string, value: string, dotColor?: string): HTMLS
 export function warnBanner(message: string): HTMLDivElement {
   return el(
     "div",
-    "margin:12px 16px;padding:8px 12px;border-radius:6px;font-size:12px;white-space:pre-wrap;" +
-      `background:${T.warnBg};color:${T.warnFg};border:1px solid ${T.warnBorder};`,
+    `margin:12px 16px;padding:${SPACE.lg} 12px;border-radius:${RADIUS.md};font-size:${FONT.body};` +
+      `white-space:pre-wrap;background:${T.warnBg};color:${T.warnFg};border:1px solid ${T.warnBorder};`,
     `⚠ ${message}`,
   );
 }
@@ -124,8 +134,8 @@ export function warnBanner(message: string): HTMLDivElement {
 export function floatingWarning(host: HTMLElement, message: string): HTMLDivElement {
   const warn = el("div", "", `⚠ ${message}`);
   warn.style.cssText =
-    "position:absolute;top:10px;left:50%;transform:translateX(-50%);max-width:90%;z-index:20;" +
-    "padding:6px 14px;border-radius:6px;font-size:12px;" +
+    `position:absolute;top:${SPACE.xl};left:50%;transform:translateX(-50%);max-width:90%;z-index:20;` +
+    `padding:${SPACE.md} ${SPACE.xxl};border-radius:${RADIUS.md};font-size:${FONT.body};` +
     `background:${T.warnBg};color:${T.warnFg};border:1px solid ${T.warnBorder};`;
   host.appendChild(warn);
   return warn;
@@ -136,7 +146,7 @@ export function centredMessage(text: string, isError = false): HTMLDivElement {
   return el(
     "div",
     "flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;" +
-      `font-size:13px;color:${isError ? T.errorFg : T.textMuted2};`,
+      `font-size:${FONT.heading};color:${isError ? TEXT.error : TEXT.faint};`,
     text,
   );
 }
@@ -161,16 +171,16 @@ export interface HeaderStrip extends HTMLDivElement {
  * is belongs in the payload's own name; what type it is, the view already is.
  */
 export function headerStrip(title: string): HeaderStrip {
-  const bar = el(
-    "div",
-    "display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:9px 14px;flex-shrink:0;" +
-      `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};`,
-  ) as HeaderStrip;
+  const bar = el("div", HEADER) as HeaderStrip;
   bar.className = "gufe-header";
-  bar.titleEl = el("span", `font-weight:700;font-size:15px;color:${T.titleColor};letter-spacing:.02em;`, title);
+  bar.titleEl = el(
+    "span",
+    `font-weight:${WEIGHT.bold};font-size:${FONT.title};color:${TEXT.title};letter-spacing:.02em;`,
+    title,
+  );
   bar.statsEl = el(
     "div",
-    `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${T.textMuted};`,
+    `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:${FONT.small};color:${TEXT.muted};`,
   );
   // `align-self` rather than inheriting the strip's `baseline`: the button holds
   // an icon and no text, so its baseline is its bottom edge and it would hang
@@ -194,15 +204,15 @@ export function fieldRow(label: string, value: string, mono = false): HTMLDivEle
   row.appendChild(
     el(
       "span",
-      "flex:0 0 128px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;" +
-        `color:${T.textMuted2};`,
+      `flex:0 0 128px;font-size:${FONT.tiny};font-weight:${WEIGHT.bold};letter-spacing:.08em;` +
+        `text-transform:uppercase;color:${TEXT.faint};`,
       label,
     ),
   );
   const shown = el(
     "span",
-    `flex:1;min-width:0;user-select:text;cursor:text;overflow-wrap:anywhere;color:${T.textPrimary};` +
-      (mono ? "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;" : "font-size:12px;"),
+    `flex:1;min-width:0;user-select:text;cursor:text;overflow-wrap:anywhere;color:${TEXT.primary};` +
+      (mono ? `font-family:${FONT.mono};font-size:${FONT.small};` : `font-size:${FONT.body};`),
     value,
   );
   shown.title = value;
@@ -214,19 +224,15 @@ export function fieldRow(label: string, value: string, mono = false): HTMLDivEle
 export function typeBadge(text: string): HTMLSpanElement {
   return el(
     "span",
-    "padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.04em;white-space:nowrap;" +
-      `background:${T.badgeBg};color:${T.badgeFg};`,
+    `padding:1px 7px;border-radius:${RADIUS.xl};font-size:${FONT.tiny};font-weight:${WEIGHT.bold};` +
+      `letter-spacing:.04em;white-space:nowrap;background:${T.badgeBg};color:${T.badgeFg};`,
     text,
   );
 }
 
 /** A bordered card: the standard container for anything that is not a viewer. */
 export function card(): HTMLDivElement {
-  return el(
-    "div",
-    "display:flex;flex-direction:column;gap:2px;padding:14px 18px;border-radius:10px;" +
-      `background:${T.cardBg};border:1px solid ${T.cardBorder};`,
-  );
+  return el("div", CARD);
 }
 
 /** A 3D viewer host: an absolutely-filled container inside a flexible box. */
@@ -284,7 +290,7 @@ export interface ChromeMenuOptions {
 
 /** Three bars, drawn rather than typed, so the glyph is not a Unicode dependency. */
 function hamburgerIcon(): HTMLSpanElement {
-  const icon = el("span", "display:inline-flex;flex-direction:column;gap:2px;justify-content:center;");
+  const icon = el("span", `display:inline-flex;flex-direction:column;gap:${SPACE.xs};justify-content:center;`);
   for (let i = 0; i < 3; i++) {
     icon.appendChild(el("span", `display:block;width:11px;height:1.5px;border-radius:1px;background:${T.btnFg};`));
   }
@@ -307,7 +313,7 @@ export function chromeMenu(
   let built = false;
 
   const panel = el("div", "flex-shrink:0;");
-  const button = el("button", `${BTN_CSS}display:inline-flex;align-items:center;gap:6px;padding:4px 8px;`);
+  const button = el("button", `${BUTTON.base}display:inline-flex;align-items:center;gap:${SPACE.md};padding:${SPACE.sm} ${SPACE.lg};`);
   button.appendChild(hamburgerIcon());
   button.setAttribute("aria-label", options.label || "Toggle menu");
 
@@ -320,7 +326,7 @@ export function chromeMenu(
       panel.appendChild(build());
     }
     panel.style.display = open ? "" : "none";
-    button.style.background = open ? T.btnBgActive : T.btnBg;
+    button.style.background = open ? BUTTON.bgActive : BUTTON.bg;
     button.setAttribute("aria-expanded", String(open));
   };
 
@@ -333,10 +339,10 @@ export function chromeMenu(
 
   button.onclick = () => setOpen(!open);
   button.onmouseover = () => {
-    button.style.background = open ? T.btnBgActive : T.btnBgHover;
+    button.style.background = open ? BUTTON.bgActive : BUTTON.bgHover;
   };
   button.onmouseout = () => {
-    button.style.background = open ? T.btnBgActive : T.btnBg;
+    button.style.background = open ? BUTTON.bgActive : BUTTON.bg;
   };
 
   // Only now does the slot take any room: an empty one must not indent the title.

@@ -41,6 +41,12 @@
  * and that is what OpenFE users are taught, so 2D follows gufe. See
  * `shared/atom-colors.ts`.
  *
+ * 2D is also the one mode whose *appearance* is not decided in this file. Marking
+ * style, ring shape, hydrogen treatment, letter and bond sizes and every colour
+ * come from one JSON document, `shared/depict-style.json`, which is authored in
+ * a live editor and compiled into the bundle. `shared/depict-style.ts` is the
+ * whole of it, and it carries the editor's URL.
+ *
  * Every mode takes the same two molecules, so this element is what any view
  * showing a pair of ligands should mount: the ligand network's detail pane and
  * the transformation view both do.
@@ -51,9 +57,19 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer } from "../shared/engines.js";
 import { guardWheel, type Interaction } from "../shared/interact.js";
 import { applyRT, kabsch, type Vec3 } from "../shared/kabsch.js";
-import { buildSDF, depictHighlightedSVG, parseSDF, placeDepiction, type Molecule } from "../shared/sdf.js";
-import { MAPPING_COLORS } from "../shared/atom-colors.js";
-import { T } from "../shared/theme.js";
+import { buildSDF, parseSDF, placeDepiction, type Molecule } from "../shared/sdf.js";
+import {
+  DEPICT_STYLE,
+  depictStyledSVG,
+  depictionDetails,
+  effectiveMarkStyle,
+  markGroups,
+  parseAtomSpec,
+  postProcessDepiction,
+  type Side,
+} from "../shared/depict-style.js";
+import { MOL } from "../shared/molecule-colors.js";
+import { FONT, MONO, NOTE, OVERLAY_CONTROLS, PANE_LABEL, SECTION_LABEL, SPACE, SURFACE, TEXT, WEIGHT } from "../shared/style.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
@@ -83,15 +99,6 @@ const STYLE = {
 
 /** How far apart Pairs mode lifts the second molecule. */
 const PAIRS = { gap: 2.5, minLiftFraction: 0.6 };
-
-/** An RGB triple in the 0-1 form RDKit's drawing options take. */
-function rgb(hex: string): Vec3 {
-  const value = parseInt(hex.replace("#", ""), 16);
-  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
-}
-
-const ELEMENT_CHANGE_RGB = rgb(MAPPING_COLORS.elementChange);
-const UNIQUE_ATOM_RGB = rgb(MAPPING_COLORS.uniqueAtom);
 
 /** One side of a mapping, classified the way gufe classifies it. */
 export interface Uniques {
@@ -235,8 +242,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     let mode: Mode = "plain";
     const switcher = el(
       "div",
-      "position:absolute;bottom:10px;right:10px;display:flex;gap:4px;padding:4px;border-radius:6px;z-index:10;" +
-        `background:${T.switcherBg};box-shadow:0 2px 8px rgba(0,0,0,0.25);`,
+      OVERLAY_CONTROLS,
     );
     switcher.appendChild(
       buttonGroup(MODES, mode, (id) => {
@@ -280,7 +286,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       wrap.appendChild(
         el(
           "div",
-          `padding:4px 10px;font-size:13px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
+          PANE_LABEL,
           labelText,
         ),
       );
@@ -331,7 +337,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     };
 
     const open = (box: Box, models: { mol: Molecule }[]): ThreeDmolViewer => {
-      const viewer = ThreeDmol!.createViewer(box.container, { backgroundColor: T.viewerBg });
+      const viewer = ThreeDmol!.createViewer(box.container, { backgroundColor: SURFACE.viewer });
       for (const { mol } of models) viewer.addModel(buildSDF(mol), "sdf");
       box.viewer = viewer;
       // The same wheel rule as everywhere else: a plain scroll moves the page.
@@ -360,15 +366,15 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
 
     const renderColored = (): void => {
       const sides = [
-        { mol: molA, uniques: uniquesA, colour: T.colorUniqueA },
-        { mol: molB, uniques: uniquesB, colour: T.colorUniqueB },
+        { mol: molA, uniques: uniquesA, colour: MOL.uniqueA },
+        { mol: molB, uniques: uniquesB, colour: MOL.uniqueB },
       ];
       for (const side of sides) {
         const box = makeBox(side.mol.name);
         const viewer = open(box, [{ mol: side.mol }]);
         viewer.setStyle(
           {},
-          { stick: { radius: STYLE.stick, color: T.colorCore }, sphere: { scale: STYLE.sphere, color: T.colorCore } },
+          { stick: { radius: STYLE.stick, color: MOL.core }, sphere: { scale: STYLE.sphere, color: MOL.core } },
         );
         // Everything that does not carry over, picked out. 3Dmol counts atoms
         // from one, and the payload counts from zero.
@@ -418,11 +424,11 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       const viewer = open(box, [{ mol: molA }, { mol: lifted }]);
       viewer.setStyle(
         { model: 0 },
-        { stick: { radius: STYLE.stick, color: T.linesMolA }, sphere: { scale: STYLE.pairSphere, color: T.linesMolA } },
+        { stick: { radius: STYLE.stick, color: MOL.pairA }, sphere: { scale: STYLE.pairSphere, color: MOL.pairA } },
       );
       viewer.setStyle(
         { model: 1 },
-        { stick: { radius: STYLE.stick, color: T.linesMolB }, sphere: { scale: STYLE.pairSphere, color: T.linesMolB } },
+        { stick: { radius: STYLE.stick, color: MOL.pairB }, sphere: { scale: STYLE.pairSphere, color: MOL.pairB } },
       );
       for (const [a, b] of pairs) {
         const pa = molA.coords[a];
@@ -435,7 +441,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
           dashed: true,
           fromCap: "round",
           toCap: "round",
-          color: T.linesDash,
+          color: MOL.pairLine,
         });
       }
       viewer.zoomTo();
@@ -449,8 +455,8 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       const box = makeBox(`${nameA} + ${nameB}  (overlay)`);
       const viewer = open(box, [{ mol: molA }, { mol: molB }]);
       for (const [model, colour] of [
-        [0, T.overlayMolA],
-        [1, T.overlayMolB],
+        [0, MOL.overlayA],
+        [1, MOL.overlayB],
       ] as const) {
         viewer.setStyle(
           { model },
@@ -465,26 +471,34 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     };
 
     const render2D = (): void => {
-      // gufe's scheme, not the prototype's: an element change against a unique
-      // atom, with everything else unhighlighted. That is what OpenFE users are
-      // taught, and it is the one place this view does not follow the prototype.
+      // *Which* atom is marked, and why, is gufe's scheme rather than the
+      // prototype's: an element change against a unique atom, with everything
+      // else unhighlighted. That is what OpenFE users are taught, and it is the
+      // one place this view does not follow the prototype.
+      //
+      // *How* those atoms are drawn is not decided here at all. It is one JSON
+      // document, `shared/depict-style.ts`, authored by hand in the editor that
+      // file links to and compiled into this bundle. At its defaults it draws
+      // exactly what this view drew before the document existed.
+      const style = DEPICT_STYLE;
+      const custom = parseAtomSpec(style.customSpec);
       const sides = [
-        { mol: molA, sdf: from.sdf, uniques: uniquesA },
-        { mol: molB, sdf: to.sdf, uniques: uniquesB },
+        { mol: molA, sdf: from.sdf, uniques: uniquesA, side: "left" as Side, custom: custom.left },
+        { mol: molB, sdf: to.sdf, uniques: uniquesB, side: "right" as Side, custom: custom.right },
       ];
       const targets = sides.map((side) => {
         const wrap = el("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
         wrap.appendChild(
           el(
             "div",
-            `padding:4px 10px;font-size:13px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
+            PANE_LABEL,
             side.mol.name,
           ),
         );
         const box = el(
           "div",
           "flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;" +
-            `background:${T.canvas2DBg};`,
+            `background:${SURFACE.canvas2D};`,
         );
         box.appendChild(centredMessage("Loading 2D depiction..."));
         wrap.appendChild(box);
@@ -494,15 +508,30 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
 
       loadRDKit()
         .then((RDKit: RDKitModule) => {
+          // Asked once per pair rather than once per panel: it is a property of
+          // the RDKit build, and the two panels must not disagree about it.
+          const markStyle = effectiveMarkStyle(style, RDKit);
           for (const { box, side } of targets) {
-            const colors: Record<number, Vec3> = {};
-            for (const index of side.uniques.elements) colors[index] = ELEMENT_CHANGE_RGB;
-            for (const index of side.uniques.atoms) colors[index] = UNIQUE_ATOM_RGB;
-            const atoms = [...side.uniques.elements, ...side.uniques.atoms];
-            const drawn = depictHighlightedSVG(RDKit, side.sdf, DEPICT_SIZE, atoms, colors);
+            const groups = markGroups(style, side.uniques, side.side);
+            const details = depictionDetails(
+              style,
+              DEPICT_SIZE,
+              groups,
+              side.custom,
+              markStyle,
+              side.mol.symbols.length,
+            );
+            const drawn = depictStyledSVG(RDKit, side.sdf, DEPICT_SIZE, details);
             box.replaceChildren();
-            if (drawn) placeDepiction(box, drawn, DEPICT_SIZE);
-            else box.appendChild(centredMessage("Failed to parse molecule", true));
+            if (!drawn) {
+              box.appendChild(centredMessage("Failed to parse molecule", true));
+              continue;
+            }
+            placeDepiction(box, drawn, DEPICT_SIZE);
+            // After it is in the document: the post-processing reads the styles
+            // RDKit set on each element, which needs the elements to be real.
+            const svg = box.querySelector("svg");
+            if (svg) postProcessDepiction(svg, side.mol, style, groups, side.custom, markStyle);
           }
         })
         .catch((e: unknown) => {
@@ -521,32 +550,30 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       heading.appendChild(
         el(
           "div",
-          `font-size:15px;font-weight:700;color:${T.titleColor};`,
+          `font-size:${FONT.title};font-weight:${WEIGHT.bold};color:${TEXT.title};`,
           payload.name || `${nameA} to ${nameB}`,
         ),
       );
-      heading.appendChild(el("div", `font-size:12px;color:${T.textMuted2};`, "LigandAtomMapping"));
+      heading.appendChild(el("div", `font-size:${FONT.body};color:${TEXT.faint};`, "LigandAtomMapping"));
       body.appendChild(heading);
 
-      const counts = el("div", "display:flex;flex-wrap:wrap;gap:8px 16px;font-size:11px;");
+      const counts = el("div", `display:flex;flex-wrap:wrap;gap:${SPACE.lg} 16px;font-size:${FONT.small};`);
       counts.appendChild(statChip("mapped atoms", String(pairs.size)));
+      // The chips take their colours from the depiction style rather than from
+      // the constants, so the legend cannot say one thing while 2D draws another.
       counts.appendChild(
-        statChip("element changes", String(uniquesA.elements.length), MAPPING_COLORS.elementChange),
+        statChip("element changes", String(uniquesA.elements.length), DEPICT_STYLE.modifiedColor),
       );
-      counts.appendChild(statChip(`unique to ${nameA}`, String(uniquesA.atoms.length), MAPPING_COLORS.uniqueAtom));
-      counts.appendChild(statChip(`unique to ${nameB}`, String(uniquesB.atoms.length), MAPPING_COLORS.uniqueAtom));
+      counts.appendChild(statChip(`unique to ${nameA}`, String(uniquesA.atoms.length), DEPICT_STYLE.destroyedColor));
+      counts.appendChild(statChip(`unique to ${nameB}`, String(uniquesB.atoms.length), DEPICT_STYLE.createdColor));
       counts.appendChild(statChip(`atoms in ${nameA}`, String(molA.symbols.length)));
       counts.appendChild(statChip(`atoms in ${nameB}`, String(molB.symbols.length)));
       counts.appendChild(statChip("score", payload.score == null ? EM_DASH : payload.score.toFixed(3)));
       body.appendChild(counts);
 
-      const listLabel = el("div", `font-size:11px;font-weight:700;color:${T.textMuted2};`, "CORRESPONDENCE");
+      const listLabel = el("div", SECTION_LABEL, "Correspondence");
       body.appendChild(listLabel);
-      const list = el(
-        "div",
-        "font-size:11px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" +
-          `color:${T.textMuted};`,
-      );
+      const list = el("div", MONO);
       list.textContent = pairs.size
         ? Array.from(pairs, ([a, b]) => `${a} -> ${b}`).join("   ")
         : "This mapping relates no atoms at all.";
@@ -554,12 +581,8 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
 
       const annotations = Object.entries(payload.annotations ?? {}).filter(([key]) => key !== "score");
       if (annotations.length) {
-        body.appendChild(el("div", `font-size:11px;font-weight:700;color:${T.textMuted2};`, "ANNOTATIONS"));
-        const notes = el(
-          "div",
-          "font-size:11px;line-height:1.7;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" +
-            `color:${T.textMuted2};`,
-        );
+        body.appendChild(el("div", SECTION_LABEL, "Annotations"));
+        const notes = el("div", `${MONO}color:${TEXT.faint};`);
         for (const [key, value] of annotations) {
           notes.appendChild(el("div", "", `${key}: ${String(value)}`));
         }
@@ -569,7 +592,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       body.appendChild(
         el(
           "div",
-          `font-size:11px;color:${T.textMuted2};overflow-wrap:anywhere;`,
+          `${NOTE}overflow-wrap:anywhere;`,
           `gufe key: ${payload["gufe-key"]}`,
         ),
       );
