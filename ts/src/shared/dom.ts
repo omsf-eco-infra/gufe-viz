@@ -166,7 +166,10 @@ export function headerStrip(title: string, subtitle?: string): HeaderStrip {
     "div",
     `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${T.textMuted};`,
   );
-  bar.toggleEl = el("div", "display:flex;align-items:center;flex-shrink:0;");
+  // `align-self` rather than inheriting the strip's `baseline`: the button holds
+  // an icon and no text, so its baseline is its bottom edge and it would hang
+  // low against the title. The text either side keeps its baseline alignment.
+  bar.toggleEl = el("div", "display:flex;align-items:center;align-self:center;flex-shrink:0;");
   // First, so the menu button is at the top left wherever a view carries one.
   bar.appendChild(bar.toggleEl);
   bar.appendChild(bar.titleEl);

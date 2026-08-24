@@ -88,6 +88,15 @@ describe("chromeMenu", () => {
     expect(header.toggleEl.compareDocumentPosition(header.titleEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("centres the button against the header text", () => {
+    // The strip aligns on `baseline`, and the button holds an icon with no text,
+    // so its baseline is its bottom edge and it hangs low against the title.
+    // jsdom has no layout engine, so this checks the rule is set rather than the
+    // pixels it produces - the pixels are what the gallery is for.
+    expect(header.style.alignItems).toBe("baseline");
+    expect(header.toggleEl.style.alignSelf).toBe("center");
+  });
+
   it("takes no room in a header with no menu", () => {
     // Every view builds a header strip; most have no menu, and an empty slot
     // must not indent their titles.
