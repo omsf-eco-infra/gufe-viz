@@ -37,7 +37,7 @@ import { loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictHighlightedSVG, parseSDF, placeDepiction } from "../shared/sdf.js";
 import { MAPPING_COLORS } from "../shared/atom-colors.js";
 import { T } from "../shared/theme.js";
-import { buildRegistry, entryLabel, lookupOfType } from "../schema/registry.js";
+import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
 const DEPICT_SIZE = 420;
@@ -117,6 +117,28 @@ function pairMap(payload: LigandAtomMappingViz): Map<number, number> {
     }
   }
   return pairs;
+}
+
+/**
+ * A mapping, cut loose as a payload that stands on its own.
+ *
+ * An edge of a ligand network and a mapping of a transformation are both
+ * already `LigandAtomMappingViz`; what they lack is a registry of their own, so
+ * this gives them one holding the two ligands they name. What comes out is
+ * exactly the payload this element receives when someone drops a mapping on the
+ * page by itself, which is what lets one element serve every case.
+ *
+ * Returns `null` when either endpoint names nothing the registry holds - the
+ * same schema-valid-but-undrawable case the views drop with a banner.
+ */
+export function mappingPayloadFor(
+  mapping: LigandAtomMappingViz,
+  registry: RegistryIndex,
+): LigandAtomMappingViz | null {
+  const from = lookupOfType<SmallMoleculeComponentViz>(registry, mapping.componentA, "SmallMoleculeComponentViz");
+  const to = lookupOfType<SmallMoleculeComponentViz>(registry, mapping.componentB, "SmallMoleculeComponentViz");
+  if (!from || !to) return null;
+  return { ...mapping, registry: from["gufe-key"] === to["gufe-key"] ? [from] : [from, to] };
 }
 
 export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {

@@ -134,6 +134,85 @@ def _somebodys_own_component() -> gufe.Component:
     return NanoparticleComponent()
 
 
+def _renamed(mol: gufe.SmallMoleculeComponent) -> gufe.SmallMoleculeComponent:
+    """``mol`` again, named after its SMILES, with its atom order untouched.
+
+    The round trip through RDKit preserves atom indices, which is what makes it
+    safe to keep an existing mapping's ``componentA_to_componentB`` when the
+    molecules on either end of it are replaced by their renamed selves.
+    """
+    from gufe import SmallMoleculeComponent
+
+    return SmallMoleculeComponent.from_rdkit(mol.to_rdkit(), name=mol.smiles)
+
+
+def _dummy_protocol() -> gufe.Protocol:
+    """gufe's own ``DummyProtocol``, from its test suite.
+
+    A ``Transformation`` cannot be built without a ``Protocol``, and gufe ships
+    no concrete one outside its tests - the real ones live in OpenFE, which this
+    repo does not depend on. Borrowing the test double keeps the rule that every
+    fixture here is a real serialization of a real gufe object, and the payload
+    carries the protocol as a class name and nothing else, so a stand-in is
+    exactly as informative as the real thing would be.
+    """
+    from gufe.tests.test_protocol import DummyProtocol
+
+    return DummyProtocol(settings=DummyProtocol.default_settings())
+
+
+def _solvated_transformation(
+    edge: gufe.LigandAtomMapping,
+    protocol: gufe.Protocol,
+    systems: dict[str, gufe.ChemicalSystem] | None = None,
+) -> gufe.Transformation:
+    """One edge of gufe's ligand network, as a solvated transformation.
+
+    ``systems`` is an optional cache keyed by ligand, so that a network built
+    out of several of these shares one ``ChemicalSystem`` per ligand rather than
+    creating a fresh, equal-but-distinct one per edge - which is what makes the
+    alchemical network a connected graph instead of a row of disjoint pairs.
+    """
+    from gufe import ChemicalSystem, LigandAtomMapping, SolventComponent, Transformation
+
+    if systems is None:
+        systems = {}
+
+    def system(mol: gufe.SmallMoleculeComponent) -> gufe.ChemicalSystem:
+        return systems.setdefault(
+            str(mol.key),
+            ChemicalSystem({"ligand": mol, "solvent": SolventComponent()}, name=f"{mol.name} in water"),
+        )
+
+    ligand_a, ligand_b = _renamed(edge.componentA), _renamed(edge.componentB)
+    mapping = LigandAtomMapping(ligand_a, ligand_b, edge.componentA_to_componentB, edge.annotations)
+    return Transformation(
+        stateA=system(ligand_a),
+        stateB=system(ligand_b),
+        mapping=mapping,
+        protocol=protocol,
+        name=f"{ligand_a.name} to {ligand_b.name}",
+    )
+
+
+def _alchemical_network(network: gufe.LigandNetwork, protocol: gufe.Protocol) -> gufe.AlchemicalNetwork:
+    """gufe's ligand network again, one layer up: solvated systems and edges.
+
+    Same three ligands and the same three mappings, promoted to
+    ``ChemicalSystem`` nodes and ``Transformation`` edges - so the two network
+    views can be compared side by side in the gallery on data that is the same
+    underneath.
+    """
+    from gufe import AlchemicalNetwork
+
+    systems: dict[str, gufe.ChemicalSystem] = {}
+    edges = sorted(network.edges, key=lambda e: (str(e.componentA.key), str(e.componentB.key)))
+    return AlchemicalNetwork(
+        [_solvated_transformation(edge, protocol, systems) for edge in edges],
+        name="solvated ligand transformations",
+    )
+
+
 def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
     """``network`` again, with every ligand named after its SMILES.
 
@@ -165,12 +244,10 @@ def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
 def build() -> dict[str, GufeTokenizable]:
     """Return ``{filename: gufe object}``.
 
-    Two types are absent on purpose. ``TransformationViz`` and
-    ``AlchemicalNetworkViz`` cannot be built without inventing a
-    :class:`gufe.Protocol`, and neither has a view yet - their
-    example payloads land with their views, alongside a real protocol to point
-    them at. Both are already declared in the schema, so adding them later is an
-    additive change and nothing more.
+    Every declared type is represented. The two that need a
+    :class:`gufe.Protocol` borrow gufe's own ``DummyProtocol`` - see
+    :func:`_dummy_protocol` for why a stand-in is exactly as informative as a
+    real one here.
     """
     from gufe import ChemicalSystem, LigandNetwork, ProteinComponent, SolventComponent
 
@@ -184,6 +261,7 @@ def build() -> dict[str, GufeTokenizable]:
     # order the frozenset happens to yield in this process.
     mapping = sorted(network.edges, key=lambda e: (str(e.componentA.key), str(e.componentB.key)))[0]
     benzene = mols["benzene"]
+    protocol = _dummy_protocol()
 
     return {
         # Two variants per kind: with and without a formal charge, and
@@ -208,6 +286,10 @@ def build() -> dict[str, GufeTokenizable]:
         # against real data before the views exist.
         "solvent.json": SolventComponent(),
         "ligand_atom_mapping.json": mapping,
+        # The two kinds that need a Protocol. Both are the same three ligands as
+        # the network above, one layer up, so the gallery reads as one story.
+        "transformation.json": _solvated_transformation(mapping, protocol),
+        "alchemical_network.json": _alchemical_network(network, protocol),
         # Not a gufe class at all, which is the only way to produce this type.
         "unknown_component.json": _somebodys_own_component(),
         "chemical_system.json": ChemicalSystem(

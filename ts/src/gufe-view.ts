@@ -41,11 +41,13 @@ import type { PayloadType } from "./schema/types.js";
  * visualization for X yet" panel.
  */
 export const VIEW_TAGS: Partial<Record<PayloadType, string>> = {
+  AlchemicalNetworkViz: "gufe-alchemical-network",
   SmallMoleculeComponentViz: "gufe-small-molecule",
   ProteinComponentViz: "gufe-protein",
   LigandNetworkViz: "gufe-ligand-network",
   ChemicalSystemViz: "gufe-chemical-system",
   LigandAtomMappingViz: "gufe-atom-mapping",
+  TransformationViz: "gufe-transformation",
   SolventComponentViz: "gufe-solvent",
   UnknownComponentViz: "gufe-unknown-component",
 };

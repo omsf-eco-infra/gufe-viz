@@ -11,9 +11,9 @@ import { parseCounts, parseSDF } from "../src/shared/sdf.js";
 import { parsePdbStats } from "../src/shared/pdb.js";
 import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry } from "../src/schema/registry.js";
-import { mappingPayloadFor } from "../src/views/ligand-network.js";
+import { mappingPayloadFor, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { parseConcentration } from "../src/views/solvent.js";
-import { uniqueAtoms } from "../src/views/atom-mapping.js";
+import { diffStatus } from "../src/views/transformation.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 import type { LigandNetworkViz } from "../src/schema/types.js";
 
@@ -566,5 +566,108 @@ describe("<gufe-ligand-network> detail pane", () => {
 
     // A different edge is a new payload, not a rebuilt pane.
     expect(node.querySelector("gufe-atom-mapping")).not.toBe(before);
+  });
+});
+
+describe("diffStatus", () => {
+  // Comparing gufe keys rather than payloads: a key is content-derived, so
+  // equal keys mean equal gufe objects, and there is no PDB to stringify.
+  it("reads a label present on one side only as added or removed", () => {
+    expect(diffStatus("k", undefined)).toBe("removed");
+    expect(diffStatus(undefined, "k")).toBe("added");
+  });
+
+  it("reads the same key as unchanged and a different one as changed", () => {
+    expect(diffStatus("k", "k")).toBe("unchanged");
+    expect(diffStatus("k", "other")).toBe("changed");
+  });
+});
+
+describe("<gufe-transformation>", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("names the protocol by its gufe class, which is all a Protocol has", async () => {
+    const node = mount("gufe-transformation", readExample("transformation.json"));
+    await flush();
+    expect(node.textContent).toContain("Transformation");
+    expect(node.textContent).toContain("DummyProtocol");
+  });
+
+  it("diffs the two states per label", async () => {
+    const node = mount("gufe-transformation", readExample("transformation.json"));
+    await flush();
+    const text = node.textContent ?? "";
+    expect(text).toContain("State A");
+    expect(text).toContain("State B");
+    // The two systems share a solvent and differ in their ligand.
+    expect(text).toContain("solvent");
+    expect(text).toContain("ligand");
+  });
+
+  it("embeds the mapping view rather than drawing its own", async () => {
+    const node = mount("gufe-transformation", readExample("transformation.json"));
+    await flush();
+    const embedded = node.querySelector("gufe-atom-mapping");
+    expect(embedded).toBeTruthy();
+    // Cut loose with a registry of its own, so it resolves its endpoints the
+    // same way it would as a standalone payload.
+    expect(embedded!.textContent).not.toContain("registry does not hold them");
+  });
+});
+
+describe("<gufe-alchemical-network>", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("draws a node per chemical system and an edge per transformation", async () => {
+    const payload = readExample("alchemical_network.json") as unknown as {
+      nodes: string[];
+      edges: unknown[];
+    };
+    const node = mount("gufe-alchemical-network", payload);
+    await flush();
+
+    expect(node.querySelectorAll("rect").length).toBe(payload.nodes.length);
+    const text = node.textContent ?? "";
+    expect(text).toContain(String(payload.nodes.length));
+    expect(text).toContain("transformations");
+  });
+
+  it("shows a selected system's components, resolved through the registry", async () => {
+    const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
+    await flush();
+    // It opens on the first system rather than an empty pane.
+    const text = node.textContent ?? "";
+    expect(text).toContain("ChemicalSystem");
+    expect(text).toContain("ligand");
+    expect(text).not.toContain("not in the registry");
+  });
+
+  it("drops a transformation naming a system it does not contain, and says so", async () => {
+    const payload = structuredClone(readExample("alchemical_network.json")) as {
+      edges: { stateA: string }[];
+    };
+    payload.edges[0].stateA = "ChemicalSystem-nosuchentry";
+    const node = mount("gufe-alchemical-network", payload);
+    await flush();
+    expect(node.textContent).toContain("does not contain");
+  });
+
+  it("is what the dispatcher chooses for the type", async () => {
+    const node = mount("gufe-view", readExample("alchemical_network.json"));
+    await flush();
+    expect(node.querySelector("gufe-alchemical-network")).toBeTruthy();
+    expect(node.textContent).not.toContain("This build can draw");
   });
 });

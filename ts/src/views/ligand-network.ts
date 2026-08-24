@@ -29,6 +29,7 @@ import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
+import { mappingPayloadFor } from "./atom-mapping.js";
 import type { LigandAtomMappingViz, LigandNetworkViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
 // --- just enough of d3-force to configure it -------------------------------
@@ -142,30 +143,6 @@ function scoreColor(score: number | null | undefined): string {
 const label = entryLabel;
 
 const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}...` : text);
-
-/**
- * A network edge, cut loose as a payload that stands on its own.
- *
- * This is the component-reuse seam, and after the registry change there is
- * almost nothing left of it: an edge already *is* a `LigandAtomMappingViz`, so
- * all this does is give it a registry of its own holding the two ligands it
- * names. There is no field to rename, no molecule to inline and no second
- * mapping shape to translate into.
- *
- * What comes out is exactly the payload `<gufe-atom-mapping>` will receive when
- * someone drops a mapping on the page by itself. `ts/tests/views.test.ts`
- * validates the result against the schema, so that claim is checked rather than
- * asserted in a comment.
- *
- * Returns `null` when either endpoint names nothing the registry holds - the
- * same schema-valid-but-undrawable case the view drops with a banner.
- */
-export function mappingPayloadFor(edge: LigandAtomMappingViz, registry: RegistryIndex): LigandAtomMappingViz | null {
-  const from = lookupOfType<SmallMoleculeComponentViz>(registry, edge.componentA, "SmallMoleculeComponentViz");
-  const to = lookupOfType<SmallMoleculeComponentViz>(registry, edge.componentB, "SmallMoleculeComponentViz");
-  if (!from || !to) return null;
-  return { ...edge, registry: from["gufe-key"] === to["gufe-key"] ? [from] : [from, to] };
-}
 
 export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   protected override placeholder(): string {

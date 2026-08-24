@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import "../src/index.js";
 import { dispatchProblem, VIEW_TAGS } from "../src/gufe-view.js";
+import { PAYLOAD_TYPES } from "../src/schema/types.js";
 import { clearFakeEngines, exampleNames, flush, readExample, seedFakeEngines } from "./helpers.js";
 
 function mountView(payload: unknown): HTMLElement & { payload: unknown } {
@@ -30,8 +31,15 @@ describe("dispatchProblem", () => {
   });
 
   it("refuses a type it does not draw, by name", () => {
-    const problem = dispatchProblem({ type: "AlchemicalNetworkViz", name: "", nodes: [], edges: [] });
-    expect(problem).toContain("AlchemicalNetworkViz");
+    // Chosen from the dispatch table rather than named here. A declared type
+    // with no view is legal by design, but which types those are shrinks as
+    // views land, and an earlier version of this test hard-coded one and
+    // started failing the day it got drawn.
+    const undrawn = PAYLOAD_TYPES.find((type) => !VIEW_TAGS[type]);
+    if (!undrawn) return; // every declared type draws, which is the goal
+
+    const problem = dispatchProblem({ type: undrawn, name: "" });
+    expect(problem).toContain(undrawn);
     expect(problem).toContain("no visualization");
   });
 
