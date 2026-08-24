@@ -145,6 +145,9 @@ const DETAIL = { captions: 0.5, depictions: 1.1 };
 /** How far outside the viewport to keep depictions, so panning does not tear. */
 const CULL_MARGIN = 200;
 
+/** Space left around the graph when the view frames it, in graph units. */
+const FIT_MARGIN = 24;
+
 /** How far down what is not emphasised goes. Dimmed, never removed. */
 const DIM = { node: 0.12, edge: 0.06 };
 
@@ -786,9 +789,9 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
         refreshHalos();
         applyEmphasis();
-        // Draw the level of detail the opening zoom calls for. Everything else
-        // arrives as the user zooms in.
-        scene.setDetail(1, 0, 0);
+        // Frame the graph, which also draws the level of detail the resulting
+        // zoom calls for. Everything else arrives as the user zooms in.
+        scene.fit();
       };
 
       if (layout !== "Force-directed" || forceUnavailable) {
@@ -936,6 +939,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     setDetail(scale: number, tx: number, ty: number): void;
     focusOn(index: number): void;
     depictionsDrawn(): number;
+    fit(): void;
     reset(): void;
     cleanup(): void;
   } {
@@ -1161,6 +1165,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
       setDetail: detail.apply,
       depictionsDrawn: () => detail.drawn(),
+      fit: view.fit,
       reset: view.reset,
       cleanup: view.cleanup,
     };
@@ -1175,13 +1180,69 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     groups: SVGGElement[],
     place: () => void,
     onTransform: (scale: number, tx: number, ty: number) => void,
-  ): { cleanup(): void; reset(): void; centreOn(x: number, y: number): void } {
+  ): { cleanup(): void; fit(): void; reset(): void; centreOn(x: number, y: number): void } {
     let scale = 1;
     let tx = 0;
     let ty = 0;
     const apply = () => {
       scene.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
       onTransform(scale, tx, ty);
+    };
+
+    /** The drawing area, however much of a layout box the host will admit to.
+     *
+     * The attributes are the fallback rather than the first answer, so that a
+     * canvas resized after paint still frames against what is on screen. jsdom
+     * has no layout at all, which is why there is a last resort after them. */
+    const viewport = (): { width: number; height: number } => {
+      const box = root.getBoundingClientRect();
+      return {
+        width: box.width || Number(root.getAttribute("width")) || root.clientWidth || 800,
+        height: box.height || Number(root.getAttribute("height")) || root.clientHeight || 600,
+      };
+    };
+
+    /**
+     * Put the whole graph in the viewport, centred.
+     *
+     * A force layout sizes itself by link distance and repulsion, not by the
+     * canvas: two hundred ligands settle across some five thousand units, and at
+     * the identity transform every one of them is off the edge of a nine hundred
+     * unit view - the network reads as an empty box. Framing is therefore part
+     * of drawing it, not a control the reader has to find.
+     *
+     * It never zooms in past 1. Three ligands blown up to fill the canvas would
+     * be three pixellated depictions, and the level of detail keys off this same
+     * scale, so magnifying a small network would also change what it shows.
+     */
+    const fit = (): void => {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const node of nodes) {
+        minX = Math.min(minX, node.x);
+        minY = Math.min(minY, node.y);
+        maxX = Math.max(maxX, node.x);
+        maxY = Math.max(maxY, node.y);
+      }
+
+      scale = 1;
+      tx = 0;
+      ty = 0;
+      if (!Number.isFinite(minX)) {
+        apply(); // No nodes. An empty graph is centred on nothing.
+        return;
+      }
+
+      // A node is a disc with a caption under it, so its position is not its
+      // extent.
+      const pad = NODE_RADIUS + FIT_MARGIN;
+      const { width, height } = viewport();
+      scale = Math.min(1, width / (maxX - minX + pad * 2), height / (maxY - minY + pad * 2));
+      tx = width / 2 - ((minX + maxX) / 2) * scale;
+      ty = height / 2 - ((minY + maxY) / 2) * scale;
+      apply();
     };
 
     // The zoom maths stays here rather than moving to `boundedZoom`: it works in
@@ -1249,19 +1310,18 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     });
 
     return {
-      reset() {
-        scale = 1;
-        tx = 0;
-        ty = 0;
-        apply();
-      },
+      fit,
+
+      // Back to the view it opened on, which is the framed one. An identity
+      // transform would be "reset" only in the sense that a blank canvas is.
+      reset: fit,
 
       /** Bring a graph point to the middle, zooming in enough to read it. */
       centreOn(x: number, y: number) {
-        const box = root.getBoundingClientRect();
+        const { width, height } = viewport();
         scale = Math.max(scale, FOCUS_SCALE);
-        tx = (box.width || root.clientWidth || 800) / 2 - x * scale;
-        ty = (box.height || root.clientHeight || 600) / 2 - y * scale;
+        tx = width / 2 - x * scale;
+        ty = height / 2 - y * scale;
         apply();
       },
       cleanup() {

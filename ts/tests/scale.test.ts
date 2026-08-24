@@ -1,11 +1,12 @@
 /**
  * The network view at a size nobody has drawn before.
  *
- * The committed fixtures have three ligands. The network that prompted this work
- * has 934, and the question level-of-detail exists to answer is whether the view
- * still draws at all at that size. This builds a synthetic network in memory
- * rather than committing a large fixture, and asserts the property that matters:
- * the cost of first paint does not scale with the node count.
+ * The largest committed fixture has 200 ligands. The network that prompted this
+ * work has 934, and the question level-of-detail exists to answer is whether the
+ * view still draws at all at that size. This builds its network in memory rather
+ * than reading the fixture, because the count is the variable under test and a
+ * fixture fixes it, and asserts the property that matters: the cost of first
+ * paint does not scale with the node count.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -67,6 +68,36 @@ describe("a large ligand network", () => {
     await flush();
 
     expect(node.querySelectorAll("circle").length).toBe(934);
+  });
+
+  it("opens with every ligand inside the viewport", async () => {
+    const node = document.createElement("gufe-ligand-network") as HTMLElement & { payload: unknown };
+    document.body.appendChild(node);
+    node.payload = bigNetwork(934);
+    await flush();
+
+    const scene = node.querySelector("svg > g") as SVGGElement;
+    const [, tx, ty, scale] = /translate\((-?[\d.]+),(-?[\d.]+)\) scale\(([\d.]+)\)/.exec(
+      scene.getAttribute("transform") ?? "",
+    )!.map(Number) as unknown as [string, number, number, number];
+
+    // Every node group carries its graph position; the scene transform is what
+    // turns those into viewport coordinates. Before framing, a network this size
+    // laid itself out thousands of units across and the view opened on an empty
+    // canvas with all 934 of them outside it.
+    const positions = [...node.querySelectorAll("svg > g > g:last-child > g")].map((group) => {
+      const [x, y] = /translate\((-?[\d.]+),(-?[\d.]+)\)/.exec(group.getAttribute("transform") ?? "")!.slice(1);
+      return { x: Number(x) * scale + tx, y: Number(y) * scale + ty };
+    });
+
+    expect(positions.length).toBe(934);
+    // jsdom reports no layout, so the view falls back to its declared size.
+    for (const { x, y } of positions) {
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThanOrEqual(800);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(y).toBeLessThanOrEqual(600);
+    }
   });
 
   it("does not pay for a depiction per node before the first frame", async () => {

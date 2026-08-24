@@ -201,8 +201,11 @@ describe("<gufe-ligand-network>", () => {
     const text = node.textContent ?? "";
     expect(text).toContain("score");
     expect(text).toContain(edge.score!.toFixed(3));
-    expect(text).toContain("mapped atoms");
-    expect(text).toContain(String(edge.componentA_to_componentB.length));
+    // The pane embeds <gufe-atom-mapping>, which opens on its 3D view rather
+    // than on a panel of numbers - those live behind its Info mode now.
+    const embedded = node.querySelector("gufe-atom-mapping")!;
+    expect(embedded).toBeTruthy();
+    expect(embedded.textContent).toContain("mapped");
   });
 
   it("switches the selection when another mapping is clicked", async () => {
@@ -506,82 +509,118 @@ describe("uniqueAtoms", () => {
 });
 
 describe("<gufe-atom-mapping>", () => {
+  let engines: SeededEnginesResult;
   beforeEach(() => {
-    seedFakeEngines();
+    engines = seedFakeEngines();
   });
   afterEach(() => {
     clearFakeEngines();
     document.body.replaceChildren();
   });
 
-  it("names both ligands and counts what changes", async () => {
-    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+  const mapping = () => mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+
+  const modeButton = (node: HTMLElement, label: string): HTMLButtonElement =>
+    Array.from(node.querySelectorAll("button")).find((b) => b.textContent === label)!;
+
+  const setMode = async (node: HTMLElement, label: string): Promise<void> => {
+    modeButton(node, label).click();
     await flush();
-    const text = node.textContent ?? "";
-    expect(text).toContain("LigandAtomMapping");
-    expect(text).toContain("mapped atoms");
-    expect(text).toContain("element changes");
+  };
+
+  it("offers the prototype's six modes, in its order", async () => {
+    const node = mapping();
+    await flush();
+    const labels = Array.from(node.querySelectorAll("button")).map((b) => b.textContent);
+    expect(labels).toEqual(["3D", "3D-Map", "Pairs", "Overlay", "2D", "Info"]);
   });
 
-  it("says what the two colours mean", async () => {
-    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+  it("opens on the plain 3D view, with one box per molecule", async () => {
+    const node = mapping();
     await flush();
-    expect(node.textContent).toContain("element change");
-    expect(node.textContent).toContain("unique atom");
+    expect(node.querySelectorAll("[data-gufe-viewer]").length).toBe(2);
+    expect(engines.viewers.length).toBe(2);
   });
 
-  it("draws both molecules keeping their hydrogens", async () => {
-    const engines = seedFakeEngines();
-    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+  it("keeps two side-by-side viewers pointing the same way", async () => {
+    // Turning one molecule while the other stays put makes the pair impossible
+    // to compare, which is the only reason both are on screen.
+    const node = mapping();
     await flush();
-    expect(node.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
+    expect(node.querySelectorAll("[data-gufe-viewer]").length).toBe(2);
+    // Both viewers were opened; the sync loop reads getView from one and writes
+    // setView to the other.
+    expect(engines.viewers.every((v) => typeof v.getView === "function")).toBe(true);
+  });
+
+  it("picks out each molecule's unmapped atoms in 3D-Map", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "3D-Map");
+
+    const extra = engines.viewers.flatMap((v) => v.calls.filter((c) => c.startsWith("addStyle")));
+    // One addStyle per unmapped atom, and 3Dmol counts atoms from one.
+    expect(extra.length).toBeGreaterThan(0);
+    expect(extra.every((c) => /serial":\s*[1-9]/.test(c))).toBe(true);
+  });
+
+  it("draws one line per mapped pair in Pairs, into a single box", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "Pairs");
+
+    expect(node.querySelectorAll("[data-gufe-viewer]").length).toBe(1);
+    const payload = readExample("ligand_atom_mapping.json") as unknown as {
+      componentA_to_componentB: unknown[];
+    };
+    const lines = engines.viewers.at(-1)!.shapes.filter((s) => s.kind === "cylinder");
+    expect(lines.length).toBe(payload.componentA_to_componentB.length);
+    expect(lines.every((l) => l.spec.dashed === true)).toBe(true);
+  });
+
+  it("superimposes both molecules translucently in Overlay", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "Overlay");
+
+    expect(node.querySelectorAll("[data-gufe-viewer]").length).toBe(1);
+    const viewer = engines.viewers.at(-1)!;
+    expect(viewer.calls.filter((c) => c.startsWith("addModel")).length).toBe(2);
+    const styles = viewer.styles.map(({ style }) => (style as { stick?: { opacity?: number } }).stick?.opacity);
+    expect(styles.every((o) => o !== undefined && o < 1)).toBe(true);
+  });
+
+  it("draws both depictions in 2D, keeping their hydrogens", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "2D");
     // gufe's indices count hydrogens, so a depiction that stripped them would
     // highlight neighbouring atoms with complete confidence.
     expect(engines.depicted.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("puts five models in one 3D scene, as gufe's layout does", async () => {
-    const engines = seedFakeEngines();
-    mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+  it("puts the numbers behind Info rather than beside the molecules", async () => {
+    const node = mapping();
     await flush();
-    // molA shifted left, molB shifted right, then both again unshifted in the
-    // middle: the outer pair carries the spheres, the middle pair is the overlay.
-    const viewer = engines.viewers[0];
-    expect(viewer.calls.filter((c) => c.startsWith("addModel")).length).toBe(4);
+    expect(node.textContent).not.toContain("element changes");
+
+    await setMode(node, "Info");
+    const text = node.textContent ?? "";
+    expect(text).toContain("mapped atoms");
+    expect(text).toContain("element changes");
+    expect(text).toContain("unique to");
+    expect(text).toContain("CORRESPONDENCE");
+    expect(text).toContain("gufe key");
   });
 
-  it("marks each mapped pair with one colour in two places", async () => {
-    const engines = seedFakeEngines();
-    mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+  it("releases the previous mode's viewers when the mode changes", async () => {
+    // Each mode rebuilds its boxes, and a browser only allows so many live
+    // WebGL contexts - clicking along the switcher must not use them all up.
+    const node = mapping();
     await flush();
-
-    const spheres = engines.viewers[0].shapes.filter((s) => s.kind === "sphere");
-    expect(spheres.length).toBeGreaterThan(0);
-    // Two spheres per pair, and the pair's two spheres share a colour - that
-    // sharing is the whole signal.
-    expect(spheres.length % 2).toBe(0);
-    const byColour = new Map<string, number>();
-    for (const sphere of spheres) {
-      const colour = String(sphere.spec.color);
-      byColour.set(colour, (byColour.get(colour) ?? 0) + 1);
-    }
-    for (const count of byColour.values()) expect(count).toBe(2);
-  });
-
-  it("draws a line between each mapped pair, and can be told not to", async () => {
-    const engines = seedFakeEngines();
-    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
-    await flush();
-    const viewer = engines.viewers[0];
-
-    const lines = () => viewer.shapes.filter((s) => s.kind === "cylinder");
-    expect(lines().length).toBeGreaterThan(0);
-    expect(lines().every((l) => l.spec.dashed === true)).toBe(true);
-
-    const button = Array.from(node.querySelectorAll("button")).find((b) => b.textContent === "Lines");
-    expect(button).toBeTruthy();
-    button!.click();
-    expect(lines().length).toBe(0);
+    const first = engines.viewers.slice();
+    await setMode(node, "Overlay");
+    expect(first.every((v) => v.cleared)).toBe(true);
   });
 
   it("survives a registry that does not hold its endpoints", async () => {
@@ -621,7 +660,10 @@ describe("<gufe-ligand-network> detail pane", () => {
     // drift apart.
     const embedded = node.querySelector("gufe-atom-mapping");
     expect(embedded).toBeTruthy();
-    expect(embedded!.textContent).toContain("element change");
+    // It arrives with its own six-mode switcher, which is how you know it is
+    // the same element and not a second drawing path.
+    const labels = Array.from(embedded!.querySelectorAll("button")).map((b) => b.textContent);
+    expect(labels).toEqual(["3D", "3D-Map", "Pairs", "Overlay", "2D", "Info"]);
   });
 
   it("re-points that element when a different edge is selected", async () => {

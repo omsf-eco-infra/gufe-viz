@@ -125,17 +125,23 @@ describe("<gufe-ligand-network>", () => {
     expect(scene.getAttribute("transform")).toMatch(/scale\(/);
   });
 
-  it("resets pan and zoom back to identity", async () => {
+  /**
+   * Reset goes back to the view the graph opened on, which is the framed one
+   * rather than the identity transform: a laid-out network is nowhere near the
+   * origin, and at 200 ligands it is nowhere near the viewport either.
+   */
+  it("resets pan and zoom back to the view it opened on", async () => {
     const node = mount("gufe-ligand-network", readExample("ligand_network.json"));
     await flush();
     const root = node.querySelector("svg")!;
     const scene = node.querySelector("svg > g") as SVGGElement;
+    const opening = scene.getAttribute("transform");
 
     root.dispatchEvent(pointer("pointerdown"));
     root.dispatchEvent(wheel(-240));
-    expect(scene.getAttribute("transform")).not.toBe("translate(0,0) scale(1)");
+    expect(scene.getAttribute("transform")).not.toBe(opening);
 
     resetButton(node)!.click();
-    expect(scene.getAttribute("transform")).toBe("translate(0,0) scale(1)");
+    expect(scene.getAttribute("transform")).toBe(opening);
   });
 });

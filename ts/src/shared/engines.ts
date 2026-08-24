@@ -32,6 +32,13 @@ export interface ThreeDmolViewer {
   addCylinder(spec: object): unknown;
   /** Drop every sphere and cylinder, leaving the models alone. */
   removeAllShapes(): void;
+  /** Style a subset on top of what `setStyle` already applied. */
+  addStyle(selection: object, style: object): void;
+  /** The camera, for keeping two side-by-side viewers pointing the same way. */
+  getView(): unknown;
+  setView(view: unknown): void;
+  /** Turn the camera, in degrees about an axis. */
+  rotate(angle: number, axis: string): void;
   render(): void;
   resize(): void;
   spin(axis: string | false): void;

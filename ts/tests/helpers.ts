@@ -46,6 +46,7 @@ export function makeFakeViewer(): FakeViewer {
     };
   const styles: { selection: unknown; style: unknown }[] = [];
   const shapes: { kind: "sphere" | "cylinder"; spec: Record<string, unknown> }[] = [];
+  let view: number[] = [0, 0, 0, 1];
   const viewer = {
     calls,
     styles,
@@ -74,6 +75,20 @@ export function makeFakeViewer(): FakeViewer {
     removeAllShapes: () => {
       calls.push("removeAllShapes");
       shapes.length = 0;
+    },
+    addStyle: (selection: object, style: object) => {
+      calls.push(`addStyle(${JSON.stringify(selection)})`);
+      styles.push({ selection, style });
+    },
+    // A camera the sync loop can read back unchanged, so two boxes agree
+    // without anything actually rendering.
+    getView: () => view,
+    setView: (next: unknown) => {
+      view = next as number[];
+      calls.push("setView");
+    },
+    rotate: (angle: number, axis: string) => {
+      calls.push(`rotate(${angle},${axis})`);
     },
     render: record("render"),
     resize: record("resize"),
