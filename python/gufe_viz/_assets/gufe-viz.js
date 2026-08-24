@@ -185,7 +185,7 @@ function Te(e, t) {
   return n.titleEl = j("span", `font-weight:700;font-size:15px;color:${P.titleColor};letter-spacing:.02em;`, e), n.subtitleEl = j("span", `font-size:12px;color:${P.textMuted2};`, t || ""), n.statsEl = j(
     "div",
     `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${P.textMuted};`
-  ), n.toggleEl = j("div", "display:flex;align-items:center;margin-left:10px;flex-shrink:0;"), n.appendChild(n.titleEl), n.appendChild(n.subtitleEl), n.appendChild(n.statsEl), n.appendChild(n.toggleEl), n;
+  ), n.toggleEl = j("div", "display:flex;align-items:center;flex-shrink:0;"), n.appendChild(n.toggleEl), n.appendChild(n.titleEl), n.appendChild(n.subtitleEl), n.appendChild(n.statsEl), n;
 }
 function Pe(e, t, n = !1) {
   const o = j("div", "display:flex;gap:12px;align-items:baseline;padding:5px 0;min-width:0;");
@@ -240,7 +240,7 @@ function _i(e, t, n = {}) {
     c.style.background = o ? P.btnBgActive : P.btnBgHover;
   }, c.onmouseout = () => {
     c.style.background = o ? P.btnBgActive : P.btnBg;
-  }, e.toggleEl.appendChild(c), s(), {
+  }, e.toggleEl.style.marginRight = "2px", e.toggleEl.appendChild(c), s(), {
     panel: r,
     isOpen: () => o,
     setOpen: d

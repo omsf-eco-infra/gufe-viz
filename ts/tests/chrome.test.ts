@@ -79,6 +79,23 @@ describe("chromeMenu", () => {
     expect(onToggle).not.toHaveBeenCalled();
   });
 
+  it("puts its button at the top left, before the title", () => {
+    chromeMenu(header, () => document.createElement("div"));
+    // Placement is the helper's job, not each view's, so it is asserted here:
+    // the slot is the strip's first child, and the button is in it.
+    expect(header.firstElementChild).toBe(header.toggleEl);
+    expect(header.toggleEl.contains(button())).toBe(true);
+    expect(header.toggleEl.compareDocumentPosition(header.titleEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("takes no room in a header with no menu", () => {
+    // Every view builds a header strip; most have no menu, and an empty slot
+    // must not indent their titles.
+    expect(header.firstElementChild).toBe(header.toggleEl);
+    expect(header.toggleEl.childElementCount).toBe(0);
+    expect(header.toggleEl.style.marginRight).toBe("");
+  });
+
   it("puts its button in the header's toggle slot", () => {
     chromeMenu(header, () => document.createElement("div"), { label: "Network options" });
     expect(button()).toBeTruthy();
@@ -104,7 +121,4 @@ describe("chromeMenu", () => {
     expect(menu.panel.style.display).toBe("");
   });
 
-  it("gives a header with no menu nothing to click", () => {
-    expect(header.toggleEl.childElementCount).toBe(0);
-  });
 });

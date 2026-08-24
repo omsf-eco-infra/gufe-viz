@@ -145,7 +145,11 @@ export interface HeaderStrip extends HTMLDivElement {
   titleEl: HTMLSpanElement;
   subtitleEl: HTMLSpanElement;
   statsEl: HTMLDivElement;
-  /** Where `chromeMenu` puts its button. Empty, and invisible, until it does. */
+  /**
+   * Where `chromeMenu` puts its button: first in the strip, so the control sits
+   * at the top left in every view that has one. Empty, and taking no room, until
+   * a view asks for a menu.
+   */
   toggleEl: HTMLDivElement;
 }
 
@@ -162,11 +166,12 @@ export function headerStrip(title: string, subtitle?: string): HeaderStrip {
     "div",
     `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:11px;color:${T.textMuted};`,
   );
-  bar.toggleEl = el("div", "display:flex;align-items:center;margin-left:10px;flex-shrink:0;");
+  bar.toggleEl = el("div", "display:flex;align-items:center;flex-shrink:0;");
+  // First, so the menu button is at the top left wherever a view carries one.
+  bar.appendChild(bar.toggleEl);
   bar.appendChild(bar.titleEl);
   bar.appendChild(bar.subtitleEl);
   bar.appendChild(bar.statsEl);
-  bar.appendChild(bar.toggleEl);
   return bar;
 }
 
@@ -326,6 +331,8 @@ export function chromeMenu(
     button.style.background = open ? T.btnBgActive : T.btnBg;
   };
 
+  // Only now does the slot take any room: an empty one must not indent the title.
+  header.toggleEl.style.marginRight = "2px";
   header.toggleEl.appendChild(button);
   apply();
 
