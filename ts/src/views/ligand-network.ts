@@ -14,7 +14,9 @@
  */
 
 import {
+  BTN_CSS,
   centredMessage,
+  chromeMenu,
   el,
   errText,
   floatingWarning,
@@ -125,6 +127,12 @@ const DETAIL = { captions: 0.5, depictions: 1.1 };
 
 /** How far outside the viewport to keep depictions, so panning does not tear. */
 const CULL_MARGIN = 200;
+
+/** How far down what is not emphasised goes. Dimmed, never removed. */
+const DIM = { node: 0.12, edge: 0.06 };
+
+/** Zoom to at least this when jumping to a ligand, so its name is legible. */
+const FOCUS_SCALE = 1.2;
 
 const FORCE = {
   linkBaseDistance: 150,
@@ -268,6 +276,134 @@ function levelOfDetail(parts: DetailParts): {
   return { apply, drawn: () => injected.size };
 }
 
+interface MenuParts {
+  nodes: NetNode[];
+  edges: NetEdge[];
+  /** Re-run emphasis after the query, the selection or the threshold moves. */
+  refresh(): void;
+  /** Bring one ligand into view and select it. */
+  focus(index: number): void;
+  selected: Set<string>;
+  filter: { minScore: number };
+  query: { text: string };
+}
+
+/**
+ * The network's menu: search, the ligand list, and the score filter.
+ *
+ * All three are new, so all three live behind the hamburger rather than on the
+ * toolbar - the layout picker and the score legend that were already visible
+ * stay visible. The list is also the reason the menu builds lazily: at nine
+ * hundred ligands it is the most expensive thing in the view, and a collapsed
+ * menu should not pay for it.
+ */
+function buildMenu(parts: MenuParts): HTMLDivElement {
+  const panel = el(
+    "div",
+    "display:flex;flex-direction:column;gap:8px;width:236px;padding:10px;min-height:0;" +
+      `background:${T.panelBg};border-right:1px solid ${T.splitBorder};`,
+  );
+
+  const search = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
+  search.type = "search";
+  search.placeholder = "Search ligands";
+  search.setAttribute("aria-label", "Search ligands by name, SMILES or gufe key");
+  panel.appendChild(search);
+
+  const scoreRow = el("div", `display:flex;align-items:center;gap:8px;font-size:11px;color:${T.textMuted};`);
+  const scoreValue = el("span", `min-width:28px;color:${T.textPrimary};`, "0.00");
+  const score = el("input", "flex:1;") as HTMLInputElement;
+  score.type = "range";
+  score.min = "0";
+  score.max = "1";
+  score.step = "0.01";
+  score.value = "0";
+  score.setAttribute("aria-label", "Hide mappings scoring below this");
+  scoreRow.appendChild(el("span", "", "score >="));
+  scoreRow.appendChild(score);
+  scoreRow.appendChild(scoreValue);
+  panel.appendChild(scoreRow);
+
+  const count = el("div", `font-size:11px;color:${T.textMuted2};`);
+  panel.appendChild(count);
+
+  const list = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
+  panel.appendChild(list);
+
+  const clear = el("button", `${BTN_CSS}width:100%;`, "Clear selection");
+  clear.onclick = () => {
+    parts.selected.clear();
+    render();
+    parts.refresh();
+  };
+  panel.appendChild(clear);
+
+  const matches = (node: NetNode): boolean => {
+    const text = parts.query.text.trim().toLowerCase();
+    if (!text) return true;
+    return (
+      label(node).toLowerCase().includes(text) ||
+      (node.smiles ?? "").toLowerCase().includes(text) ||
+      node["gufe-key"].toLowerCase().includes(text)
+    );
+  };
+
+  const render = (): void => {
+    list.replaceChildren();
+    const shown = parts.nodes.map((node, index) => ({ node, index })).filter(({ node }) => matches(node));
+    count.textContent = `${shown.length} of ${parts.nodes.length} ligands`;
+
+    for (const { node, index } of shown) {
+      const key = node["gufe-key"];
+      const row = el(
+        "button",
+        "display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;text-align:left;" +
+          "font-family:inherit;font-size:11px;cursor:pointer;width:100%;min-width:0;" +
+          `border:1px solid ${parts.selected.has(key) ? T.cardBorderActive : T.cardBorder};` +
+          `background:${parts.selected.has(key) ? T.cardBgActive : T.cardBg};color:${T.textPrimary};`,
+      );
+      // The full name lives here, because the canvas caption is truncated and
+      // long ligand names were called out as normal rather than exceptional.
+      const name = el("span", "flex:1;min-width:0;overflow-wrap:anywhere;", label(node));
+      name.title = `${label(node)}\n${node.smiles ?? ""}`;
+      row.appendChild(name);
+      row.onclick = (event) => {
+        // Plain click jumps to it; modifier-click adds to the selection, which
+        // is what makes "highlight the edges between these five" possible.
+        if (event.shiftKey || event.metaKey || event.ctrlKey) {
+          if (parts.selected.has(key)) parts.selected.delete(key);
+          else parts.selected.add(key);
+        } else {
+          parts.selected.clear();
+          parts.selected.add(key);
+          parts.focus(index);
+        }
+        render();
+        parts.refresh();
+      };
+      list.appendChild(row);
+    }
+
+    if (!shown.length) {
+      list.appendChild(el("div", `font-size:11px;padding:8px;color:${T.textMuted2};`, "Nothing matches."));
+    }
+  };
+
+  search.oninput = () => {
+    parts.query.text = search.value;
+    render();
+    parts.refresh();
+  };
+  score.oninput = () => {
+    parts.filter.minScore = Number(score.value);
+    scoreValue.textContent = parts.filter.minScore.toFixed(2);
+    parts.refresh();
+  };
+
+  render();
+  return panel;
+}
+
 export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   protected override placeholder(): string {
     return "Waiting for a LigandNetwork payload...";
@@ -314,6 +450,29 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const split = el("div", "flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden;");
     host.appendChild(split);
 
+    // What is emphasised, and what dims. One set shared by the list, the canvas
+    // and - when it lands - the export, so all three cannot disagree.
+    const selected = new Set<string>();
+    const filter = { minScore: 0 };
+    const query = { text: "" };
+    let applyEmphasis = () => {};
+
+    const menu = chromeMenu(
+      bar,
+      () =>
+        buildMenu({
+          nodes,
+          edges,
+          selected,
+          filter,
+          query,
+          refresh: () => applyEmphasis(),
+          focus: (index) => focusNode(index),
+        }),
+      { label: "Search, filter and select ligands", onToggle: () => draw() },
+    );
+    split.appendChild(menu.panel);
+
     const left = el("div", `flex:1 1 58%;min-width:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
     const right = el("div", `flex:1 1 42%;min-width:0;display:flex;flex-direction:column;background:${T.appBg};`);
     split.appendChild(left);
@@ -359,7 +518,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       return null;
     });
 
-    let selected = edges.length ? 0 : -1;
+    let focusNode: (index: number) => void = () => {};
+    let selectedEdge = edges.length ? 0 : -1;
     let stop: (() => void) | null = null;
     let layout: Layout = "Force-directed";
     let forceUnavailable = false;
@@ -368,7 +528,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     let resetView = () => {};
 
     const select = (index: number) => {
-      selected = index;
+      selectedEdge = index;
       detail.show(edges[index] ?? null);
       refreshHalos();
     };
@@ -386,10 +546,47 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       const paint = () => {
         if (!alive) return;
         const scene = this.#paint(canvas, nodes, edges, width, height, select, rdkitReady);
-        refreshHalos = () => scene.setSelected(selected);
+        refreshHalos = () => scene.setSelected(selectedEdge);
         resetView = scene.reset;
         stop = scene.cleanup;
+        focusNode = (index) => scene.focusOn(index);
+
+        /**
+         * Which nodes and edges stay lit.
+         *
+         * A ligand is lit when nothing is selected and nothing is searched for,
+         * or when it is selected, or when it matches the search. An edge is lit
+         * when it clears the score threshold *and* both its ends are lit - so a
+         * selection reads as "these ligands and what connects them".
+         */
+        applyEmphasis = () => {
+          const text = query.text.trim().toLowerCase();
+          const narrowed = selected.size > 0 || text.length > 0;
+          const litNodes = new Set<string>();
+          for (const node of nodes) {
+            const key = node["gufe-key"];
+            const hit =
+              selected.has(key) ||
+              (text.length > 0 &&
+                (label(node).toLowerCase().includes(text) ||
+                  (node.smiles ?? "").toLowerCase().includes(text) ||
+                  key.toLowerCase().includes(text)));
+            if (!narrowed || hit) litNodes.add(key);
+          }
+
+          const litEdges = new Set<number>();
+          edges.forEach((edge, i) => {
+            if ((edge.score ?? 0) < filter.minScore) return;
+            if (!litNodes.has(edge.from["gufe-key"]) || !litNodes.has(edge.to["gufe-key"])) return;
+            litEdges.add(i);
+          });
+
+          const filtering = narrowed || filter.minScore > 0;
+          scene.setEmphasis(filtering ? litNodes : null, filtering ? litEdges : null);
+        };
+
         refreshHalos();
+        applyEmphasis();
         // Draw the level of detail the opening zoom calls for. Everything else
         // arrives as the user zooms in.
         scene.setDetail(1, 0, 0);
@@ -418,7 +615,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
 
     draw();
-    detail.show(edges[selected] ?? null);
+    detail.show(edges[selectedEdge] ?? null);
 
     return {
       onResize: () => draw(),
@@ -534,7 +731,9 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     rdkitReady: Promise<RDKitModule | null>,
   ): {
     setSelected(index: number): void;
+    setEmphasis(nodeKeys: ReadonlySet<string> | null, edgeIndices: ReadonlySet<number> | null): void;
     setDetail(scale: number, tx: number, ty: number): void;
+    focusOn(index: number): void;
     depictionsDrawn(): number;
     reset(): void;
     cleanup(): void;
@@ -672,6 +871,31 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         halos.forEach((halo, i) => halo.setAttribute("opacity", i === index ? "0.95" : "0"));
       },
 
+      /**
+       * Dim what is not emphasised rather than hiding it.
+       *
+       * Asked for directly: you want to see what is *not* selected too, because
+       * a filter that removes the rest answers a different question from one
+       * that fades it.
+       */
+      setEmphasis(nodeKeys, edgeIndices) {
+        groups.forEach((group, i) => {
+          const lit = !nodeKeys || nodeKeys.has(nodes[i]["gufe-key"]);
+          group.setAttribute("opacity", lit ? "1" : String(DIM.node));
+        });
+        edges.forEach((_edge, i) => {
+          const lit = !edgeIndices || edgeIndices.has(i);
+          const opacity = lit ? "0.9" : String(DIM.edge);
+          (lines.children[i * 2 + 1] as SVGElement).setAttribute("stroke-opacity", opacity);
+          (labels.children[i] as SVGElement).setAttribute("opacity", lit ? "1" : String(DIM.edge));
+        });
+      },
+
+      focusOn(index: number) {
+        const node = nodes[index];
+        if (node) view.centreOn(node.x, node.y);
+      },
+
       setDetail: detail.apply,
       depictionsDrawn: () => detail.drawn(),
       reset: view.reset,
@@ -688,7 +912,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     groups: SVGGElement[],
     place: () => void,
     onTransform: (scale: number, tx: number, ty: number) => void,
-  ): { cleanup(): void; reset(): void } {
+  ): { cleanup(): void; reset(): void; centreOn(x: number, y: number): void } {
     let scale = 1;
     let tx = 0;
     let ty = 0;
@@ -766,6 +990,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         scale = 1;
         tx = 0;
         ty = 0;
+        apply();
+      },
+
+      /** Bring a graph point to the middle, zooming in enough to read it. */
+      centreOn(x: number, y: number) {
+        const box = root.getBoundingClientRect();
+        scale = Math.max(scale, FOCUS_SCALE);
+        tx = (box.width || root.clientWidth || 800) / 2 - x * scale;
+        ty = (box.height || root.clientHeight || 600) / 2 - y * scale;
         apply();
       },
       cleanup() {
