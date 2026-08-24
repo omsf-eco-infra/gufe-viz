@@ -10,6 +10,7 @@ import "./gufe-view.js";
 import "./views/small-molecule.js";
 import "./views/protein.js";
 import "./views/ligand-network.js";
+import "./views/atom-mapping.js";
 import "./views/chemical-system.js";
 import "./views/solvent.js";
 import "./views/unknown-component.js";
@@ -20,6 +21,7 @@ export { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryEntry, ty
 export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein } from "./views/protein.js";
 export { GufeLigandNetwork, mappingPayloadFor } from "./views/ligand-network.js";
+export { GufeAtomMapping, uniqueAtoms, type Uniques } from "./views/atom-mapping.js";
 export { GufeChemicalSystem } from "./views/chemical-system.js";
 export { GufeSolvent, parseConcentration } from "./views/solvent.js";
 export { GufeUnknownComponent } from "./views/unknown-component.js";

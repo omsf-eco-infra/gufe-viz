@@ -11,6 +11,7 @@
 
 import { errText } from "./dom.js";
 import type { RDKitModule } from "./engines.js";
+import { MAPPING_DRAW_OPTIONS } from "./atom-colors.js";
 
 export interface Molecule {
   name: string;
@@ -162,12 +163,18 @@ export function placeDepiction(box: HTMLElement, svg: string, size: number): voi
  *
  * Falls back to an unhighlighted depiction when the RDKit build predates
  * `get_svg_with_highlights` - a plain picture is worth more than an error.
+ *
+ * `colors` maps an atom index to an RGB triple, which is how the two meanings
+ * gufe distinguishes - an element change against an atom unique to its side -
+ * end up on the same picture. Atoms listed in `atoms` but absent from `colors`
+ * take RDKit's default highlight.
  */
 export function depictHighlightedSVG(
   RDKit: RDKitModule,
   source: string,
   size: number,
   atoms: number[],
+  colors: Record<number, readonly [number, number, number]> = {},
 ): string | null {
   let rdmol = null;
   try {
@@ -176,7 +183,17 @@ export function depictHighlightedSVG(
     if (!rdmol.get_svg_with_highlights) return rdmol.get_svg(size, size) || null;
     return (
       rdmol.get_svg_with_highlights(
-        JSON.stringify({ atoms, width: size, height: size, addAtomIndices: false }),
+        JSON.stringify({
+          atoms,
+          width: size,
+          height: size,
+          // Everything gufe sets, mirrored: a black-and-white element palette,
+          // atom indices, and outline rather than filled highlights. Getting
+          // the highlight colours right while missing these still produces a
+          // picture that does not match what gufe draws.
+          ...MAPPING_DRAW_OPTIONS,
+          highlightAtomColors: colors,
+        }),
       ) || null
     );
   } catch (e) {

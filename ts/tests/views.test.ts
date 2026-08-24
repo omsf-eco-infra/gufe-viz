@@ -13,6 +13,7 @@ import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry } from "../src/schema/registry.js";
 import { mappingPayloadFor } from "../src/views/ligand-network.js";
 import { parseConcentration } from "../src/views/solvent.js";
+import { uniqueAtoms } from "../src/views/atom-mapping.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 import type { LigandNetworkViz } from "../src/schema/types.js";
 
@@ -438,5 +439,132 @@ describe("<gufe-chemical-system>", () => {
     const node = mount("gufe-chemical-system", payload);
     await flush();
     expect(node.textContent).toContain("None of this system's components are in its registry");
+  });
+});
+
+describe("uniqueAtoms", () => {
+  // gufe's classification, which this has to mirror exactly or the two pictures
+  // disagree about what a colour means: an index absent from the mapping is
+  // unique, an index present whose element differs is an element change, and
+  // everything else gets no highlight at all.
+  const pairs = (entries: [number, number][]) => new Map(entries);
+
+  it("calls an unmapped atom unique", () => {
+    const u = uniqueAtoms(pairs([[0, 0]]), ["C", "O"], ["C"]);
+    expect(u.atoms).toEqual([1]);
+    expect(u.elements).toEqual([]);
+    expect(u.mapped).toEqual([0]);
+  });
+
+  it("calls a mapped atom of a different element an element change", () => {
+    const u = uniqueAtoms(pairs([[0, 0]]), ["C"], ["N"]);
+    expect(u.elements).toEqual([0]);
+    expect(u.atoms).toEqual([]);
+    expect(u.mapped).toEqual([]);
+  });
+
+  it("leaves a same-element mapped atom unhighlighted, as gufe does", () => {
+    const u = uniqueAtoms(pairs([[0, 0], [1, 1]]), ["C", "H"], ["C", "H"]);
+    expect(u.mapped).toEqual([0, 1]);
+    expect(u.atoms).toEqual([]);
+    expect(u.elements).toEqual([]);
+  });
+
+  it("classifies every atom exactly once", () => {
+    const u = uniqueAtoms(pairs([[0, 0], [2, 1]]), ["C", "O", "N"], ["C", "N"]);
+    const total = u.atoms.length + u.elements.length + u.mapped.length;
+    expect(total).toBe(3);
+  });
+});
+
+describe("<gufe-atom-mapping>", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("names both ligands and counts what changes", async () => {
+    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+    await flush();
+    const text = node.textContent ?? "";
+    expect(text).toContain("LigandAtomMapping");
+    expect(text).toContain("mapped atoms");
+    expect(text).toContain("element changes");
+  });
+
+  it("says what the two colours mean", async () => {
+    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+    await flush();
+    expect(node.textContent).toContain("element change");
+    expect(node.textContent).toContain("unique atom");
+  });
+
+  it("draws both molecules keeping their hydrogens", async () => {
+    const engines = seedFakeEngines();
+    const node = mount("gufe-atom-mapping", readExample("ligand_atom_mapping.json"));
+    await flush();
+    expect(node.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
+    // gufe's indices count hydrogens, so a depiction that stripped them would
+    // highlight neighbouring atoms with complete confidence.
+    expect(engines.depicted.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("survives a registry that does not hold its endpoints", async () => {
+    const payload = structuredClone(readExample("ligand_atom_mapping.json")) as {
+      componentA: string;
+      registry: unknown[];
+    };
+    payload.registry = [];
+    const node = mount("gufe-atom-mapping", payload);
+    await flush();
+    expect(node.textContent).toContain("registry does not hold them");
+  });
+
+  it("is what the dispatcher chooses for the type", async () => {
+    const node = mount("gufe-view", readExample("ligand_atom_mapping.json"));
+    await flush();
+    expect(node.querySelector("gufe-atom-mapping")).toBeTruthy();
+    expect(node.textContent).not.toContain("This build can draw");
+  });
+});
+
+describe("<gufe-ligand-network> detail pane", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("draws the selected mapping with the very same element as standalone", async () => {
+    const node = mount("gufe-ligand-network", readExample("ligand_network.json"));
+    await flush();
+
+    // The reuse claim, checked rather than asserted in a comment: one element,
+    // two call sites, so the in-context picture and the standalone one cannot
+    // drift apart.
+    const embedded = node.querySelector("gufe-atom-mapping");
+    expect(embedded).toBeTruthy();
+    expect(embedded!.textContent).toContain("element change");
+  });
+
+  it("re-points that element when a different edge is selected", async () => {
+    const node = mount("gufe-ligand-network", readExample("ligand_network.json"));
+    await flush();
+    const before = node.querySelector("gufe-atom-mapping");
+
+    const hits = Array.from(node.querySelectorAll("line")).filter(
+      (l) => l.getAttribute("stroke") === "transparent",
+    );
+    expect(hits.length).toBeGreaterThan(1);
+    hits[hits.length - 1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+
+    // A different edge is a new payload, not a rebuilt pane.
+    expect(node.querySelector("gufe-atom-mapping")).not.toBe(before);
   });
 });

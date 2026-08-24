@@ -9,8 +9,11 @@ Three sources, all read rather than transcribed:
 
 * the two mapping highlight colours, imported from ``gufe`` itself;
 * the 3D mapping ramp, sampled from the matplotlib colormap openfe asks for;
-* nothing else. Element colouring belongs to 3Dmol and RDKit and is left to
-  them, so it does not appear here at all.
+* the black-and-white element palette gufe draws mappings with, checked against
+  RDKit's own ``useBWAtomPalette()`` rather than typed out.
+
+Element colouring anywhere else belongs to 3Dmol's ``Jmol`` scheme and RDKit's
+defaults, and is left to them.
 
 Run ``pixi run atom-colors``. CI re-runs it and fails on any difference, the
 same way the schema and the bundle are checked.
@@ -25,6 +28,11 @@ from pathlib import Path
 # it by the position of each mapped pair. Changing it changes what OpenFE draws,
 # so it is a decision for the team rather than an edit here.
 RAMP_NAME = "hsv"
+
+#: Highest atomic number to give a palette entry. Covers the periodic table with
+#: room to spare; RDKit falls back to its default for anything unlisted, which is
+#: why the equivalence below is checked rather than assumed.
+MAX_ATOMIC_NUMBER = 118
 
 #: How many stops to bake. The ramp is resampled in the browser, so this only has
 #: to be dense enough that linear interpolation between stops is invisible.
@@ -68,6 +76,50 @@ def _ramp() -> list[str]:
     return [_hex(cmap(i / (RAMP_STOPS - 1))) for i in range(RAMP_STOPS)]
 
 
+def _bw_palette() -> dict[int, tuple[float, float, float]]:
+    """Every element drawn black, verified to equal RDKit's own BW palette.
+
+    gufe calls ``d2d.drawOptions().useBWAtomPalette()``. RDKit-JS offers no such
+    method: a view can only pass JSON draw options, and **the JSON parser accepts
+    ``useBWAtomPalette`` and silently ignores it** - drawing an oxygen red
+    regardless. An explicit ``atomColourPalette`` does work, so that is the route
+    the browser has to take.
+
+    The equivalence is proved here rather than trusted, so that a change in
+    RDKit's palette handling fails this generator instead of quietly making our
+    2D mappings disagree with gufe's.
+    """
+    import json
+
+    from rdkit import Chem
+    from rdkit.Chem.Draw import rdMolDraw2D
+
+    palette = {z: (0.0, 0.0, 0.0) for z in range(MAX_ATOMIC_NUMBER + 1)}
+
+    # An oxygen and a nitrogen, so a colour palette has something to get wrong.
+    probe = Chem.MolFromSmiles("c1ccccc1ON")
+
+    def drawn(use_method: bool) -> str:
+        drawer = rdMolDraw2D.MolDraw2DSVG(300, 300)
+        if use_method:
+            drawer.drawOptions().useBWAtomPalette()
+        else:
+            rdMolDraw2D.UpdateDrawerParamsFromJSON(
+                drawer, json.dumps({"atomColourPalette": {str(z): list(c) for z, c in palette.items()}})
+            )
+        rdMolDraw2D.PrepareAndDrawMolecule(drawer, probe)
+        drawer.FinishDrawing()
+        return drawer.GetDrawingText()
+
+    if drawn(False) != drawn(True):
+        raise SystemExit(
+            "the generated all-black palette no longer reproduces RDKit's "
+            "useBWAtomPalette(). gufe draws mappings with the latter, so the 2D "
+            "mapping view would stop matching it. Investigate before regenerating."
+        )
+    return palette
+
+
 def _versions() -> str:
     import gufe
     import matplotlib
@@ -79,6 +131,7 @@ def render() -> str:
     colors = _gufe_mapping_colors()
     ramp = _ramp()
     stops = "\n".join(f'  "{value}",' for value in ramp)
+    palette = ", ".join(f"{z}: BLACK" for z in sorted(_bw_palette()))
 
     return f'''{HEADER}
 /**
@@ -120,6 +173,38 @@ export const MAPPING_RAMP_3D: readonly string[] = [
 
 /** Which colormap `MAPPING_RAMP_3D` was sampled from. */
 export const MAPPING_RAMP_NAME = "{RAMP_NAME}";
+
+const BLACK: readonly [number, number, number] = [0, 0, 0];
+
+/**
+ * Every element drawn black, which is how gufe draws a mapping.
+ *
+ * gufe calls `drawOptions().useBWAtomPalette()` so that the two highlight
+ * colours are the only colour on the page. RDKit-JS has no such method: a view
+ * can only pass JSON draw options, and **the JSON parser accepts
+ * `useBWAtomPalette` and silently ignores it**, drawing an oxygen red anyway.
+ * An explicit palette does work, so this is that palette.
+ *
+ * The generator checks this reproduces `useBWAtomPalette()` byte for byte
+ * before emitting it, so a change in RDKit fails the build rather than quietly
+ * making our mappings disagree with gufe's.
+ */
+export const MAPPING_BW_PALETTE: Readonly<Record<number, readonly [number, number, number]>> = {{
+  {palette},
+}};
+
+/**
+ * The draw options a mapping depiction must pass to match gufe.
+ *
+ * All three are things gufe sets and RDKit does not default to. Getting the
+ * highlight colours right while missing these still produces a picture that
+ * does not match.
+ */
+export const MAPPING_DRAW_OPTIONS = {{
+  atomColourPalette: MAPPING_BW_PALETTE,
+  addAtomIndices: true,
+  continuousHighlight: false,
+}} as const;
 '''
 
 

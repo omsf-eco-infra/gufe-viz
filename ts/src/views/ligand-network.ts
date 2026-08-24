@@ -15,7 +15,6 @@
 
 import {
   centredMessage,
-  EM_DASH,
   el,
   errText,
   floatingWarning,
@@ -27,7 +26,7 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { svg, titled } from "../shared/svg.js";
 import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
-import { depictSVG, parseCounts } from "../shared/sdf.js";
+import { depictSVG } from "../shared/sdf.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, LigandNetworkViz, SmallMoleculeComponentViz } from "../schema/types.js";
@@ -228,7 +227,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     );
     left.appendChild(toolbar.bar);
 
-    const detail = this.#detailPane(right);
+    const detail = this.#detailPane(right, registry);
 
     if (!nodes.length) {
       // Naming the cause matters here: "no ligands" and "the ligands it names
@@ -363,7 +362,10 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   }
 
   /** The right-hand pane: what the selected mapping is, in words and pictures. */
-  #detailPane(host: HTMLDivElement): { show(edge: NetEdge | null): void; message(text: string): void } {
+  #detailPane(
+    host: HTMLDivElement,
+    registry: RegistryIndex,
+  ): { show(edge: NetEdge | null): void; message(text: string): void } {
     const title = el(
       "div",
       `flex-shrink:0;padding:4px 10px;font-size:12px;font-weight:bold;color:${T.labelFg};background:${T.labelBg};`,
@@ -380,8 +382,6 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         message("Click an edge to see its mapping.");
         return;
       }
-      // The endpoints are already resolved to whole ligands, so the pane reads
-      // the same `SmallMoleculeComponentViz` the single-molecule view does.
       body.replaceChildren();
 
       const heading = el(
@@ -392,37 +392,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       );
       body.appendChild(heading);
 
-      const pair = el("div", "display:flex;flex-direction:row;min-height:180px;");
-      body.appendChild(pair);
-      const boxes = [edge.from.sdf, edge.to.sdf].map((sdf, i) => {
-        const pane = el("div", "flex:1 1 50%;min-width:0;display:flex;flex-direction:column;");
-        pane.appendChild(
-          el("div", `padding:4px 10px;font-size:11px;color:${T.textMuted2};`, i === 0 ? "A" : "B"),
-        );
-        const box = el(
-          "div",
-          "flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:6px;" +
-            `background:${T.canvas2DBg};`,
-        );
-        box.appendChild(centredMessage("..."));
-        pane.appendChild(box);
-        pair.appendChild(pane);
-        return { box, sdf };
-      });
-
-      const mapped = (edge.componentA_to_componentB ?? []).length;
-      const countsA = parseCounts(edge.from.sdf);
-      const countsB = parseCounts(edge.to.sdf);
-      const stats = el(
-        "div",
-        "display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 14px;font-size:11px;" +
-          `color:${T.textMuted};border-top:1px solid ${T.toolbarBorder};`,
-      );
-      stats.appendChild(statChip("score", edge.score == null ? EM_DASH : edge.score.toFixed(3), scoreColor(edge.score)));
-      stats.appendChild(statChip("mapped atoms", String(mapped)));
-      stats.appendChild(statChip("atoms A", countsA ? String(countsA.atoms) : EM_DASH));
-      stats.appendChild(statChip("atoms B", countsB ? String(countsB.atoms) : EM_DASH));
-      body.appendChild(stats);
+      // The same element the standalone mapping payload renders through, fed
+      // the payload `mappingPayloadFor` cuts loose. There is no second drawing
+      // path, so the in-context picture and the standalone one cannot drift.
+      const mapping = mappingPayloadFor(edge, registry);
+      const embedded = document.createElement("gufe-atom-mapping") as HTMLElement & { payload: unknown };
+      embedded.style.cssText = "flex:1;min-width:0;min-height:220px;display:flex;";
+      embedded.payload = mapping;
+      body.appendChild(embedded);
 
       const annotations = Object.entries(edge.annotations ?? {}).filter(([key]) => key !== "score");
       if (annotations.length) {
@@ -437,25 +414,6 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         body.appendChild(list);
       }
 
-      loadRDKit()
-        .then((RDKit) => {
-          for (const { box, sdf } of boxes) {
-            const drawn = depictSVG(RDKit, sdf, DEPICT_SIZE);
-            box.replaceChildren();
-            if (drawn) {
-              box.innerHTML = drawn;
-              const el2 = box.querySelector("svg");
-              el2?.removeAttribute("width");
-              el2?.removeAttribute("height");
-              el2?.setAttribute("style", "width:100%;height:100%;");
-            } else {
-              box.appendChild(centredMessage("Failed to parse molecule", true));
-            }
-          }
-        })
-        .catch((e: unknown) => {
-          for (const { box } of boxes) box.replaceChildren(centredMessage(`RDKit failed to load: ${errText(e)}`, true));
-        });
     };
 
     return { show, message };
