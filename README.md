@@ -40,6 +40,22 @@ That solves and downloads a conda environment containing RDKit and gufe.
 
 ### 3. Look at the visualizations
 
+The fastest loop is the dev server. It rebuilds on save, so a change to a view
+is visible without running anything else:
+
+```bash
+pixi run dev
+# http://localhost:5173/gallery.html   every example, every view
+# http://localhost:5173/parity.html    our atom mapping beside gufe's own
+# http://localhost:5173/               drop any payload JSON on the page
+```
+
+The gallery finds `examples/*.json` by itself, so a new fixture appears without
+touching it. Cards draw as you scroll to them and are released again when you
+scroll well past: several of them hold a WebGL context, and a browser only
+allows so many at once.
+
+
 Three ways:
 
 **The gallery:**  every example payload on one page, for quick debugging and checks
@@ -663,7 +679,10 @@ somewhere sensible - for that, see
 
 | Task | What it does |
 |---|---|
-| `pixi run dev` | Vite dev server - dropzone and gallery |
+| `pixi run dev` | Vite dev server - dropzone, gallery and the parity page |
+| `pixi run parity-reference` | Render gufe's own mapping drawings, to compare ours against |
+| `pixi run big-network` | Generate a large synthetic ligand network, to measure against |
+| `pixi run atom-colors` | Regenerate the mirrored atom colours from gufe and matplotlib |
 | `pixi run gufe-viz <input> [-o out.html]` | Render one payload or gufe object as a standalone page |
 | `pixi run gufe-viz-debug <input> [-o out.html]` | The same, with the payload printed to the browser console |
 | `pixi run build` | Bundle TypeScript into `python/gufe_viz/_assets/gufe-viz.js` |

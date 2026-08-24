@@ -7,6 +7,7 @@ import { defineConfig } from "vitest/config";
  *
  *   index.html    drop a payload JSON anywhere on the page and it renders
  *   gallery.html  every component, every example payload, one scrolling page
+ *   parity.html   our atom mapping beside gufe's own drawing of the same one
  *
  * `examples/` is exposed as an extra fs root so the gallery can fetch the same
  * fixture files pytest and vitest use.
@@ -22,6 +23,7 @@ export default defineConfig({
       input: {
         index: resolve(import.meta.dirname, "ts/index.html"),
         gallery: resolve(import.meta.dirname, "ts/gallery.html"),
+        parity: resolve(import.meta.dirname, "ts/parity.html"),
       },
     },
   },

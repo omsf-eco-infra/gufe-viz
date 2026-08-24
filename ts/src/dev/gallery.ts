@@ -35,6 +35,22 @@ const EXAMPLE_URLS = import.meta.glob<string>("../../../examples/*.json", {
 
 const CARD_HEIGHT = "520px";
 
+/**
+ * How far outside the viewport a card mounts, and how far out it is released.
+ *
+ * Cards mount lazily because several of them create a WebGL context - the two
+ * 3D panes, three proteins, the mapping overlay, and whatever a chemical system
+ * or a transformation nests - and browsers cap live contexts at somewhere around
+ * eight to sixteen. Mounting all fourteen at once silently blanks the ones past
+ * the cap, which reads as "my view is broken" rather than "the browser ran out".
+ *
+ * Releasing again on the way out is what keeps that true after a long scroll.
+ * The release margin is wider than the mount margin so a card near the edge does
+ * not flicker between the two.
+ */
+const MOUNT_MARGIN = "600px";
+const RELEASE_MARGIN = "1400px";
+
 export async function buildGallery(host: HTMLElement): Promise<void> {
   const paths = Object.keys(EXAMPLES).sort();
 
@@ -44,7 +60,8 @@ export async function buildGallery(host: HTMLElement): Promise<void> {
   header.innerHTML =
     `<h1 style="margin:0 0 4px;font-size:18px;color:${T.titleColor};">gufe-viz gallery</h1>` +
     `<div>${paths.length} example payload${paths.length === 1 ? "" : "s"} from <code>examples/</code>, ` +
-    "each rendered through <code>&lt;gufe-view&gt;</code>.</div>";
+    "each rendered through <code>&lt;gufe-view&gt;</code>. " +
+    `<a href="./parity.html" style="color:${T.titleColor};">mapping parity -&gt;</a></div>`;
   host.appendChild(header);
 
   if (!paths.length) {
@@ -77,12 +94,71 @@ export async function buildGallery(host: HTMLElement): Promise<void> {
     card.appendChild(stage);
     host.appendChild(card);
 
-    try {
-      const mod = await EXAMPLES[path]();
-      mount(stage, mod.default);
-    } catch (e) {
-      stage.style.cssText = `padding:20px;color:${T.errorFg};font:12px ui-sans-serif,system-ui,sans-serif;`;
-      stage.textContent = `Failed to load ${name}: ${errText(e)}`;
-    }
+    placeholder(stage, name);
+    observe(stage, path, name);
+  }
+}
+
+/** What a card shows before it is scrolled to. */
+function placeholder(stage: HTMLElement, name: string): void {
+  stage.replaceChildren();
+  stage.style.cssText =
+    `height:${CARD_HEIGHT};display:flex;align-items:center;justify-content:center;` +
+    `color:${T.textMuted2};font:12px ui-sans-serif,system-ui,sans-serif;`;
+  stage.textContent = `${name} - scroll to draw`;
+}
+
+let mountObserver: IntersectionObserver | null = null;
+let releaseObserver: IntersectionObserver | null = null;
+const pending = new Map<Element, { path: string; name: string }>();
+const mounted = new Set<Element>();
+
+function observe(stage: HTMLElement, path: string, name: string): void {
+  if (typeof IntersectionObserver === "undefined") {
+    void draw(stage, path, name);
+    return;
+  }
+
+  mountObserver ??= new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const card = pending.get(entry.target);
+        if (card) void draw(entry.target as HTMLElement, card.path, card.name);
+      }
+    },
+    { rootMargin: MOUNT_MARGIN },
+  );
+
+  releaseObserver ??= new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting || !mounted.has(entry.target)) continue;
+        // Removing the element fires its `disconnectedCallback`, which is where
+        // a 3Dmol viewer gives its context back.
+        mounted.delete(entry.target);
+        const card = pending.get(entry.target);
+        if (card) placeholder(entry.target as HTMLElement, card.name);
+      }
+    },
+    { rootMargin: RELEASE_MARGIN },
+  );
+
+  pending.set(stage, { path, name });
+  mountObserver.observe(stage);
+  releaseObserver.observe(stage);
+}
+
+async function draw(stage: HTMLElement, path: string, name: string): Promise<void> {
+  if (mounted.has(stage)) return;
+  mounted.add(stage);
+  stage.replaceChildren();
+  stage.style.cssText = `height:${CARD_HEIGHT};`;
+  try {
+    const mod = await EXAMPLES[path]();
+    mount(stage, mod.default);
+  } catch (e) {
+    stage.style.cssText = `padding:20px;color:${T.errorFg};font:12px ui-sans-serif,system-ui,sans-serif;`;
+    stage.textContent = `Failed to load ${name}: ${errText(e)}`;
   }
 }
