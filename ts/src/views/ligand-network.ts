@@ -108,6 +108,24 @@ const EDGE_MIN_WIDTH = 1.5;
 const EDGE_MAX_WIDTH = 6;
 const HIT_WIDTH = 16;
 
+/**
+ * Level of detail, keyed off the zoom.
+ *
+ * Zoomed out, the shape of the network is the thing worth seeing, and a caption
+ * under every node buries it - a nine-hundred-ligand network is unreadable long
+ * before it is slow. Zoomed in, the structures are what people navigate by:
+ * project chemists know what a ligand looks like more reliably than what it is
+ * called. So captions arrive first and depictions second.
+ *
+ * Depictions are also the expensive part - one RDKit call and an SVG subtree per
+ * node - so they are built lazily, only for nodes actually on screen, and only
+ * once each.
+ */
+const DETAIL = { captions: 0.5, depictions: 1.1 };
+
+/** How far outside the viewport to keep depictions, so panning does not tear. */
+const CULL_MARGIN = 200;
+
 const FORCE = {
   linkBaseDistance: 150,
   linkScoreBonus: 60,
@@ -143,6 +161,112 @@ function scoreColor(score: number | null | undefined): string {
 const label = entryLabel;
 
 const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}...` : text);
+
+interface DetailParts {
+  nodes: NetNode[];
+  captions: SVGTextElement[];
+  initials: SVGTextElement[];
+  depictionGroups: SVGGElement[];
+  rdkit: () => Promise<RDKitModule | null>;
+  viewport: () => { width: number; height: number };
+}
+
+/**
+ * Show and hide per-node detail according to the zoom.
+ *
+ * Two things are gated. Captions are cheap and toggle wholesale. Depictions cost
+ * an RDKit call and an SVG subtree each, so they are built at most once per node
+ * and only for nodes currently on screen - which is what makes a network of
+ * several hundred ligands draw at all, rather than paying for every depiction
+ * before the first frame.
+ */
+function levelOfDetail(parts: DetailParts): {
+  apply(scale: number, tx: number, ty: number): void;
+  drawn(): number;
+} {
+  const injected = new Set<number>();
+  let failed = new Set<number>();
+
+  const inject = (RDKit: RDKitModule, index: number): void => {
+    if (injected.has(index) || failed.has(index)) return;
+    const node = parts.nodes[index];
+    const drawn = node.sdf && depictSVG(RDKit, node.sdf, DEPICT_SIZE);
+    if (!drawn) {
+      failed.add(index);
+      return;
+    }
+    const parsed = new DOMParser().parseFromString(drawn, "image/svg+xml").documentElement;
+    if (!parsed || parsed.nodeName.toLowerCase() === "parsererror") {
+      failed.add(index);
+      return;
+    }
+
+    const size = ((NODE_RADIUS - 4) * 2) / DEPICT_SIZE;
+    const target = parts.depictionGroups[index];
+    target.setAttribute(
+      "transform",
+      `translate(${(-size * DEPICT_SIZE) / 2},${(-size * DEPICT_SIZE) / 2}) scale(${size})`,
+    );
+    let appended = 0;
+    for (const child of Array.from(parsed.childNodes)) {
+      if (child.nodeType !== 1) continue;
+      const tag = child.nodeName.toLowerCase();
+      if (tag === "defs" || tag === "metadata" || tag === "title") continue;
+      // RDKit paints an opaque white backing rect; dropping it lets the node's
+      // own fill show through.
+      if (tag === "rect") {
+        const fill = ((child as Element).getAttribute("fill") ?? "").toLowerCase();
+        if (fill === "#ffffff" || fill === "white" || fill === "rgb(255,255,255)") continue;
+      }
+      target.appendChild(document.importNode(child, true));
+      appended++;
+    }
+    if (appended) injected.add(index);
+    else failed.add(index);
+  };
+
+  const apply = (scale: number, tx: number, ty: number): void => {
+    const wantCaptions = scale >= DETAIL.captions;
+    for (const caption of parts.captions) {
+      caption.setAttribute("display", wantCaptions ? "inline" : "none");
+    }
+
+    const wantDepictions = scale >= DETAIL.depictions;
+    for (let i = 0; i < parts.nodes.length; i++) {
+      const showing = wantDepictions && injected.has(i);
+      parts.depictionGroups[i].setAttribute("display", showing ? "inline" : "none");
+      parts.initials[i].setAttribute("display", showing ? "none" : "inline");
+    }
+    if (!wantDepictions) return;
+
+    // Only what is on screen, plus a margin so panning does not tear.
+    const { width, height } = parts.viewport();
+    const visible: number[] = [];
+    parts.nodes.forEach((node, i) => {
+      if (injected.has(i) || failed.has(i)) return;
+      const x = node.x * scale + tx;
+      const y = node.y * scale + ty;
+      if (x < -CULL_MARGIN || y < -CULL_MARGIN || x > width + CULL_MARGIN || y > height + CULL_MARGIN) return;
+      visible.push(i);
+    });
+    if (!visible.length) return;
+
+    parts
+      .rdkit()
+      .then((RDKit) => {
+        if (!RDKit) return;
+        for (const index of visible) {
+          inject(RDKit, index);
+          const showing = injected.has(index);
+          parts.depictionGroups[index].setAttribute("display", showing ? "inline" : "none");
+          parts.initials[index].setAttribute("display", showing ? "none" : "inline");
+        }
+      })
+      .catch(() => undefined);
+  };
+
+  return { apply, drawn: () => injected.size };
+}
 
 export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   protected override placeholder(): string {
@@ -261,12 +385,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
       const paint = () => {
         if (!alive) return;
-        const scene = this.#paint(canvas, nodes, edges, width, height, select);
+        const scene = this.#paint(canvas, nodes, edges, width, height, select, rdkitReady);
         refreshHalos = () => scene.setSelected(selected);
         resetView = scene.reset;
         stop = scene.cleanup;
         refreshHalos();
-        rdkitReady.then((RDKit) => RDKit && scene.depict(RDKit)).catch(() => undefined);
+        // Draw the level of detail the opening zoom calls for. Everything else
+        // arrives as the user zooms in.
+        scene.setDetail(1, 0, 0);
       };
 
       if (layout !== "Force-directed" || forceUnavailable) {
@@ -405,7 +531,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     width: number,
     height: number,
     onSelect: (index: number) => void,
-  ): { setSelected(index: number): void; depict(RDKit: RDKitModule): number; reset(): void; cleanup(): void } {
+    rdkitReady: Promise<RDKitModule | null>,
+  ): {
+    setSelected(index: number): void;
+    setDetail(scale: number, tx: number, ty: number): void;
+    depictionsDrawn(): number;
+    reset(): void;
+    cleanup(): void;
+  } {
     const root = svg("svg", { width, height, style: "display:block;touch-action:none;" });
     const scene = svg("g");
     root.appendChild(scene);
@@ -462,6 +595,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     const depictionGroups: SVGGElement[] = [];
     const initials: SVGTextElement[] = [];
+    const captions: SVGTextElement[] = [];
     const groups = nodes.map((node) => {
       const group = titled(svg("g", { style: "cursor:grab;" }), `${label(node)}\n${node.smiles ?? ""}\n${node["gufe-key"]}`);
       group.appendChild(
@@ -497,6 +631,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         "pointer-events": "none",
       });
       caption.textContent = truncate(label(node), 16);
+      caption.setAttribute("display", "none");
+      captions.push(caption);
       group.appendChild(caption);
 
       nodeLayer.appendChild(group);
@@ -520,51 +656,24 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
     place();
 
-    const view = this.#interact(root, scene, nodes, groups, place);
+    const detail = levelOfDetail({
+      nodes,
+      captions,
+      initials,
+      depictionGroups,
+      rdkit: () => rdkitReady,
+      viewport: () => ({ width, height }),
+    });
+
+    const view = this.#interact(root, scene, nodes, groups, place, detail.apply);
 
     return {
       setSelected(index: number) {
         halos.forEach((halo, i) => halo.setAttribute("opacity", i === index ? "0.95" : "0"));
       },
 
-      depict(RDKit: RDKitModule) {
-        const scale = ((NODE_RADIUS - 4) * 2) / DEPICT_SIZE;
-        const parser = new DOMParser();
-        let injected = 0;
-
-        nodes.forEach((node, i) => {
-          const drawn = node.sdf && depictSVG(RDKit, node.sdf, DEPICT_SIZE);
-          if (!drawn) return;
-          const parsed = parser.parseFromString(drawn, "image/svg+xml").documentElement;
-          if (!parsed || parsed.nodeName.toLowerCase() === "parsererror") return;
-
-          const target = depictionGroups[i];
-          target.setAttribute(
-            "transform",
-            `translate(${(-scale * DEPICT_SIZE) / 2},${(-scale * DEPICT_SIZE) / 2}) scale(${scale})`,
-          );
-          let appended = 0;
-          for (const child of Array.from(parsed.childNodes)) {
-            if (child.nodeType !== 1) continue;
-            const tag = child.nodeName.toLowerCase();
-            if (tag === "defs" || tag === "metadata" || tag === "title") continue;
-            // RDKit paints an opaque white backing rect; dropping it lets the
-            // node's own fill show through.
-            if (tag === "rect") {
-              const fill = ((child as Element).getAttribute("fill") ?? "").toLowerCase();
-              if (fill === "#ffffff" || fill === "white" || fill === "rgb(255,255,255)") continue;
-            }
-            target.appendChild(document.importNode(child, true));
-            appended++;
-          }
-          if (appended) {
-            initials[i].setAttribute("display", "none");
-            injected++;
-          }
-        });
-        return injected;
-      },
-
+      setDetail: detail.apply,
+      depictionsDrawn: () => detail.drawn(),
       reset: view.reset,
       cleanup: view.cleanup,
     };
@@ -578,11 +687,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     nodes: NetNode[],
     groups: SVGGElement[],
     place: () => void,
+    onTransform: (scale: number, tx: number, ty: number) => void,
   ): { cleanup(): void; reset(): void } {
     let scale = 1;
     let tx = 0;
     let ty = 0;
-    const apply = () => scene.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
+    const apply = () => {
+      scene.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
+      onTransform(scale, tx, ty);
+    };
 
     // The zoom maths stays here rather than moving to `boundedZoom`: it works in
     // SVG transform space, carries its own clamp, and zooms about the pointer,

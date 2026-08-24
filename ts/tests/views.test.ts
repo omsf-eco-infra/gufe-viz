@@ -140,15 +140,47 @@ describe("<gufe-ligand-network>", () => {
     expect(node.textContent).toContain("LigandNetwork");
   });
 
-  it("runs the force layout, and depicts every ligand", async () => {
-    const payload = network();
-    mount("gufe-ligand-network", payload);
+  it("runs the force layout", async () => {
+    mount("gufe-ligand-network", network());
+    await flush();
+    expect(engines.simulations, "d3's force simulation was never configured").toBe(1);
+  });
+
+  it("does not draw node depictions until they are zoomed into", async () => {
+    // This replaces an assertion that every ligand was depicted up front. That
+    // is the thing a nine-hundred-ligand network cannot afford: one RDKit call
+    // and an SVG subtree per node, all before the first frame. The depictions
+    // in `engines.depicted` at rest belong to the detail pane's mapping view,
+    // which draws the two endpoints of the selected edge.
+    const node = mount("gufe-ligand-network", network());
     await flush();
 
-    expect(engines.simulations, "d3's force simulation was never configured").toBe(1);
-    // Every ligand in the graph, plus the two endpoints of the selected edge in
-    // the detail pane.
-    expect(engines.depicted.length).toBeGreaterThanOrEqual(payload.nodes.length);
+    const captions = Array.from(node.querySelectorAll("text")).filter(
+      (t) => t.getAttribute("y") === String(34 + 14),
+    );
+    expect(captions.length).toBeGreaterThan(0);
+    // Opening zoom is 1, which is below the depiction threshold and above the
+    // caption one: names yes, structures not yet.
+    expect(captions.every((c) => c.getAttribute("display") === "inline")).toBe(true);
+    const depictionGroups = Array.from(node.querySelectorAll("g[display]"));
+    expect(depictionGroups.every((g) => g.getAttribute("display") === "none")).toBe(true);
+  });
+
+  it("hides the captions when zoomed far enough out", async () => {
+    // The shape of the network is what is worth seeing at that distance, and a
+    // caption under every node buries it.
+    const node = mount("gufe-ligand-network", network());
+    await flush();
+    const root = node.querySelector("svg")!;
+
+    root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    root.dispatchEvent(new WheelEvent("wheel", { deltaY: 600, bubbles: true, cancelable: true }));
+
+    const captions = Array.from(node.querySelectorAll("text")).filter(
+      (t) => t.getAttribute("y") === String(34 + 14),
+    );
+    expect(captions.length).toBeGreaterThan(0);
+    expect(captions.every((c) => c.getAttribute("display") === "none")).toBe(true);
   });
 
   it("labels unnamed ligands from their gufe key, and named ones by name", async () => {
