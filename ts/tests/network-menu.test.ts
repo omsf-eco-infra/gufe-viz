@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import "../src/index.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines } from "./helpers.js";
+import { selectionText } from "../src/views/ligand-network.js";
 
 function mountNetwork(fixture = "ligand_network_named.json"): HTMLElement {
   const node = document.createElement("gufe-ligand-network") as HTMLElement & { payload: unknown };
@@ -140,5 +141,91 @@ describe("the ligand network menu", () => {
     const clear = Array.from(node.querySelectorAll("button")).find((b) => b.textContent === "Clear selection")!;
     clear.click();
     expect(nodeGroups(node).every((g) => g.getAttribute("opacity") === "1")).toBe(true);
+  });
+});
+
+describe("selection export", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  const open = async (): Promise<HTMLElement> => {
+    const node = mountNetwork();
+    await flush();
+    hamburger(node).click();
+    await flush();
+    return node;
+  };
+
+  it("copies the selected ligand names, comma separated", async () => {
+    const node = await open();
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: (t: string) => (written.push(t), Promise.resolve()) },
+      configurable: true,
+    });
+
+    listRows(node)[0].click();
+    Array.from(node.querySelectorAll("button")).find((b) => b.textContent === "Ligands")!.click();
+
+    expect(written).toHaveLength(1);
+    // What a plan command takes: a list of names, nothing that reconstructs a
+    // gufe object. Python keeps the data.
+    expect(written[0]).not.toContain("gufe-key");
+    expect(written[0].split(", ")).toHaveLength(1);
+  });
+
+  it("copies nothing when nothing is selected", async () => {
+    const node = await open();
+    const written: string[] = [];
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: (t: string) => (written.push(t), Promise.resolve()) },
+      configurable: true,
+    });
+    Array.from(node.querySelectorAll("button")).find((b) => b.textContent === "Ligands")!.click();
+    expect(written).toHaveLength(0);
+  });
+});
+
+describe("selectionText", () => {
+  const nodes = [
+    { "gufe-key": "k1", name: "lig_a", smiles: "CC", x: 0, y: 0 },
+    { "gufe-key": "k2", name: "lig_b", smiles: "CO", x: 0, y: 0 },
+    { "gufe-key": "k3", name: "lig_c", smiles: "CN", x: 0, y: 0 },
+  ] as never[];
+  const edges = [
+    { from: nodes[0], to: nodes[1], index: 0 },
+    { from: nodes[1], to: nodes[2], index: 1 },
+  ] as never[];
+
+  it("lists selected ligands by name, comma separated", () => {
+    const text = selectionText(nodes, edges, new Set(["k1", "k3"]), "ligands", "names");
+    expect(text).toBe("lig_a, lig_c");
+  });
+
+  it("can name them by gufe key instead, for when names collide or are empty", () => {
+    const text = selectionText(nodes, edges, new Set(["k1"]), "ligands", "keys");
+    expect(text).toBe("k1");
+  });
+
+  it("includes an edge only when both its ends are selected", () => {
+    // "The edges among these ligands" is the question; one endpoint answers a
+    // different one.
+    expect(selectionText(nodes, edges, new Set(["k1", "k2"]), "edges", "names")).toBe("lig_a, lig_b");
+    expect(selectionText(nodes, edges, new Set(["k1", "k3"]), "edges", "names")).toBe("");
+  });
+
+  it("puts one edge per line, because a pair already uses the comma", () => {
+    const text = selectionText(nodes, edges, new Set(["k1", "k2", "k3"]), "edges", "names");
+    expect(text.split("\n")).toEqual(["lig_a, lig_b", "lig_b, lig_c"]);
+  });
+
+  it("is empty for an empty selection", () => {
+    expect(selectionText(nodes, edges, new Set(), "ligands", "names")).toBe("");
+    expect(selectionText(nodes, edges, new Set(), "edges", "names")).toBe("");
   });
 });

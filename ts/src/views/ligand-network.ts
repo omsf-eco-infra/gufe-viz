@@ -276,6 +276,75 @@ function levelOfDetail(parts: DetailParts): {
   return { apply, drawn: () => injected.size };
 }
 
+/** What an export names things by. */
+export type ExportAs = "names" | "keys";
+
+/**
+ * The selection, as text to paste somewhere else.
+ *
+ * This is the whole of the answer to "how do I get this back into OpenFE": you
+ * select in the browser, copy a list out, paste it into a file, and the CLI
+ * re-plans from the originals. Nothing here writes a gufe object, and the
+ * payload is not sufficient to reconstruct one - a gufe key hashes the full
+ * float64 conformer while the SDF we carry holds four decimal places, and a
+ * Protocol arrives as a class name with no settings. So what crosses back is
+ * pointers, and Python keeps the data.
+ *
+ * Ligands come out comma-separated, which is what a plan command takes. Edges
+ * come out one pair per line, because a pair is two things and a comma is
+ * already spoken for.
+ */
+export function selectionText(
+  nodes: readonly NetNode[],
+  edges: readonly NetEdge[],
+  selected: ReadonlySet<string>,
+  what: "ligands" | "edges",
+  as: ExportAs,
+): string {
+  const name = (node: NetNode): string => (as === "keys" ? node["gufe-key"] : label(node));
+
+  if (what === "ligands") {
+    return nodes
+      .filter((node) => selected.has(node["gufe-key"]))
+      .map(name)
+      .join(", ");
+  }
+
+  // An edge is included when both its ends are selected: "the edges among these
+  // ligands" is the question, and one endpoint would answer a different one.
+  return edges
+    .filter((edge) => selected.has(edge.from["gufe-key"]) && selected.has(edge.to["gufe-key"]))
+    .map((edge) => `${name(edge.from)}, ${name(edge.to)}`)
+    .join("\n");
+}
+
+/** Put `text` on the clipboard, falling back to a selectable box. */
+function copyOut(text: string, fallbackHost: HTMLElement): void {
+  navigator.clipboard?.writeText(text).catch(() => showText(text, fallbackHost));
+  if (!navigator.clipboard) showText(text, fallbackHost);
+}
+
+/** When the clipboard is unavailable, show the text so it can be copied by hand. */
+function showText(text: string, host: HTMLElement): void {
+  const box = el("textarea", "width:100%;height:80px;font-size:11px;box-sizing:border-box;") as HTMLTextAreaElement;
+  box.value = text;
+  box.readOnly = true;
+  host.appendChild(box);
+  box.select();
+}
+
+/** Offer `text` as a file, for a selection too big for a clipboard. */
+function download(text: string, filename: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+  const link = el("a", "display:none;") as HTMLAnchorElement;
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 interface MenuParts {
   nodes: NetNode[];
   edges: NetEdge[];
@@ -329,6 +398,49 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
 
   const list = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
   panel.appendChild(list);
+
+  // --- export: the line against becoming a GUI ---
+  //
+  // Labelled as copying rather than editing, on purpose. A button that said
+  // "Add edge" would set an expectation this cannot meet, and frustrating
+  // someone who thinks they should be able to edit is the failure mode.
+  const exportBox = el("div", "display:flex;flex-direction:column;gap:6px;");
+  const asRow = el("div", `display:flex;align-items:center;gap:6px;font-size:11px;color:${T.textMuted};`);
+  asRow.appendChild(el("span", "", "copy as"));
+  const asPicker = el("select", `${SELECT_CSS}flex:1;`) as HTMLSelectElement;
+  for (const [value, text] of [
+    ["names", "names"],
+    ["keys", "gufe keys"],
+  ] as const) {
+    const option = el("option", "", text);
+    option.value = value;
+    asPicker.appendChild(option);
+  }
+  asRow.appendChild(asPicker);
+  exportBox.appendChild(asRow);
+
+  const exportRow = el("div", "display:flex;gap:4px;");
+  const exports: [string, "ligands" | "edges", string][] = [
+    ["Ligands", "ligands", "Copy the selected ligand names, comma separated"],
+    ["Edges", "edges", "Copy the selected edges, one pair per line"],
+  ];
+  for (const [text, what, title] of exports) {
+    const button = el("button", `${BTN_CSS}flex:1;`, text);
+    button.title = title;
+    button.onclick = (event) => {
+      const as = asPicker.value as ExportAs;
+      const content = selectionText(parts.nodes, parts.edges, parts.selected, what, as);
+      if (!content) return;
+      if (event.shiftKey) download(content, `selected-${what}.txt`);
+      else copyOut(content, exportBox);
+    };
+    exportRow.appendChild(button);
+  }
+  exportBox.appendChild(exportRow);
+  exportBox.appendChild(
+    el("div", `font-size:10px;color:${T.textMuted2};`, "Shift-click to save as a file instead."),
+  );
+  panel.appendChild(exportBox);
 
   const clear = el("button", `${BTN_CSS}width:100%;`, "Clear selection");
   clear.onclick = () => {

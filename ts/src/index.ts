@@ -24,7 +24,7 @@ export { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryEntry, ty
 export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein, type PdbPayload } from "./views/protein.js";
 export { GufeProtocol } from "./views/protocol.js";
-export { GufeLigandNetwork } from "./views/ligand-network.js";
+export { GufeLigandNetwork, selectionText, type ExportAs } from "./views/ligand-network.js";
 export { GufeAlchemicalNetwork } from "./views/alchemical-network.js";
 export { GufeAtomMapping, mappingPayloadFor, uniqueAtoms, type Uniques } from "./views/atom-mapping.js";
 export { GufeChemicalSystem } from "./views/chemical-system.js";
