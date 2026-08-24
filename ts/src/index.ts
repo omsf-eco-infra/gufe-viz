@@ -13,6 +13,7 @@ import "./views/ligand-network.js";
 import "./views/alchemical-network.js";
 import "./views/atom-mapping.js";
 import "./views/chemical-system.js";
+import "./views/protocol.js";
 import "./views/solvent.js";
 import "./views/transformation.js";
 import "./views/unknown-component.js";
@@ -21,7 +22,8 @@ export { GufeView, VIEW_TAGS, describeProblem, dispatchProblem } from "./gufe-vi
 export { PAYLOAD_TYPES, SCHEMA_TYPES, formatIssues, validateAs, validatePayload } from "./schema/validate.js";
 export { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryEntry, type RegistryIndex } from "./schema/registry.js";
 export { GufeSmallMolecule } from "./views/small-molecule.js";
-export { GufeProtein } from "./views/protein.js";
+export { GufeProtein, type PdbPayload } from "./views/protein.js";
+export { GufeProtocol } from "./views/protocol.js";
 export { GufeLigandNetwork } from "./views/ligand-network.js";
 export { GufeAlchemicalNetwork } from "./views/alchemical-network.js";
 export { GufeAtomMapping, mappingPayloadFor, uniqueAtoms, type Uniques } from "./views/atom-mapping.js";

@@ -26,6 +26,12 @@ export function readExample(name: string): Record<string, unknown> {
 /** Every call a view makes on a 3Dmol viewer, recorded rather than rendered. */
 export interface FakeViewer extends ThreeDmolViewer {
   calls: string[];
+  /**
+   * Every `setStyle` as the pair it was given. `calls` records only the
+   * selection, which cannot distinguish "style these atoms" from "style nothing"
+   * - and turning a representation off is `setStyle(selection, {})`.
+   */
+  styles: { selection: unknown; style: unknown }[];
   cleared: boolean;
 }
 
@@ -36,11 +42,16 @@ export function makeFakeViewer(): FakeViewer {
     (...args: unknown[]) => {
       calls.push(args.length ? `${name}(${JSON.stringify(args[0])})` : name);
     };
+  const styles: { selection: unknown; style: unknown }[] = [];
   const viewer = {
     calls,
+    styles,
     cleared: false,
     addModel: record("addModel"),
-    setStyle: record("setStyle"),
+    setStyle: (selection: object, style: object) => {
+      calls.push(`setStyle(${JSON.stringify(selection)})`);
+      styles.push({ selection, style });
+    },
     removeAllSurfaces: record("removeAllSurfaces"),
     addSurface: () => {
       calls.push("addSurface");

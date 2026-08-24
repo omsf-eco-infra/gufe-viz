@@ -14,7 +14,7 @@ import { buildRegistry } from "../src/schema/registry.js";
 import { mappingPayloadFor, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { parseConcentration } from "../src/views/solvent.js";
 import { diffStatus } from "../src/views/transformation.js";
-import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
+import { clearFakeEngines, exampleNames, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 import type { LigandNetworkViz } from "../src/schema/types.js";
 
 function mount<T extends HTMLElement>(tag: string, payload: unknown): T {
@@ -669,5 +669,92 @@ describe("<gufe-alchemical-network>", () => {
     await flush();
     expect(node.querySelector("gufe-alchemical-network")).toBeTruthy();
     expect(node.textContent).not.toContain("This build can draw");
+  });
+});
+
+describe("the three PDB types", () => {
+  let engines: SeededEnginesResult;
+  beforeEach(() => {
+    engines = seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it.each([
+    ["protein.json", "ProteinComponent"],
+    ["solvated_pdb.json", "SolvatedPDBComponent"],
+    ["protein_membrane.json", "ProteinMembraneComponent"],
+  ])("%s draws and names its gufe class", async (fixture, gufeClass) => {
+    const node = mount("gufe-view", readExample(fixture));
+    await flush();
+    expect(node.querySelector("gufe-protein")).toBeTruthy();
+    expect(node.textContent).toContain(gufeClass);
+  });
+
+  it("opens a solvated system with its waters shown, and a bare protein without", async () => {
+    // Hiding the very thing that distinguishes them would make the three
+    // indistinguishable on screen; burying a bare protein in a few thousand
+    // crystallographic waters would be worse. Note this reads the *style*, not
+    // the selection: turning a representation off is setStyle(selection, {}),
+    // so the selection alone cannot tell the two apart.
+    const watersShown = (viewer: { styles: { selection: unknown; style: unknown }[] }): boolean =>
+      viewer.styles.some(
+        ({ selection, style }) =>
+          JSON.stringify(selection).includes("HOH") && Object.keys(style as object).length > 0,
+      );
+
+    mount("gufe-protein", readExample("solvated_pdb.json"));
+    await flush();
+    expect(watersShown(engines.viewers[0])).toBe(true);
+
+    document.body.replaceChildren();
+    const plain = seedFakeEngines();
+    mount("gufe-protein", readExample("protein.json"));
+    await flush();
+    expect(watersShown(plain.viewers[0])).toBe(false);
+  });
+});
+
+describe("<gufe-protocol>", () => {
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("shows the class name, which is all a Protocol carries", () => {
+    const payload = {
+      type: "ProtocolViz",
+      "gufe-key": "DummyProtocol-abc123",
+      name: "",
+      gufe_type: "DummyProtocol",
+    };
+    const node = mount("gufe-protocol", payload);
+    const text = node.textContent ?? "";
+    expect(text).toContain("DummyProtocol");
+    expect(text).toContain("Protocol");
+    // Says what is absent rather than leaving a reader to wonder.
+    expect(text).toContain("settings are not carried");
+  });
+});
+
+describe("every declared type", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  it("draws, with no unsupported panel anywhere", async () => {
+    for (const name of exampleNames()) {
+      document.body.replaceChildren();
+      const node = mount("gufe-view", readExample(name));
+      await flush();
+      expect(node.textContent, `${name} fell back to the unsupported panel`).not.toContain(
+        "This build can draw",
+      );
+    }
   });
 });

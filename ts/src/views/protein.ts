@@ -3,6 +3,14 @@
  *
  * The PDB statistics and styling live in `shared/pdb.ts` rather than here,
  * because the chemical-system view will want them too.
+ *
+ * All three PDB-carrying payload types render through here: a protein, a
+ * protein with explicit solvent, and a protein in a membrane are the same
+ * picture with different things in it. They stay separate types because the
+ * discriminator is what Python dispatches on and what a future view could
+ * specialize on; what differs today is where the viewer starts, because hiding
+ * the very thing that distinguishes them would make the three
+ * indistinguishable on screen.
  */
 
 import { BTN_CSS, buttonGroup, el, errText, SELECT_CSS, viewerHost } from "../shared/dom.js";
@@ -20,7 +28,11 @@ import {
   type StatusFn,
 } from "../shared/pdb.js";
 import { T } from "../shared/theme.js";
-import type { ProteinComponentViz } from "../schema/types.js";
+import type {
+  ProteinComponentViz,
+  ProteinMembraneComponentViz,
+  SolvatedPDBComponentViz,
+} from "../schema/types.js";
 
 const PROTEIN_REPS = [
   { id: "cartoon", label: "Cartoon", title: "Ribbon / cartoon backbone" },
@@ -36,16 +48,31 @@ const PROTEIN_COLOR_SCHEMES = [
   { id: "element", label: "Element" },
 ] as const;
 
-export class GufeProtein extends GufeElement<ProteinComponentViz> {
+/** Every payload this view draws: one PDB string and a name, three types. */
+export type PdbPayload = ProteinComponentViz | SolvatedPDBComponentViz | ProteinMembraneComponentViz;
+
+/** What the gufe class was called, for the subtitle. */
+const GUFE_CLASS: Record<PdbPayload["type"], string> = {
+  ProteinComponentViz: "ProteinComponent",
+  SolvatedPDBComponentViz: "SolvatedPDBComponent",
+  ProteinMembraneComponentViz: "ProteinMembraneComponent",
+};
+
+export class GufeProtein extends GufeElement<PdbPayload> {
   protected override placeholder(): string {
     return "Waiting for a ProteinComponent payload...";
   }
 
-  protected renderView(host: HTMLDivElement, payload: ProteinComponentViz): ViewHandle {
+  protected renderView(host: HTMLDivElement, payload: PdbPayload): ViewHandle {
     const pdb = payload.pdb;
     const name = payload.name ?? "";
+    const gufeClass = GUFE_CLASS[payload.type] ?? "ProteinComponent";
+    // A solvated or membrane system is defined by what surrounds the protein,
+    // so it opens with that shown; a bare protein does not, because a few
+    // thousand crystallographic waters would bury it.
+    const solvated = payload.type !== "ProteinComponentViz";
 
-    const opts: ProteinOptions = { rep: "cartoon", color: "chain", waters: false, hetero: true };
+    const opts: ProteinOptions = { rep: "cartoon", color: "chain", waters: solvated, hetero: true };
     let viewer: ThreeDmolViewer | null = null;
     let interaction: (BoundedZoom & Interaction) | null = null;
     let stats: PdbStats | null = null;
@@ -61,6 +88,7 @@ export class GufeProtein extends GufeElement<ProteinComponentViz> {
     toolbar.appendChild(
       el("span", `font-weight:700;font-size:14px;letter-spacing:.02em;color:${T.titleColor};`, name || "Protein"),
     );
+    toolbar.appendChild(el("span", `font-size:11px;color:${T.textMuted2};`, gufeClass));
 
     const groupLabel = (text: string) => el("span", `font-size:11px;color:${T.textMuted};`, text);
 
