@@ -19,13 +19,14 @@ import {
   chromeMenu,
   el,
   errText,
+  esc,
   floatingWarning,
   headerStrip,
   SELECT_CSS,
   statChip,
 } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
-import { svg, titled } from "../shared/svg.js";
+import { svg } from "../shared/svg.js";
 import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { depictSVG } from "../shared/sdf.js";
@@ -104,11 +105,27 @@ interface NetEdge extends LigandAtomMappingViz {
 const LAYOUTS = ["Force-directed", "Circular", "Radial"] as const;
 type Layout = (typeof LAYOUTS)[number];
 
-const NODE_RADIUS = 34;
+// Dimensions and force constants are the framejs prototype's, kept the same so
+// the two pictures are the same picture. Changing one here without changing it
+// there is how they drift apart.
+const NODE_RADIUS = 38;
 const DEPICT_SIZE = 200;
+const DEPICT_PADDING = 4;
+const LABEL_MAX_CHARS = 14;
+const INITIALS_SIZE = 18;
 const EDGE_MIN_WIDTH = 1.5;
-const EDGE_MAX_WIDTH = 6;
-const HIT_WIDTH = 16;
+const EDGE_MAX_WIDTH = 6.5;
+const EDGE_OPACITY = 0.9;
+const HIT_WIDTH = 14;
+
+/** The arrowhead, and how far back from the node centre it stops. */
+const ARROW = { size: 8, clearance: 8 };
+
+/** The chip behind an edge's score, so it stays readable over a line. */
+const EDGE_LABEL = { fontSize: 10, padding: 3, backgroundOpacity: 0.92 };
+
+/** The selection halo, sized from the edge it sits under. */
+const HALO = { padding: 4, opacity: 0.95 };
 
 /**
  * Level of detail, keyed off the zoom.
@@ -135,8 +152,8 @@ const DIM = { node: 0.12, edge: 0.06 };
 const FOCUS_SCALE = 1.2;
 
 const FORCE = {
-  linkBaseDistance: 150,
-  linkScoreBonus: 60,
+  linkBaseDistance: 18,
+  linkScoreBonus: 10,
   linkStrength: 0.5,
   chargeStrength: -2500,
   chargeDistanceMin: 20,
@@ -147,6 +164,75 @@ const FORCE = {
   drift: 0.04,
   tickMultiplier: 2,
 };
+
+/**
+ * An arrowhead marker per edge colour, made once and reused.
+ *
+ * A marker cannot inherit the colour of the line it terminates, so a
+ * continuously coloured ramp needs one marker per distinct colour. Deduplicating
+ * by the colour string is what stops that being one marker per edge.
+ */
+/**
+ * The hover readout.
+ *
+ * A floating panel rather than the SVG's native `<title>`: a title waits for the
+ * browser's own delay, cannot be styled, and cannot show a score next to the
+ * colour it produced. This is what the prototype shows, and hovering an edge is
+ * how you read a network without clicking through every one of them.
+ */
+function hoverTooltip(host: HTMLElement): {
+  show(html: string, x: number, y: number): void;
+  hide(): void;
+  remove(): void;
+} {
+  const tip = el(
+    "div",
+    "position:absolute;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s ease;" +
+      "padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.5;max-width:260px;" +
+      `background:${T.tooltipBg};border:1px solid ${T.tooltipBorder};color:${T.textPrimary};` +
+      "box-shadow:0 4px 14px rgba(0,0,0,0.28);",
+  );
+  host.appendChild(tip);
+  return {
+    show(html, x, y) {
+      tip.innerHTML = html;
+      tip.style.left = `${x + 14}px`;
+      tip.style.top = `${y - 10}px`;
+      tip.style.opacity = "1";
+    },
+    hide() {
+      tip.style.opacity = "0";
+    },
+    remove() {
+      tip.remove();
+    },
+  };
+}
+
+function arrowMarkers(defs: SVGDefsElement): (colour: string) => string {
+  const known = new Map<string, string>();
+  return (colour: string): string => {
+    const existing = known.get(colour);
+    if (existing) return existing;
+    const id = `arrow-${colour.replace(/[^a-zA-Z0-9]/g, "")}`;
+    known.set(colour, id);
+    const marker = svg("marker", {
+      id,
+      viewBox: "0 -5 10 10",
+      // Pushes the head back along the line so it stops at the node's edge
+      // rather than under it.
+      refX: NODE_RADIUS + ARROW.clearance,
+      refY: 0,
+      markerUnits: "userSpaceOnUse",
+      markerWidth: ARROW.size,
+      markerHeight: ARROW.size,
+      orient: "auto",
+    });
+    marker.appendChild(svg("path", { d: "M0,-5L10,0L0,5", fill: colour }));
+    defs.appendChild(marker);
+    return id;
+  };
+}
 
 // --- the score ramp --------------------------------------------------------
 //
@@ -209,7 +295,7 @@ function levelOfDetail(parts: DetailParts): {
       return;
     }
 
-    const size = ((NODE_RADIUS - 4) * 2) / DEPICT_SIZE;
+    const size = ((NODE_RADIUS - DEPICT_PADDING) * 2) / DEPICT_SIZE;
     const target = parts.depictionGroups[index];
     target.setAttribute(
       "transform",
@@ -630,6 +716,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       return null;
     });
 
+    const tip = hoverTooltip(canvas);
     let focusNode: (index: number) => void = () => {};
     let selectedEdge = edges.length ? 0 : -1;
     let stop: (() => void) | null = null;
@@ -657,7 +744,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
       const paint = () => {
         if (!alive) return;
-        const scene = this.#paint(canvas, nodes, edges, width, height, select, rdkitReady);
+        const scene = this.#paint(canvas, nodes, edges, width, height, select, rdkitReady, tip);
         refreshHalos = () => scene.setSelected(selectedEdge);
         resetView = scene.reset;
         stop = scene.cleanup;
@@ -733,6 +820,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       onResize: () => draw(),
       cleanup: () => {
         alive = false;
+        tip.remove();
         stop?.();
       },
     };
@@ -841,6 +929,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     height: number,
     onSelect: (index: number) => void,
     rdkitReady: Promise<RDKitModule | null>,
+    tip: ReturnType<typeof hoverTooltip>,
   ): {
     setSelected(index: number): void;
     setEmphasis(nodeKeys: ReadonlySet<string> | null, edgeIndices: ReadonlySet<number> | null): void;
@@ -855,60 +944,100 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     root.appendChild(scene);
     canvas.appendChild(root);
 
+    const defs = svg("defs");
+    const markerFor = arrowMarkers(defs);
+    root.appendChild(defs);
+
     const halos: SVGLineElement[] = [];
     const lines = svg("g");
     const hits = svg("g");
     const labels = svg("g", { "pointer-events": "none" });
+    const labelChips: SVGRectElement[] = [];
+    const labelTexts: SVGTextElement[] = [];
     const nodeLayer = svg("g");
     scene.append(lines, hits, labels, nodeLayer);
 
     for (const edge of edges) {
       const colour = scoreColor(edge.score);
+      const width = EDGE_MIN_WIDTH + (edge.score ?? 0.5) * (EDGE_MAX_WIDTH - EDGE_MIN_WIDTH);
       const halo = svg("line", {
         stroke: T.netHaloColor,
-        "stroke-width": EDGE_MIN_WIDTH + 12,
+        // Sized from the edge underneath, so a thick edge does not outgrow its
+        // own halo and a thin one is not swamped by it.
+        "stroke-width": width + HALO.padding * 2,
         "stroke-linecap": "round",
         opacity: 0,
         "pointer-events": "none",
       });
       const line = svg("line", {
         stroke: colour,
-        "stroke-width": EDGE_MIN_WIDTH + (edge.score ?? 0.5) * (EDGE_MAX_WIDTH - EDGE_MIN_WIDTH),
-        "stroke-opacity": 0.9,
+        "stroke-width": width,
+        "stroke-opacity": EDGE_OPACITY,
+        // A mapping runs from A to B, and the arrow is what says which is which.
+        "marker-end": `url(#${markerFor(colour)})`,
         "pointer-events": "none",
       });
-      const hit = titled(
-        svg("line", { stroke: "transparent", "stroke-width": HIT_WIDTH, style: "cursor:pointer;" }),
-        `${label(edge.from)} -> ${label(edge.to)}${edge.score == null ? "" : `\nscore ${edge.score.toFixed(3)}`}`,
-      );
+      const hit = svg("line", { stroke: "transparent", "stroke-width": HIT_WIDTH, style: "cursor:pointer;" });
       hit.addEventListener("click", (event) => {
         event.stopPropagation();
         onSelect(edge.index);
       });
+      hit.addEventListener("mousemove", (event: MouseEvent) => {
+        tip.show(
+          `<div style="font-weight:700;color:${T.titleColor};">${esc(label(edge.from))} -&gt; ${esc(label(edge.to))}</div>` +
+            (edge.score == null
+              ? `<div style="color:${T.textMuted2};">no score</div>`
+              : `<div style="margin-top:4px;">score <b>${edge.score.toFixed(3)}</b></div>`) +
+            `<div style="margin-top:4px;font-size:10px;color:${T.textMuted2};">Click to see the mapping</div>`,
+          event.offsetX,
+          event.offsetY,
+        );
+      });
+      hit.addEventListener("mouseleave", () => tip.hide());
       halos.push(halo);
       lines.append(halo, line);
       hits.appendChild(hit);
 
-      if (edge.score != null) {
-        const text = svg("text", {
-          "text-anchor": "middle",
-          "dominant-baseline": "middle",
-          "font-size": 10,
-          "font-weight": 600,
-          fill: T.netEdgeLabel,
-        });
-        text.textContent = edge.score.toFixed(2);
-        labels.appendChild(text);
-      } else {
-        labels.appendChild(svg("text"));
-      }
+      // The score, on a chip. A bare number over a coloured line at whatever
+      // width the score gave it is not reliably readable.
+      const chip = svg("rect", {
+        fill: T.netLabelBg,
+        opacity: edge.score == null ? 0 : EDGE_LABEL.backgroundOpacity,
+        rx: 3,
+        ry: 3,
+      });
+      const text = svg("text", {
+        "text-anchor": "middle",
+        "dominant-baseline": "middle",
+        "font-size": EDGE_LABEL.fontSize,
+        "font-weight": 600,
+        fill: T.netEdgeLabel,
+      });
+      text.textContent = edge.score == null ? "" : edge.score.toFixed(2);
+      const group = svg("g", { class: "gufe-edge-label" });
+      group.append(chip, text);
+      labels.appendChild(group);
+      labelChips.push(chip);
+      labelTexts.push(text);
     }
 
     const depictionGroups: SVGGElement[] = [];
     const initials: SVGTextElement[] = [];
     const captions: SVGTextElement[] = [];
     const groups = nodes.map((node) => {
-      const group = titled(svg("g", { style: "cursor:grab;" }), `${label(node)}\n${node.smiles ?? ""}\n${node["gufe-key"]}`);
+      const group = svg("g", { class: "gufe-node", style: "cursor:grab;" });
+      group.addEventListener("mousemove", (event: MouseEvent) => {
+        tip.show(
+          `<div style="font-weight:700;color:${T.titleColor};">${esc(label(node))}</div>` +
+            (node.smiles
+              ? `<div style="margin-top:3px;font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;">${esc(node.smiles)}</div>`
+              : "") +
+            `<div style="margin-top:3px;font-size:10px;color:${T.textMuted2};overflow-wrap:anywhere;">${esc(node["gufe-key"])}</div>`,
+          event.offsetX,
+          event.offsetY,
+        );
+      });
+      group.addEventListener("mouseleave", () => tip.hide());
       group.appendChild(
         svg("circle", {
           r: NODE_RADIUS,
@@ -917,14 +1046,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
           "stroke-width": 1.5,
         }),
       );
-      const depiction = svg("g", { "pointer-events": "none" });
+      const depiction = svg("g", { class: "gufe-node-depiction", "pointer-events": "none" });
       group.appendChild(depiction);
       depictionGroups.push(depiction);
 
       const initial = svg("text", {
         "text-anchor": "middle",
         "dominant-baseline": "middle",
-        "font-size": 16,
+        "font-size": INITIALS_SIZE,
         "font-weight": 700,
         fill: T.netInitials,
         "pointer-events": "none",
@@ -934,6 +1063,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       initials.push(initial);
 
       const caption = svg("text", {
+        class: "gufe-node-caption",
         "text-anchor": "middle",
         y: NODE_RADIUS + 14,
         "font-size": 11,
@@ -941,7 +1071,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         fill: T.netNodeLabel,
         "pointer-events": "none",
       });
-      caption.textContent = truncate(label(node), 16);
+      caption.textContent = truncate(label(node), LABEL_MAX_CHARS);
       caption.setAttribute("display", "none");
       captions.push(caption);
       group.appendChild(caption);
@@ -949,6 +1079,24 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       nodeLayer.appendChild(group);
       return group;
     });
+
+    /** Size each score chip to the text it sits behind. */
+    const fitLabels = (): void => {
+      labelTexts.forEach((text, i) => {
+        if (!text.textContent) return;
+        let box: DOMRect;
+        try {
+          box = text.getBBox();
+        } catch {
+          return; // jsdom has no layout, and a chip is decoration
+        }
+        const pad = EDGE_LABEL.padding;
+        labelChips[i].setAttribute("x", String(box.x - pad));
+        labelChips[i].setAttribute("y", String(box.y - pad));
+        labelChips[i].setAttribute("width", String(box.width + pad * 2));
+        labelChips[i].setAttribute("height", String(box.height + pad * 2));
+      });
+    };
 
     const place = () => {
       edges.forEach((edge, i) => {
@@ -959,13 +1107,16 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
           target.setAttribute("x2", String(edge.to.x));
           target.setAttribute("y2", String(edge.to.y));
         }
-        const text = labels.children[i] as SVGTextElement;
-        text.setAttribute("x", String((edge.from.x + edge.to.x) / 2));
-        text.setAttribute("y", String((edge.from.y + edge.to.y) / 2 - 8));
+        const group = labels.children[i] as SVGGElement;
+        group.setAttribute(
+          "transform",
+          `translate(${(edge.from.x + edge.to.x) / 2},${(edge.from.y + edge.to.y) / 2 - 8})`,
+        );
       });
       nodes.forEach((node, i) => groups[i].setAttribute("transform", `translate(${node.x},${node.y})`));
     };
     place();
+    fitLabels();
 
     const detail = levelOfDetail({
       nodes,

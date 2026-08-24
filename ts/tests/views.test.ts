@@ -155,14 +155,12 @@ describe("<gufe-ligand-network>", () => {
     const node = mount("gufe-ligand-network", network());
     await flush();
 
-    const captions = Array.from(node.querySelectorAll("text")).filter(
-      (t) => t.getAttribute("y") === String(34 + 14),
-    );
+    const captions = Array.from(node.querySelectorAll("text.gufe-node-caption"));
     expect(captions.length).toBeGreaterThan(0);
     // Opening zoom is 1, which is below the depiction threshold and above the
     // caption one: names yes, structures not yet.
     expect(captions.every((c) => c.getAttribute("display") === "inline")).toBe(true);
-    const depictionGroups = Array.from(node.querySelectorAll("g[display]"));
+    const depictionGroups = Array.from(node.querySelectorAll("g.gufe-node-depiction"));
     expect(depictionGroups.every((g) => g.getAttribute("display") === "none")).toBe(true);
   });
 
@@ -176,9 +174,7 @@ describe("<gufe-ligand-network>", () => {
     root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
     root.dispatchEvent(new WheelEvent("wheel", { deltaY: 600, bubbles: true, cancelable: true }));
 
-    const captions = Array.from(node.querySelectorAll("text")).filter(
-      (t) => t.getAttribute("y") === String(34 + 14),
-    );
+    const captions = Array.from(node.querySelectorAll("text.gufe-node-caption"));
     expect(captions.length).toBeGreaterThan(0);
     expect(captions.every((c) => c.getAttribute("display") === "none")).toBe(true);
   });
@@ -832,5 +828,97 @@ describe("every declared type", () => {
         "This build can draw",
       );
     }
+  });
+});
+
+describe("<gufe-ligand-network> against the framejs prototype", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  const net = () => {
+    const node = document.createElement("gufe-ligand-network") as HTMLElement & { payload: unknown };
+    document.body.appendChild(node);
+    node.payload = readExample("ligand_network_named.json");
+    return node;
+  };
+
+  it("puts an arrowhead on every edge, in that edge's own colour", async () => {
+    const node = net();
+    await flush();
+
+    const drawn = Array.from(node.querySelectorAll("line")).filter((l) => l.getAttribute("marker-end"));
+    expect(drawn.length).toBeGreaterThan(0);
+
+    for (const line of drawn) {
+      const id = /url\(#(.+)\)/.exec(line.getAttribute("marker-end")!)![1];
+      const marker = node.querySelector(`#${id}`);
+      expect(marker, `no marker ${id}`).toBeTruthy();
+      // A marker cannot inherit the line's colour, so the two are set
+      // separately and have to agree - which is exactly what rots silently.
+      expect(marker!.querySelector("path")!.getAttribute("fill")).toBe(line.getAttribute("stroke"));
+    }
+  });
+
+  it("makes one marker per colour rather than one per edge", async () => {
+    const node = net();
+    await flush();
+    const colours = new Set(
+      Array.from(node.querySelectorAll("line"))
+        .filter((l) => l.getAttribute("marker-end"))
+        .map((l) => l.getAttribute("stroke")),
+    );
+    expect(node.querySelectorAll("marker").length).toBe(colours.size);
+  });
+
+  it("backs each score with a chip so it stays readable over the line", async () => {
+    const node = net();
+    await flush();
+    const labels = Array.from(node.querySelectorAll("g.gufe-edge-label"));
+    expect(labels.length).toBeGreaterThan(0);
+    for (const group of labels) {
+      expect(group.querySelector("rect")).toBeTruthy();
+      expect(group.querySelector("text")).toBeTruthy();
+    }
+  });
+
+  it("sizes the selection halo from the edge under it", async () => {
+    const node = net();
+    await flush();
+    const widths = Array.from(node.querySelectorAll("line"))
+      .filter((l) => l.getAttribute("stroke") === "#fbcfe8" || l.getAttribute("opacity") === "0")
+      .map((l) => Number(l.getAttribute("stroke-width")));
+    // Scores differ across the fixture, so the halos differ too - a fixed halo
+    // would swamp a thin edge and be outgrown by a thick one.
+    expect(new Set(widths).size).toBeGreaterThan(1);
+  });
+
+  it("shows a hover readout on an edge, with its score", async () => {
+    const node = net();
+    await flush();
+    const hit = Array.from(node.querySelectorAll("line")).find(
+      (l) => l.getAttribute("stroke") === "transparent",
+    )!;
+    hit.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+
+    const tip = Array.from(node.querySelectorAll("div")).find((d) => d.style.opacity === "1");
+    expect(tip, "no tooltip appeared").toBeTruthy();
+    expect(tip!.textContent).toContain("score");
+    expect(tip!.textContent).toContain("Click to see the mapping");
+  });
+
+  it("hides the readout again on the way out", async () => {
+    const node = net();
+    await flush();
+    const hit = Array.from(node.querySelectorAll("line")).find(
+      (l) => l.getAttribute("stroke") === "transparent",
+    )!;
+    hit.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+    hit.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+    expect(Array.from(node.querySelectorAll("div")).some((d) => d.style.opacity === "1")).toBe(false);
   });
 });

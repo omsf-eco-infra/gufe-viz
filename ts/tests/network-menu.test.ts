@@ -28,7 +28,7 @@ const listRows = (node: HTMLElement): HTMLButtonElement[] =>
   );
 
 const nodeGroups = (node: HTMLElement): SVGGElement[] =>
-  Array.from(node.querySelectorAll<SVGGElement>("g[opacity]"));
+  Array.from(node.querySelectorAll<SVGGElement>("g.gufe-node"));
 
 describe("the ligand network menu", () => {
   beforeEach(() => {
