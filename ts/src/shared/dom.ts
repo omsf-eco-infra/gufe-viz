@@ -170,6 +170,33 @@ export function headerStrip(title: string, subtitle?: string): HeaderStrip {
   return bar;
 }
 
+/**
+ * One "label: value" line, which is what the card-shaped views are built from.
+ * The label column is fixed so a stack of these lines up without a table, and
+ * the value is selectable because half of what such a card is for is copying a
+ * SMILES out of it.
+ */
+export function fieldRow(label: string, value: string, mono = false): HTMLDivElement {
+  const row = el("div", "display:flex;gap:12px;align-items:baseline;padding:5px 0;min-width:0;");
+  row.appendChild(
+    el(
+      "span",
+      "flex:0 0 128px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;" +
+        `color:${T.textMuted2};`,
+      label,
+    ),
+  );
+  const shown = el(
+    "span",
+    `flex:1;min-width:0;user-select:text;cursor:text;overflow-wrap:anywhere;color:${T.textPrimary};` +
+      (mono ? "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;" : "font-size:12px;"),
+    value,
+  );
+  shown.title = value;
+  row.appendChild(shown);
+  return row;
+}
+
 /** A small pill naming a payload's type - used wherever a view lists others. */
 export function typeBadge(text: string): HTMLSpanElement {
   return el(

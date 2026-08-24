@@ -44,6 +44,8 @@ export const VIEW_TAGS: Partial<Record<PayloadType, string>> = {
   SmallMoleculeComponentViz: "gufe-small-molecule",
   ProteinComponentViz: "gufe-protein",
   LigandNetworkViz: "gufe-ligand-network",
+  SolventComponentViz: "gufe-solvent",
+  UnknownComponentViz: "gufe-unknown-component",
 };
 
 interface UnknownPayload {

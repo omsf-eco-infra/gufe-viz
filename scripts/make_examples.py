@@ -101,6 +101,39 @@ def _acetate() -> gufe.SmallMoleculeComponent:
     return SmallMoleculeComponent.from_rdkit(_quantize(mol))
 
 
+def _somebodys_own_component() -> gufe.Component:
+    """A component gufe has never heard of, which gufe explicitly supports.
+
+    Every other fixture is a gufe class; this one deliberately is not, because
+    ``UnknownComponentViz`` exists for exactly the case where a user's own
+    ``Component`` subclass turns up inside a system this repo has to draw.
+    """
+
+    class NanoparticleComponent(gufe.Component):
+        """Stands in for any Component defined outside gufe."""
+
+        @property
+        def name(self) -> str:
+            return "gold nanoparticle"
+
+        @property
+        def total_charge(self) -> int:
+            return 0
+
+        def _to_dict(self) -> dict:
+            return {}
+
+        @classmethod
+        def _from_dict(cls, d: dict):
+            return cls()
+
+        @classmethod
+        def _defaults(cls) -> dict:
+            return {}
+
+    return NanoparticleComponent()
+
+
 def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
     """``network`` again, with every ligand named after its SMILES.
 
@@ -175,6 +208,8 @@ def build() -> dict[str, GufeTokenizable]:
         # against real data before the views exist.
         "solvent.json": SolventComponent(),
         "ligand_atom_mapping.json": mapping,
+        # Not a gufe class at all, which is the only way to produce this type.
+        "unknown_component.json": _somebodys_own_component(),
         "chemical_system.json": ChemicalSystem(
             {"ligand": benzene, "solvent": SolventComponent()},
             name="benzene in water",

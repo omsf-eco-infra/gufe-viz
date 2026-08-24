@@ -10,6 +10,8 @@ import "./gufe-view.js";
 import "./views/small-molecule.js";
 import "./views/protein.js";
 import "./views/ligand-network.js";
+import "./views/solvent.js";
+import "./views/unknown-component.js";
 
 export { GufeView, VIEW_TAGS, describeProblem, dispatchProblem } from "./gufe-view.js";
 export { PAYLOAD_TYPES, SCHEMA_TYPES, formatIssues, validateAs, validatePayload } from "./schema/validate.js";
@@ -17,6 +19,8 @@ export { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryEntry, ty
 export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein } from "./views/protein.js";
 export { GufeLigandNetwork, mappingPayloadFor } from "./views/ligand-network.js";
+export { GufeSolvent, parseConcentration } from "./views/solvent.js";
+export { GufeUnknownComponent } from "./views/unknown-component.js";
 export { GufeElement, defineElement, type ViewHandle } from "./shared/element.js";
 export { CHROME_OPEN_BY_DEFAULT, chromeMenu, type ChromeMenu, type ChromeMenuOptions } from "./shared/dom.js";
 export { MAPPING_COLORS, MAPPING_RAMP_3D, MAPPING_RAMP_NAME } from "./shared/atom-colors.js";

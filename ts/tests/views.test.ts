@@ -12,6 +12,7 @@ import { parsePdbStats } from "../src/shared/pdb.js";
 import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry } from "../src/schema/registry.js";
 import { mappingPayloadFor } from "../src/views/ligand-network.js";
+import { parseConcentration } from "../src/views/solvent.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 import type { LigandNetworkViz } from "../src/schema/types.js";
 
@@ -299,5 +300,71 @@ describe("SDF parsing degrades rather than throwing garbage", () => {
       expect(mol.bonds, name).toHaveLength(counts.bonds);
       expect(mol.name, name).toBe(payload.name);
     }
+  });
+});
+
+describe("<gufe-solvent>", () => {
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("prints the five settings a SolventComponent actually carries", () => {
+    const payload = readExample("solvent.json");
+    const node = mount("gufe-solvent", payload);
+    const text = node.textContent ?? "";
+
+    expect(text).toContain("SolventComponent");
+    for (const field of ["smiles", "positive_ion", "negative_ion", "ion_concentration"] as const) {
+      expect(text).toContain(String(payload[field]));
+    }
+    expect(text).toContain(payload.neutralize ? "yes" : "no");
+  });
+
+  it("draws the same schematic twice, so a resize does not look like new data", () => {
+    const payload = readExample("solvent.json");
+    const first = mount("gufe-solvent", payload).querySelector("svg")!.innerHTML;
+    document.body.replaceChildren();
+    const second = mount("gufe-solvent", payload).querySelector("svg")!.innerHTML;
+    expect(second).toBe(first);
+  });
+
+  it("says the picture is not quantitative", () => {
+    const node = mount("gufe-solvent", readExample("solvent.json"));
+    expect(node.textContent).toContain("Schematic only");
+  });
+
+  it("reads the leading number of a display concentration", () => {
+    expect(parseConcentration("0.15 molar")).toBe(0.15);
+    expect(parseConcentration("1.5e-2 molar")).toBe(0.015);
+    expect(parseConcentration("none at all")).toBeNull();
+    expect(parseConcentration(undefined)).toBeNull();
+  });
+});
+
+describe("<gufe-unknown-component>", () => {
+  afterEach(() => {
+    document.body.replaceChildren();
+  });
+
+  it("names the class it cannot draw, and says that is not an error", () => {
+    const payload = readExample("unknown_component.json");
+    const node = mount("gufe-unknown-component", payload);
+    const text = node.textContent ?? "";
+
+    expect(text).toContain(payload.gufe_type as string);
+    expect(text).toContain(payload.name as string);
+    // The distinction this view exists to make: a component gufe supports and
+    // this build has not been taught, rather than a broken payload.
+    expect(text).toContain("not a broken payload");
+  });
+
+  it("is what the dispatcher chooses for the type", () => {
+    const node = mount("gufe-view", readExample("unknown_component.json"));
+    expect(node.querySelector("gufe-unknown-component")).toBeTruthy();
+    // Both this view and the dispatcher's fallback say "no visualization for",
+    // which is the point: one is a considered answer and the other is a
+    // shrug. Only the fallback lists what the build *can* draw, so that is
+    // what distinguishes them.
+    expect(node.textContent).not.toContain("This build can draw");
   });
 });
