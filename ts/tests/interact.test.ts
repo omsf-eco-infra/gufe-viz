@@ -71,6 +71,28 @@ describe("guardWheel", () => {
     expect(onZoom).toHaveBeenCalledTimes(1);
   });
 
+  it("hands the wheel back to the page when the zoom has nowhere left to go", () => {
+    // The end of the zoom must not also be the end of scrolling: with the
+    // pointer resting over a viewer that cannot move, the notebook still moves.
+    onZoom.mockReturnValue(false);
+    guardWheel(host, { onZoom });
+    host.dispatchEvent(pointer("pointerdown"));
+    const event = wheel(120);
+    host.dispatchEvent(event);
+    expect(onZoom).toHaveBeenCalledTimes(1);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("still swallows a modifier wheel the zoom could not use", () => {
+    // This one is not the page's to have: unprevented, a ctrl-wheel zooms the
+    // browser itself, which is a worse surprise than nothing happening.
+    onZoom.mockReturnValue(false);
+    guardWheel(host, { onZoom });
+    const event = wheel(120, { ctrlKey: true });
+    host.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
   it("never lets the wheel reach whatever the host contains", () => {
     // 3Dmol binds its own handlers to the canvas it creates inside the host. If
     // one of those ever fires, the model zooms behind the guard's back.
@@ -137,6 +159,52 @@ describe("boundedZoom", () => {
     zoom.zoomBy(4);
     expect(zoom.level()).toBe(2);
     expect(viewer.calls).toContain("zoom(2)");
+  });
+
+  it("hands its bounds to the engine as well, because the wheel is not the only way to zoom", () => {
+    const viewer = makeFakeViewer();
+    const opening = viewer.distance();
+    boundedZoom(viewer, { min: 0.5, max: 2 });
+    expect(viewer.zoomLimits).toEqual({ lower: opening / 2, upper: opening / 0.5 });
+  });
+
+  it("will not let a drag shrink a molecule to a speck either", () => {
+    // A drag and a two-finger pinch never reach the guard: 3Dmol handles them
+    // itself, and only the limits it was given stop them.
+    const viewer = makeFakeViewer();
+    const opening = viewer.distance();
+    boundedZoom(viewer, { min: 0.5, max: 2 });
+    for (let i = 0; i < 50; i++) viewer.dragZoom(0.8);
+    expect(viewer.distance()).toBe(opening / 0.5);
+  });
+
+  it("clamps from where the camera is, not from where its own zooms left it", () => {
+    // Something else has moved the camera - a drag, or a linked viewer's
+    // `setView`. A tally of our own zooms would still read 1x here and happily
+    // zoom out again.
+    const viewer = makeFakeViewer();
+    const zoom = boundedZoom(viewer, { min: 0.5, max: 2 });
+    viewer.dragZoom(0.5);
+    expect(zoom.level()).toBeCloseTo(0.5, 12);
+
+    const settled = viewer.calls.length;
+    zoom.zoomBy(0.8);
+    expect(viewer.calls.length).toBe(settled);
+  });
+
+  it("still bounds a viewer that can neither be measured nor be limited", () => {
+    // An older pre-seeded 3Dmol: nothing to hand the bounds to and no camera to
+    // read, so the clamp falls back to counting its own zooms.
+    const blind = { ...makeFakeViewer(), getView: () => [], setZoomLimits: undefined };
+    const zoom = boundedZoom(blind);
+    for (let i = 0; i < 200; i++) zoom.zoomBy(0.8);
+    expect(zoom.level()).toBe(DEFAULT_ZOOM_BOUNDS.min);
+  });
+
+  it("reports the zoom that went nowhere, so the wheel can go to the page", () => {
+    const zoom = boundedZoom(makeFakeViewer(), { min: 0.5, max: 2 });
+    expect(zoom.zoomBy(0.5)).toBe(true);
+    expect(zoom.zoomBy(0.5)).toBe(false);
   });
 
   it("comes back to the opening framing on reset", () => {

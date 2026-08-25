@@ -10,6 +10,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import "../src/index.js";
+import { DEFAULT_ZOOM_BOUNDS } from "../src/shared/interact.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 
 function mount<T extends HTMLElement>(tag: string, payload: unknown): T {
@@ -76,6 +77,41 @@ describe.each(VIEWS)("%s", (tag, fixture) => {
     container.dispatchEvent(pointer("pointerdown"));
     container.dispatchEvent(wheel(-120));
     expect(viewer.calls.some((c) => c.startsWith("zoom("))).toBe(true);
+  });
+
+  it("tells the engine how far out it may zoom, so a drag cannot lose the molecule", async () => {
+    mount(tag, readExample(fixture));
+    await flush();
+    const viewer = engines.viewers[0];
+    const opening = viewer.distance();
+
+    expect(viewer.zoomLimits).toEqual({
+      lower: opening / DEFAULT_ZOOM_BOUNDS.max,
+      upper: opening / DEFAULT_ZOOM_BOUNDS.min,
+    });
+
+    // Dragged out well past the bound, the way a trackpad does in one gesture.
+    for (let i = 0; i < 50; i++) viewer.dragZoom(0.8);
+    expect(viewer.distance()).toBe(opening / DEFAULT_ZOOM_BOUNDS.min);
+  });
+
+  it("lets the page scroll again once there is no zooming out left", async () => {
+    const node = mount(tag, readExample(fixture));
+    await flush();
+    const container = viewerContainer(node);
+    container.dispatchEvent(pointer("pointerdown"));
+
+    // The wheels that zoom are the view's, and it keeps them.
+    const zooming = wheel(240);
+    container.dispatchEvent(zooming);
+    expect(zooming.defaultPrevented).toBe(true);
+
+    // Kept scrolling in the same gesture, well past the bound.
+    for (let i = 0; i < 40; i++) container.dispatchEvent(wheel(240));
+
+    const spent = wheel(240);
+    container.dispatchEvent(spent);
+    expect(spent.defaultPrevented).toBe(false);
   });
 
   it("offers a way back to the opening framing", async () => {

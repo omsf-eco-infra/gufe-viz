@@ -35,7 +35,22 @@ export interface FakeViewer extends ThreeDmolViewer {
   /** Spheres and cylinders, as the specs they were given. */
   shapes: { kind: "sphere" | "cylinder"; spec: Record<string, unknown> }[];
   cleared: boolean;
+  /** The limits `setZoomLimits` was last given, null until it is called. */
+  zoomLimits: { lower: number; upper: number } | null;
+  /** How far the camera sits from the model, the number the zoom clamp reads. */
+  distance(): number;
+  /**
+   * Move the camera without going through `zoom`, the way a drag or a pinch
+   * does: 3Dmol handles those itself, so nothing of ours is called.
+   */
+  dragZoom(factor: number): void;
 }
+
+/** 3Dmol's own default, and what `interact.ts` assumes when a viewer is silent. */
+const FAKE_CAMERA_Z = 150;
+
+/** Whatever `zoomTo` settles on. Arbitrary: only ratios to it are asserted. */
+const FAKE_OPENING_DISTANCE = 30;
 
 export function makeFakeViewer(): FakeViewer {
   const calls: string[] = [];
@@ -46,7 +61,19 @@ export function makeFakeViewer(): FakeViewer {
     };
   const styles: { selection: unknown; style: unknown }[] = [];
   const shapes: { kind: "sphere" | "cylinder"; spec: Record<string, unknown> }[] = [];
-  let view: number[] = [0, 0, 0, 1];
+
+  // 3Dmol's camera in miniature, because the zoom clamp reads it rather than
+  // counting its own calls: `zoom(f)` divides the camera-to-model distance,
+  // `setZoomLimits` bounds that distance, and `getView` reports it back as
+  // `CAMERA_Z - distance` at index 3. A fake that ignored all this would let a
+  // broken clamp pass.
+  let distance = FAKE_OPENING_DISTANCE;
+  let limits: { lower: number; upper: number } | null = null;
+  const clampDistance = (d: number): number => {
+    if (!limits) return d;
+    return Math.min(Math.max(d, limits.lower), limits.upper);
+  };
+  const position = () => [0, 0, 0, FAKE_CAMERA_Z - distance, 0, 0, 0, 1];
   const viewer = {
     calls,
     styles,
@@ -62,8 +89,25 @@ export function makeFakeViewer(): FakeViewer {
       calls.push("addSurface");
       return Promise.resolve(1);
     },
-    zoomTo: record("zoomTo"),
-    zoom: record("zoom"),
+    zoomLimits: null,
+    distance: () => distance,
+    dragZoom: (factor: number) => {
+      distance = clampDistance(distance / factor);
+    },
+    zoomTo: () => {
+      calls.push("zoomTo");
+      distance = clampDistance(FAKE_OPENING_DISTANCE);
+    },
+    zoom: (factor: number) => {
+      calls.push(`zoom(${JSON.stringify(factor)})`);
+      distance = clampDistance(distance / factor);
+    },
+    setZoomLimits: (lower: number, upper: number) => {
+      calls.push(`setZoomLimits(${lower},${upper})`);
+      limits = { lower, upper };
+      viewer.zoomLimits = limits;
+      distance = clampDistance(distance);
+    },
     addSphere: (spec: Record<string, unknown>) => {
       calls.push("addSphere");
       shapes.push({ kind: "sphere", spec });
@@ -80,11 +124,14 @@ export function makeFakeViewer(): FakeViewer {
       calls.push(`addStyle(${JSON.stringify(selection)})`);
       styles.push({ selection, style });
     },
-    // A camera the sync loop can read back unchanged, so two boxes agree
-    // without anything actually rendering.
-    getView: () => view,
+    // A camera the sync loop can read back, so two boxes agree without anything
+    // actually rendering.
+    getView: () => position(),
     setView: (next: unknown) => {
-      view = next as number[];
+      // Unclamped, as in 3Dmol: `setView` restores a camera rather than moving
+      // it by hand.
+      const z = (next as number[])[3];
+      if (typeof z === "number") distance = FAKE_CAMERA_Z - z;
       calls.push("setView");
     },
     rotate: (angle: number, axis: string) => {

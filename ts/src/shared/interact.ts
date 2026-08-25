@@ -12,11 +12,14 @@
  * interacting with the canvas (something has been clicked or dragged there), or
  * the wheel carries a modifier, which is also what a trackpad pinch sends. This
  * is how embedded maps behave, and it is the actual fix; the clamp below only
- * limits how bad it gets.
+ * limits how bad it gets. A wheel the zoom cannot use is handed back the same
+ * way: once a view is against its bound it will not move, and a view that will
+ * not move must not stop the page moving either.
  *
  * **Zooming out must not lose the molecule.** 3Dmol will happily reduce a model
- * to a speck it is hard to find again, so the cumulative zoom is bounded and a
- * reset is always one click away.
+ * to a speck it is hard to find again, so the zoom is bounded - here for the
+ * wheel, and inside the engine for the drag and the pinch it handles itself -
+ * and a reset is always one click away.
  *
  * The guard is deliberately separate from the zoomer. The network view already
  * has its own zoom, in SVG transform space with its own limits, and wants only
@@ -34,8 +37,12 @@ export interface Interaction {
 // --- the wheel guard -------------------------------------------------------
 
 export interface WheelGuardOptions {
-  /** Act on a wheel event that passed the guard. */
-  onZoom(event: WheelEvent): void;
+  /**
+   * Act on a wheel event that passed the guard. Return `false` for a wheel that
+   * changed nothing, which for a bounded zoom means it is against a bound: the
+   * guard then leaves the event to the page instead of swallowing it.
+   */
+  onZoom(event: WheelEvent): boolean | void;
   /**
    * Shown once, briefly, the first time a wheel is let through to the page.
    * Without it the guard is correct and silent, which reads as broken.
@@ -68,9 +75,14 @@ export function guardWheel(host: HTMLElement, options: WheelGuardOptions): Inter
 
     // `ctrlKey` on a wheel is not necessarily a held key: a trackpad pinch
     // arrives as exactly this, on every major browser.
-    if (engaged || event.ctrlKey || event.metaKey) {
-      event.preventDefault();
-      options.onZoom(event);
+    const modifier = event.ctrlKey || event.metaKey;
+    if (engaged || modifier) {
+      // Swallowed only if the zoom used it. A modifier wheel is the exception
+      // and is always swallowed: handed back it zooms the browser's own page,
+      // which is a stranger outcome than a view that will not move.
+      if (options.onZoom(event) !== false || modifier) event.preventDefault();
+      // Either way this wheel is answered. No hint: at a bound the page moving
+      // is the explanation, and nothing was blocked to need one.
       return;
     }
 
@@ -129,9 +141,29 @@ export interface ZoomBounds {
  */
 export const DEFAULT_ZOOM_BOUNDS: ZoomBounds = { min: 0.25, max: 12 };
 
+/** Where 3Dmol parks the camera when a viewer does not say otherwise. */
+const DEFAULT_CAMERA_Z = 150;
+
+/**
+ * How far the camera currently sits from the model, in 3Dmol's units.
+ *
+ * `getView()` is the only reading 3Dmol exposes: index 3 is the camera's z, and
+ * the distance is measured back from `CAMERA_Z`. NaN when a viewer cannot
+ * answer, which is what the caller checks for.
+ */
+function cameraDistance(viewer: ThreeDmolViewer): number {
+  const z = viewer.getView?.()?.[3];
+  if (typeof z !== "number" || !Number.isFinite(z)) return NaN;
+  return (viewer.CAMERA_Z ?? DEFAULT_CAMERA_Z) - z;
+}
+
 export interface BoundedZoom {
-  /** Multiply the current zoom, within the bounds. */
-  zoomBy(factor: number): void;
+  /**
+   * Multiply the current zoom, within the bounds. False when nothing moved
+   * because the view is already against one, which is how the wheel guard knows
+   * the event is better spent on the page.
+   */
+  zoomBy(factor: number): boolean;
   /** Back to the framing the view opened with. */
   reset(): void;
   /** Current zoom as a multiple of the starting framing. */
@@ -141,31 +173,56 @@ export interface BoundedZoom {
 /**
  * Bound a 3Dmol viewer's zoom.
  *
- * The level is tracked here rather than read back from the viewer because 3Dmol
- * exposes no "how far am I zoomed" that survives a `zoomTo`, and a clamp that
- * cannot tell where it is would drift out of its own bounds.
+ * The clamp is applied in two places on purpose, because the wheel is not the
+ * only way to zoom: a drag with the middle button and a two-finger pinch are
+ * handled inside 3Dmol, where the guard above never sees them. So the bounds
+ * are also handed to the engine through `setZoomLimits`, which 3Dmol enforces
+ * on every one of its own zoom paths. Without that, one drag can still put the
+ * molecule somewhere it cannot be found.
+ *
+ * For the same reason the current level is measured from the camera rather than
+ * counted here: anything that moves the camera behind our back - a drag, a
+ * pinch, a linked viewer's `setView` - would otherwise leave a counter clamping
+ * against a framing that is no longer on screen. A viewer that cannot report
+ * its camera falls back to the count, which is all the older code had.
  */
 export function boundedZoom(viewer: ThreeDmolViewer, bounds: ZoomBounds = DEFAULT_ZOOM_BOUNDS): BoundedZoom {
-  let level = 1;
+  // Measured once, from the framing the view opened with: every bound is a
+  // multiple of this distance.
+  const opening = cameraDistance(viewer);
+  const measurable = Number.isFinite(opening) && opening > 0;
+
+  if (measurable) viewer.setZoomLimits?.(opening / bounds.max, opening / bounds.min);
+
+  let counted = 1;
+
+  const level = (): number => {
+    if (!measurable) return counted;
+    const now = cameraDistance(viewer);
+    return Number.isFinite(now) && now > 0 ? opening / now : counted;
+  };
 
   return {
     zoomBy(factor: number) {
-      const next = Math.min(bounds.max, Math.max(bounds.min, level * factor));
-      // Already against a bound: doing nothing is the whole point.
-      if (next === level) return;
-      const applied = next / level;
-      level = next;
+      const current = level();
+      const next = Math.min(bounds.max, Math.max(bounds.min, current * factor));
+      const applied = next / current;
+      // Already against a bound: doing nothing is the whole point. Compared
+      // with a tolerance because `current` is a measurement, not a tally.
+      if (!Number.isFinite(applied) || Math.abs(applied - 1) < 1e-9) return false;
+      counted = next;
       viewer.zoom(applied);
       viewer.render();
+      return true;
     },
 
     reset() {
-      level = 1;
+      counted = 1;
       viewer.zoomTo();
       viewer.render();
     },
 
-    level: () => level,
+    level,
   };
 }
 

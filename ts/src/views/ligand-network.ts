@@ -1257,6 +1257,9 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       ty = py - (py - ty) * factor;
       scale *= factor;
       apply();
+      // Clamped flat, so the graph is against a limit and the guard spends this
+      // wheel on the page instead.
+      return factor !== 1;
     };
     const guard = guardWheel(root as unknown as HTMLElement, {
       onZoom: zoomAt,
