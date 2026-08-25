@@ -1,5 +1,15 @@
 # The contract
 
+Two schemas live here, and they answer different questions.
+
+| file | says | written by |
+|---|---|---|
+| `gufe-viz.schema.json` | what a gufe object **is** | a Python payload builder |
+| `depict-style.schema.json` | how a ligand pair is **drawn** in 2D | a person, in the editor linked below |
+
+Everything below is about the first one. The second is described in
+[Depiction style](#depiction-style) at the end.
+
 `gufe-viz.schema.json` **is the gate between Python and TypeScript.** Nothing
 reaches the browser except data that validates against it.
 
@@ -220,3 +230,63 @@ states whether the result must be rejected or accepted.
 
 If you change this file, add the row that proves the change does what you meant.
 
+## Depiction style
+
+`depict-style.schema.json` is the contract for one small, separate document:
+how `<gufe-atom-mapping>` draws a ligand pair in 2D. Marking style, ring shape,
+hydrogen treatment, letter and bond sizes, every colour.
+
+It is deliberately **not** part of `gufe-viz.schema.json`. That schema describes
+what a gufe object is, and every field in it is written by a payload builder
+from a real object. Nothing in this one is: it is entirely taste, it describes no
+gufe object, and a transformation drawn twice with two different styles is the
+same transformation. Putting it in the payload would make every Python builder
+carry a preference it has no opinion about, and Python never sees this file.
+
+### It is authored in a live editor
+
+<https://framejs.app/j/5df86d91e8824b20a02908b52a6f07c3>
+
+That page draws real transformation pairs with these exact values, documents
+every key beside the control that sets it, and exports this document. The loop:
+
+```
+open the editor  ->  move the controls  ->  Copy or Download
+                 ->  drop the file over ts/src/shared/depict-style.json
+                 ->  pixi run build
+```
+
+It goes the other way too: paste the committed document into the editor and
+press Apply to see exactly what a given build draws.
+
+### How it reaches the browser
+
+```
+schema/depict-style.schema.json   <- the contract. Hand-written, like the other one.
+        |                            Checked against the committed document by
+        |                            ts/tests/depict-style.test.ts.
+        v
+ts/src/shared/depict-style.json   <- ONE exported document. This is the file you replace.
+        |  import ... with { type: "json" }
+        v
+ts/src/shared/depict-style.ts     <- the types, the defaults, and the whole pipeline
+```
+
+The JSON is imported by the TypeScript, so it is compiled into the bundle. There
+is nothing to fetch, no runtime setter, and no way for two pictures in one page
+to disagree about the style.
+
+### The defaults draw what this project has always drawn
+
+Every key is optional except `version`, and what a document leaves out takes the
+built-in default. Those defaults are either a value gufe sets or a value RDKit
+already uses, so passing them explicitly changes nothing: with the document
+untouched, the picture is byte-identical to the single
+`get_svg_with_highlights` call this project made before the document existed.
+The editor starts on the same values, which is what makes an edited style a
+readable diff rather than a jump to something new.
+
+Three tests hold that together: the committed document validates against the
+schema, the schema and the TypeScript defaults agree key by key and range by
+range, and the options handed to RDKit still match `MAPPING_DRAW_OPTIONS`, which
+is generated from gufe itself.

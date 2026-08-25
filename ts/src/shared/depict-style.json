@@ -1,32 +1,25 @@
 {
   "version": 1,
-
-  "style": "rdkit",
-
+  "atomNumbers": true,
   "createdDestroyed": true,
   "modified": true,
-  "destroyedColor": "#DC3220",
-  "createdColor": "#DC3220",
-  "modifiedColor": "#005AB5",
-
+  "style": "recolor",
+  "circles": "filled",
+  "circleRadius": 0.37,
+  "circleStroke": 1.5,
   "boundary": true,
-  "circles": "outline",
-  "circleRadius": 0.3,
-  "circleStroke": 1.2,
-
   "hydrogens": "show",
   "elementColors": "mono",
-  "atomNumbers": true,
-  "stereo": false,
-
-  "numScale": 0.5,
-  "labelScale": 0.6,
-  "bondWidth": 2,
-  "markWidth": 2,
-
-  "haloWidth": 10,
+  "numScale": 0.39,
+  "labelScale": 0.54,
+  "bondWidth": 4.8,
+  "markWidth": 1.7,
+  "haloWidth": 6.5,
   "haloOpacity": 0.35,
-
+  "destroyedColor": "#d62828",
+  "createdColor": "#d62828",
+  "modifiedColor": "#1d4ed8",
+  "stereo": false,
   "customSpec": "",
-  "customColor": "#7C3AED"
+  "customColor": "#7c3aed"
 }

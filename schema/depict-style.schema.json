@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/omsf-eco-infra/gufe-viz/main/schema/depict-style.schema.json",
+  "title": "gufe-viz 2D depiction style",
+  "description": "How a ligand pair is drawn in 2D. Separate from gufe-viz.schema.json on purpose: that schema describes what a payload IS, and nothing in it comes from a person's taste. This one is entirely taste, it describes no gufe object, and it is authored by hand in the editor at https://framejs.app/j/5df86d91e8824b20a02908b52a6f07c3 rather than written by a payload builder. The editor draws real transformation pairs with these values live, then exports this document; drop the exported file over ts/src/shared/depict-style.json and it is compiled into the bundle. The editor's own panel is the reference for what each key does to the picture. Every key is optional: what is absent takes the built-in default, and the built-in defaults reproduce the picture gufe-viz drew before this document existed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+
+  "properties": {
+    "version": {
+      "title": "version",
+      "description": "The format version. 1 is the only one. Present so a future incompatible change can be recognized rather than half-applied, since every other key is optional and an unrecognized one is a validation error.",
+      "const": 1
+    },
+
+    "style": {
+      "title": "style",
+      "description": "How a marked atom's bonds are drawn. `rdkit` asks RDKit to highlight and post-processes nothing, which is what gufe-viz drew before this document existed and is the default. `recolor` takes RDKit's plain drawing and swaps the stroke of the affected bond paths to the marker colour, so there is no black bond underneath and the coloured line is a normal bond width. `halo` puts a wide translucent band under the bond instead, and repaints the black centre line on top of it. `recolor` and `halo` both need RDKit to tag its SVG with `class=\"bond-K atom-A atom-B\"`; a build that does not falls back to `rdkit`.",
+      "enum": ["rdkit", "recolor", "halo"],
+      "default": "rdkit"
+    },
+
+    "createdDestroyed": {
+      "title": "createdDestroyed",
+      "description": "Mark the atoms that map to nothing at all: destroyed on the left molecule, created on the right. These are gufe's `uniques[\"atoms\"]`.",
+      "type": "boolean",
+      "default": true
+    },
+    "modified": {
+      "title": "modified",
+      "description": "Mark the atoms that are mapped but change element (C to N, O to S). These are gufe's `uniques[\"elements\"]`. They sit inside the common core, so only the atom is ever marked and `boundary` does not extend to them: colouring the bonds around them would paint the scaffold rather than point at the atom that changed.",
+      "type": "boolean",
+      "default": true
+    },
+
+    "destroyedColor": {
+      "title": "destroyedColor",
+      "description": "Colour for atoms unique to the left molecule. gufe uses one colour for unique atoms on both sides, which is why this and `createdColor` default to the same value; they are separate keys so a viewer that wants to tell the two sides apart can.",
+      "$ref": "#/$defs/HexColor",
+      "default": "#DC3220"
+    },
+    "createdColor": {
+      "title": "createdColor",
+      "description": "Colour for atoms unique to the right molecule. See `destroyedColor`.",
+      "$ref": "#/$defs/HexColor",
+      "default": "#DC3220"
+    },
+    "modifiedColor": {
+      "title": "modifiedColor",
+      "description": "Colour for mapped atoms whose element changes. With `destroyedColor` and `createdColor` at their defaults this pair is colourblind-safe; changing either is a decision to give that up.",
+      "$ref": "#/$defs/HexColor",
+      "default": "#005AB5"
+    },
+
+    "boundary": {
+      "title": "boundary",
+      "description": "Also colour the bond that joins a created or destroyed atom to the mapped core, not only the bonds with both ends marked. With this off, a lone added carbon draws nothing at all, because a carbon carries no letter. Applies to `recolor` and `halo`; `rdkit` does not draw marked bonds.",
+      "type": "boolean",
+      "default": true
+    },
+
+    "circles": {
+      "title": "circles",
+      "description": "The ring on a marked atom, under `recolor`. RDKit only ever draws a filled disc, so `outline` is made by turning that disc inside out afterwards. `filled` keeps the disc as a wash of the marker colour and draws the atom letter black on top, since a coloured letter on a wash of its own colour reads faint. `off` leaves the atom to its bonds. Ignored by `halo`, which always fills its discs, and by `rdkit`, which draws whatever RDKit draws.",
+      "enum": ["outline", "filled", "off"],
+      "default": "outline"
+    },
+    "circleRadius": {
+      "title": "circleRadius",
+      "description": "Radius of that ring, in RDKit's `highlightAtomRadii` units. 0.3 is RDKit's own default.",
+      "type": "number",
+      "minimum": 0.12,
+      "maximum": 0.6,
+      "default": 0.3
+    },
+    "circleStroke": {
+      "title": "circleStroke",
+      "description": "Stroke width of the ring in px, for `outline` and for the full-strength edge a `filled` disc gets on a transformed atom.",
+      "type": "number",
+      "minimum": 0.4,
+      "maximum": 4,
+      "default": 1.2
+    },
+
+    "hydrogens": {
+      "title": "hydrogens",
+      "description": "What to do with explicit hydrogens in the drawing. Display only: the molecule keeps every hydrogen whatever this says, because a mapping's indices address the full molecule and removing them would shift every index above the first one. A hidden hydrogen does keep its index number, since RDKit emits every annotation under one class.",
+      "enum": ["show", "dim", "hide"],
+      "default": "show"
+    },
+
+    "elementColors": {
+      "title": "elementColors",
+      "description": "`mono` draws every element black, which is what gufe does so that the highlight colours are the only colour on the page. `cpk` lets RDKit colour the letters by element. This also drives the coloured half of a bond to a heteroatom, so `mono` flattens both.",
+      "enum": ["cpk", "mono"],
+      "default": "mono"
+    },
+
+    "atomNumbers": {
+      "title": "atomNumbers",
+      "description": "RDKit's `addAtomIndices`. On by default because the numbers are how a mapping is read off the picture.",
+      "type": "boolean",
+      "default": true
+    },
+    "stereo": {
+      "title": "stereo",
+      "description": "RDKit's `addStereoAnnotation`: R/S and E/Z labels.",
+      "type": "boolean",
+      "default": false
+    },
+
+    "numScale": {
+      "title": "numScale",
+      "description": "RDKit's `annotationFontScale`, which sizes the atom numbers. 0.5 is RDKit's own default.",
+      "type": "number",
+      "minimum": 0.15,
+      "maximum": 0.9,
+      "default": 0.5
+    },
+    "labelScale": {
+      "title": "labelScale",
+      "description": "RDKit's `baseFontSize`, which sizes the element letters. 0.6 is what RDKit's SVG drawer resolves its own default to.",
+      "type": "number",
+      "minimum": 0.3,
+      "maximum": 0.9,
+      "default": 0.6
+    },
+    "bondWidth": {
+      "title": "bondWidth",
+      "description": "RDKit's `bondLineWidth`, in px. 2 is RDKit's own default.",
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 5,
+      "default": 2
+    },
+    "markWidth": {
+      "title": "markWidth",
+      "description": "Stroke width in px of a bond that carries a marker colour. Used by `recolor` for the coloured line, and by `halo` for the centre line repainted on top of the band. Ignored by `rdkit`.",
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 6,
+      "default": 2
+    },
+
+    "haloWidth": {
+      "title": "haloWidth",
+      "description": "Width in px of the halo band, under `halo`. The band is not RDKit's: RDKit emits one filled quadrilateral per highlighted bond, and at an acute vertex adjacent quads mitre past each other instead of meeting, so the apex looks broken. Each band is drawn instead as a round-capped stroke along the bond's own centre line, all of them in one group, so neighbours merge cleanly at any angle and overlaps do not darken.",
+      "type": "number",
+      "minimum": 2,
+      "maximum": 26,
+      "default": 10
+    },
+    "haloOpacity": {
+      "title": "haloOpacity",
+      "description": "Opacity of the halo band group. Carried by the group rather than by each band, which is what composites the union once instead of once per overlap.",
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 1,
+      "default": 0.35
+    },
+
+    "customSpec": {
+      "title": "customSpec",
+      "description": "Extra atoms to ring, by index, for looking at one particular thing. `0,3,7` and `2-6` mark that index on both molecules; `L:1-4` and `R:9` restrict to the left or the right one. Separators are commas, spaces or semicolons. Empty, the default, marks nothing. This is a debugging aid rather than a style: an index means a different atom in every pair, so a committed value is almost always a leftover.",
+      "type": "string",
+      "default": ""
+    },
+    "customColor": {
+      "title": "customColor",
+      "description": "Colour for the atoms `customSpec` names. An atom named there takes this colour instead of whatever the mapping would have given it.",
+      "$ref": "#/$defs/HexColor",
+      "default": "#7C3AED"
+    }
+  },
+
+  "$defs": {
+    "HexColor": {
+      "title": "HexColor",
+      "description": "A colour as six hex digits behind a hash, the form an `<input type=\"color\">` produces and the only form the editor writes. Short `#abc` and named colours are deliberately not accepted, so there is one spelling to compare.",
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    }
+  }
+}
