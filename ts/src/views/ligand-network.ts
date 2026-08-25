@@ -941,7 +941,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     reset(): void;
     cleanup(): void;
   } {
-    const root = svg("svg", { width, height, style: "display:block;touch-action:none;" });
+    // Named, because "the svg in this view" stopped being unambiguous the moment
+    // the menu button started carrying an icon of its own.
+    const root = svg("svg", {
+      class: "gufe-graph",
+      width,
+      height,
+      style: "display:block;touch-action:none;",
+    });
     const scene = svg("g");
     root.appendChild(scene);
     canvas.appendChild(root);

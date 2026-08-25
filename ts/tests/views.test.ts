@@ -167,7 +167,7 @@ describe("<gufe-ligand-network>", () => {
     // caption under every node buries it.
     const node = mount("gufe-ligand-network", network());
     await flush();
-    const root = node.querySelector("svg")!;
+    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
 
     root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
     root.dispatchEvent(new WheelEvent("wheel", { deltaY: 600, bubbles: true, cancelable: true }));

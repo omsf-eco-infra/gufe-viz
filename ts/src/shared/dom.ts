@@ -376,7 +376,33 @@ export interface ChromeMenuOptions {
   label?: string;
 }
 
-/** Three bars, drawn rather than typed, so the glyph is not a Unicode dependency. */
+/**
+ * The OpenFE mark, from `docs.openfree.energy`'s own `OFE-color-icon.svg`.
+ *
+ * Inlined rather than fetched: it is under a kilobyte, and a page that has to
+ * reach a documentation site to draw its own menu button is a page that shows a
+ * broken image offline. The two brand colours are deliberately fixed and are not
+ * theme values - a logo is the one thing on the page that should look the same
+ * in both themes, and recolouring somebody's mark is not ours to do.
+ */
+function openFreeEnergyIcon(): HTMLSpanElement {
+  const icon = el("span", "display:inline-flex;width:14px;height:14px;");
+  icon.innerHTML =
+    '<svg viewBox="0 0 748 743" width="14" height="14" aria-hidden="true" focusable="false">' +
+    '<path fill="#8A2283" d="M267.99 102.211C119.99 102.211 0 222.191 0 370.211C0 452.061 36.71 525.321 ' +
+    '94.54 574.491L327.37 108.831C308.27 104.501 288.4 102.211 267.99 102.211Z"/>' +
+    '<path fill="#00BDAA" d="M515.66 267.67C528.75 299.25 535.99 333.89 535.99 370.21C535.99 512.26 ' +
+    '425.47 628.47 285.73 637.6H702.44L380.64 0L63.6396 637.6H267.99V267.67H515.66Z"/>' +
+    '<path fill="#8A2283" d="M516.81 267.67L702.08 638.2H267.99V742.06H747.62V267.66H516.81V267.67Z"/>' +
+    "</svg>";
+  return icon;
+}
+
+/**
+ * Three bars, drawn rather than typed, so the glyph is not a Unicode dependency.
+ *
+ * Superseded by the mark above, kept for switching back - see `MENU_ICON`.
+ */
 function hamburgerIcon(): HTMLSpanElement {
   const icon = el("span", `display:inline-flex;flex-direction:column;gap:${SPACE.xs};justify-content:center;`);
   for (let i = 0; i < 3; i++) {
@@ -384,6 +410,23 @@ function hamburgerIcon(): HTMLSpanElement {
   }
   return icon;
 }
+
+/**
+ * The glyphs the menu button can show.
+ *
+ * Both are listed rather than one being commented out, so whichever is not in
+ * use still typechecks - a commented-out alternative rots silently and is
+ * discovered broken at the moment someone wants it.
+ */
+const MENU_ICONS = {
+  /** The OpenFE mark, as `docs.openfree.energy` uses it. */
+  openFreeEnergy: openFreeEnergyIcon,
+  /** Three bars. What this was before. */
+  hamburger: hamburgerIcon,
+} as const;
+
+/** Which one the button shows. Change this word to switch. */
+const MENU_ICON: () => HTMLSpanElement = MENU_ICONS.openFreeEnergy;
 
 /**
  * Attach a collapsible menu to `header`, and hand back the panel to place.
@@ -402,7 +445,7 @@ export function chromeMenu(
 
   const panel = el("div", "flex-shrink:0;");
   const button = el("button", `${BUTTON.base}display:inline-flex;align-items:center;gap:${SPACE.md};padding:${SPACE.sm} ${SPACE.lg};`);
-  button.appendChild(hamburgerIcon());
+  button.appendChild(MENU_ICON());
   button.setAttribute("aria-label", options.label || "Toggle menu");
 
   const apply = (): void => {

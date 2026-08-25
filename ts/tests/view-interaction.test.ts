@@ -143,18 +143,18 @@ describe("<gufe-ligand-network>", () => {
   it("does not pan or zoom when the page is merely scrolled past it", async () => {
     const node = mount("gufe-ligand-network", readExample("ligand_network.json"));
     await flush();
-    const scene = node.querySelector("svg > g") as SVGGElement;
+    const scene = node.querySelector("svg.gufe-graph > g") as SVGGElement;
     const before = scene.getAttribute("transform");
 
-    node.querySelector("svg")!.dispatchEvent(wheel(120));
+    node.querySelector<SVGSVGElement>("svg.gufe-graph")!.dispatchEvent(wheel(120));
     expect(scene.getAttribute("transform")).toBe(before);
   });
 
   it("zooms the graph once the pointer has engaged it", async () => {
     const node = mount("gufe-ligand-network", readExample("ligand_network.json"));
     await flush();
-    const root = node.querySelector("svg")!;
-    const scene = node.querySelector("svg > g") as SVGGElement;
+    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
+    const scene = node.querySelector("svg.gufe-graph > g") as SVGGElement;
 
     root.dispatchEvent(pointer("pointerdown"));
     root.dispatchEvent(wheel(-120));
@@ -169,8 +169,8 @@ describe("<gufe-ligand-network>", () => {
   it("resets pan and zoom back to the view it opened on", async () => {
     const node = mount("gufe-ligand-network", readExample("ligand_network.json"));
     await flush();
-    const root = node.querySelector("svg")!;
-    const scene = node.querySelector("svg > g") as SVGGElement;
+    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
+    const scene = node.querySelector("svg.gufe-graph > g") as SVGGElement;
     const opening = scene.getAttribute("transform");
 
     root.dispatchEvent(pointer("pointerdown"));

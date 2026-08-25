@@ -76,7 +76,7 @@ describe("a large ligand network", () => {
     node.payload = bigNetwork(934);
     await flush();
 
-    const scene = node.querySelector("svg > g") as SVGGElement;
+    const scene = node.querySelector("svg.gufe-graph > g") as SVGGElement;
     const [, tx, ty, scale] = /translate\((-?[\d.]+),(-?[\d.]+)\) scale\(([\d.]+)\)/.exec(
       scene.getAttribute("transform") ?? "",
     )!.map(Number) as unknown as [string, number, number, number];
