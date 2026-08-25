@@ -17,6 +17,7 @@ import {
   BTN_CSS,
   centredMessage,
   chromeMenu,
+  dropdown,
   el,
   errText,
   esc,
@@ -26,6 +27,7 @@ import {
   statChip,
 } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { choice, flag, num, text as textSetting, type Setting } from "../shared/settings.js";
 import { svg } from "../shared/svg.js";
 import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
@@ -457,6 +459,13 @@ interface MenuParts {
  * menu should not pay for it.
  */
 function buildMenu(parts: MenuParts): HTMLDivElement {
+  // Every control in here is a preference, so every one of them survives a
+  // reload. The *selection* deliberately does not: it names ligands in the
+  // network on screen, and restoring it onto a different one would restore
+  // nonsense.
+  const querySetting = textSetting("ligand-network.query");
+  const scoreSetting = num("ligand-network.minScore", 0, 0, 1);
+  const exportAsSetting = choice<ExportAs>("ligand-network.exportAs", "names", ["names", "keys"]);
   const panel = el(
     "div",
     "display:flex;flex-direction:column;gap:8px;width:236px;padding:10px;min-height:0;" +
@@ -466,6 +475,8 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const search = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
   search.type = "search";
   search.placeholder = "Search ligands";
+  search.value = querySetting.get();
+  parts.query.text = search.value;
   search.setAttribute("aria-label", "Search ligands by name, SMILES or gufe key");
   panel.appendChild(search);
 
@@ -476,7 +487,8 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   score.min = "0";
   score.max = "1";
   score.step = "0.01";
-  score.value = "0";
+  score.value = String(scoreSetting.get());
+  parts.filter.minScore = Number(score.value);
   score.setAttribute("aria-label", "Hide mappings scoring below this");
   scoreRow.appendChild(el("span", "", "score >="));
   scoreRow.appendChild(score);
@@ -497,15 +509,16 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const exportBox = el("div", "display:flex;flex-direction:column;gap:6px;");
   const asRow = el("div", `display:flex;align-items:center;gap:6px;font-size:${FONT.small};color:${T.textMuted};`);
   asRow.appendChild(el("span", "", "copy as"));
-  const asPicker = el("select", `${SELECT_CSS}flex:1;`) as HTMLSelectElement;
-  for (const [value, text] of [
-    ["names", "names"],
-    ["keys", "gufe keys"],
-  ] as const) {
-    const option = el("option", "", text);
-    option.value = value;
-    asPicker.appendChild(option);
-  }
+  const asPicker = dropdown(
+    [
+      { id: "names", label: "names" },
+      { id: "keys", label: "gufe keys" },
+    ],
+    exportAsSetting.get(),
+    () => undefined,
+    exportAsSetting,
+  );
+  asPicker.style.flex = "1";
   asRow.appendChild(asPicker);
   exportBox.appendChild(asRow);
 
@@ -593,12 +606,14 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
 
   search.oninput = () => {
     parts.query.text = search.value;
+    querySetting.set(search.value);
     render();
     parts.refresh();
   };
   score.oninput = () => {
     parts.filter.minScore = Number(score.value);
     scoreValue.textContent = parts.filter.minScore.toFixed(2);
+    scoreSetting.set(parts.filter.minScore);
     parts.refresh();
   };
 
@@ -671,7 +686,11 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
           refresh: () => applyEmphasis(),
           focus: (index) => focusNode(index),
         }),
-      { label: "Search, filter and select ligands", onToggle: () => draw() },
+      {
+        label: "Search, filter and select ligands",
+        onToggle: () => draw(),
+        remember: flag("ligand-network.menuOpen", false),
+      },
     );
     split.appendChild(menu.panel);
 
@@ -683,9 +702,11 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     const canvas = el("div", `flex:1;position:relative;overflow:hidden;min-height:0;background:${T.netCanvasBg};`);
     left.appendChild(canvas);
+    const layoutSetting = choice<Layout>("ligand-network.layout", "Force-directed", LAYOUTS);
     const toolbar = this.#toolbar(
       (next) => draw(next),
       () => resetView(),
+      layoutSetting,
     );
     left.appendChild(toolbar.bar);
 
@@ -724,7 +745,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     let focusNode: (index: number) => void = () => {};
     let selectedEdge = edges.length ? 0 : -1;
     let stop: (() => void) | null = null;
-    let layout: Layout = "Force-directed";
+    let layout: Layout = layoutSetting.get();
     let forceUnavailable = false;
     let alive = true;
     let refreshHalos = () => {};
@@ -833,6 +854,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   #toolbar(
     onLayout: (layout: Layout) => void,
     onReset: () => void,
+    layoutSetting: Setting<string>,
   ): { bar: HTMLDivElement; picker: HTMLSelectElement } {
     const toolbar = el(
       "div",
@@ -851,13 +873,12 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     toolbar.appendChild(legend);
 
     toolbar.appendChild(el("label", `font-size:${FONT.body};margin-left:auto;color:${T.textMuted};`, "Layout"));
-    const picker = el("select", SELECT_CSS);
-    for (const name of LAYOUTS) {
-      const option = el("option", "", name);
-      option.value = name;
-      picker.appendChild(option);
-    }
-    picker.onchange = () => onLayout(picker.value as Layout);
+    const picker = dropdown(
+      LAYOUTS.map((name) => ({ id: name, label: name })),
+      layoutSetting.get(),
+      (id) => onLayout(id as Layout),
+      layoutSetting,
+    );
     toolbar.appendChild(picker);
     toolbar.appendChild(resetControl(onReset, "Reset pan and zoom"));
 

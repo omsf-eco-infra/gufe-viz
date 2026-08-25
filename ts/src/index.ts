@@ -64,6 +64,16 @@ export {
   type ZoomBounds,
 } from "./shared/interact.js";
 export { DEBUG_ATTRIBUTE, DEBUG_GLOBAL, debugEnabled, logPayload, payloadJson } from "./shared/debug.js";
+export {
+  choice,
+  flag,
+  num,
+  setting,
+  text as textSetting,
+  type Setting,
+} from "./shared/settings.js";
+import { resetSettings, settings } from "./shared/settings.js";
+export { resetSettings, settings };
 export type * from "./schema/types.js";
 
 /**
@@ -82,4 +92,22 @@ export function mount(host: HTMLElement, payload?: unknown): HTMLElement & { pay
   }
   if (payload !== undefined) view.payload = payload;
   return view;
+}
+
+/**
+ * The settings a view has remembered, on the console.
+ *
+ * `window.gufeViz.settings()` answers "what state was this actually in" without
+ * a hunt through a storage inspector, and `reset()` puts every view back to how
+ * a new reader would find it. Attached the same way the debug switch is: a
+ * global, because the thing you need it for is a page you are already looking
+ * at and cannot rebuild.
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var gufeViz: { settings: typeof settings; reset: typeof resetSettings } | undefined;
+}
+
+if (typeof globalThis !== "undefined") {
+  globalThis.gufeViz = { settings, reset: resetSettings };
 }

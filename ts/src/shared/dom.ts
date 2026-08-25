@@ -15,6 +15,7 @@ import {
   TEXT,
   WEIGHT,
 } from "./style.js";
+import type { Setting } from "./settings.js";
 import { T } from "./theme.js";
 
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -74,12 +75,23 @@ export interface ButtonGroup extends HTMLDivElement {
  * A row of mutually-exclusive buttons. `onPick(id)` fires on click; the active
  * button is highlighted. The returned element carries `.setActive(id)` so a
  * caller can drive it from elsewhere.
+ *
+ * Hand it a `Setting` and the choice both starts from what was stored and is
+ * written back on every click, so a view gets remembering for free rather than
+ * doing it by hand and doing it slightly differently each time.
  */
 export function buttonGroup(
   items: readonly ButtonGroupItem[],
   active: string,
   onPick: (id: string) => void,
+  remember?: Setting<string>,
 ): ButtonGroup {
+  if (remember) {
+    const stored = remember.get();
+    // A stored value naming a button that no longer exists is a stale
+    // preference, not a reason to render a group with nothing selected.
+    if (items.some((item) => item.id === stored)) active = stored;
+  }
   const group = el("div", "display:flex;gap:4px;") as ButtonGroup;
   const buttons = items.map((item) => {
     const btn = el("button", BTN_CSS, item.label);
@@ -92,6 +104,7 @@ export function buttonGroup(
     };
     btn.onclick = () => {
       group.setActive(item.id);
+      remember?.set(item.id);
       onPick(item.id);
     };
     group.appendChild(btn);
@@ -105,6 +118,76 @@ export function buttonGroup(
   };
   group.setActive(active);
   return group;
+}
+
+export interface DropdownItem {
+  id: string;
+  label: string;
+}
+
+/**
+ * A dropdown, with the same remembering as `buttonGroup`.
+ *
+ * Views built these by hand, four times, each slightly different. One helper
+ * means one place to restyle them and one place that knows how a choice is
+ * stored.
+ */
+export function dropdown(
+  items: readonly DropdownItem[],
+  active: string,
+  onPick: (id: string) => void,
+  remember?: Setting<string>,
+): HTMLSelectElement {
+  const select = el("select", SELECT_CSS);
+  for (const item of items) {
+    const option = el("option", "", item.label);
+    option.value = item.id;
+    select.appendChild(option);
+  }
+
+  let initial = active;
+  if (remember) {
+    const stored = remember.get();
+    if (items.some((item) => item.id === stored)) initial = stored;
+  }
+  select.value = initial;
+
+  select.onchange = () => {
+    remember?.set(select.value);
+    onPick(select.value);
+  };
+  return select;
+}
+
+/**
+ * An on/off button that shows its state, and remembers it if asked.
+ *
+ * The views had four of these written out longhand - spin, waters, hetero,
+ * lines - each repeating the same three lines of background juggling.
+ */
+export function toggleButton(
+  label: string,
+  initial: boolean,
+  onChange: (on: boolean) => void,
+  options: { title?: string; remember?: Setting<boolean> } = {},
+): HTMLButtonElement {
+  let on = options.remember ? options.remember.get() : initial;
+  const button = el("button", BTN_CSS, label);
+  button.title = options.title || label;
+  button.setAttribute("aria-pressed", String(on));
+
+  const paint = () => {
+    button.style.background = on ? BUTTON.bgActive : BUTTON.bg;
+    button.setAttribute("aria-pressed", String(on));
+  };
+  button.onclick = () => {
+    on = !on;
+    paint();
+    options.remember?.set(on);
+    onChange(on);
+  };
+  paint();
+  return button;
 }
 
 /** "label <b>value</b>" with an optional colour dot - the stats readouts. */
@@ -282,6 +365,11 @@ export interface ChromeMenu {
 export interface ChromeMenuOptions {
   /** Overrides `CHROME_OPEN_BY_DEFAULT`. */
   open?: boolean;
+  /**
+   * Remember whether it was open. Someone who opened the ligand list to work
+   * through a network should not have to open it again on the next payload.
+   */
+  remember?: Setting<boolean>;
   /** Fired after the panel's visibility changes. Views re-lay-out here. */
   onToggle?(open: boolean): void;
   /** Accessible name for the button. */
@@ -309,7 +397,7 @@ export function chromeMenu(
   build: () => Node,
   options: ChromeMenuOptions = {},
 ): ChromeMenu {
-  let open = options.open ?? CHROME_OPEN_BY_DEFAULT;
+  let open = options.remember ? options.remember.get() : (options.open ?? CHROME_OPEN_BY_DEFAULT);
   let built = false;
 
   const panel = el("div", "flex-shrink:0;");
@@ -334,6 +422,7 @@ export function chromeMenu(
     if (next === open) return;
     open = next;
     apply();
+    options.remember?.set(open);
     options.onToggle?.(open);
   };
 

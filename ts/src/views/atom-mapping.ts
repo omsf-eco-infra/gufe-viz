@@ -54,6 +54,7 @@
 
 import { buttonGroup, centredMessage, EM_DASH, el, errText, statChip } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { choice } from "../shared/settings.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer } from "../shared/engines.js";
 import { guardWheel, type Interaction } from "../shared/interact.js";
 import { applyRT, kabsch, type Vec3 } from "../shared/kabsch.js";
@@ -239,16 +240,24 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     const stage = el("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
     wrapper.appendChild(stage);
 
-    let mode: Mode = "plain";
+    // Which way someone looks at a mapping is a preference, so it survives a
+    // reload and carries from one mapping to the next.
+    const modeSetting = choice<Mode>("atom-mapping.mode", "plain", MODES.map((m) => m.id));
+    let mode: Mode = modeSetting.get();
     const switcher = el(
       "div",
       OVERLAY_CONTROLS,
     );
     switcher.appendChild(
-      buttonGroup(MODES, mode, (id) => {
-        mode = id as Mode;
-        render();
-      }),
+      buttonGroup(
+        MODES,
+        mode,
+        (id) => {
+          mode = id as Mode;
+          render();
+        },
+        modeSetting,
+      ),
     );
     wrapper.appendChild(switcher);
 

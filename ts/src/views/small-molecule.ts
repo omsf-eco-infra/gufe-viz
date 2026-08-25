@@ -5,12 +5,13 @@
  * lazily, so a page with no small molecule on it never pays for RDKit's wasm.
  */
 
-import { BTN_CSS, buttonGroup, centredMessage, EM_DASH, el, errText, headerStrip, viewerHost } from "../shared/dom.js";
+import { buttonGroup, toggleButton, centredMessage, EM_DASH, el, errText, headerStrip, viewerHost } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { choice, flag } from "../shared/settings.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
 import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import { depictSVG, ensureSDFTerminator, parseCounts, placeDepiction } from "../shared/sdf.js";
-import { BUTTON, OVERLAY_CONTROLS, PANE_LABEL, SURFACE } from "../shared/style.js";
+import { OVERLAY_CONTROLS, PANE_LABEL, SURFACE } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type { SmallMoleculeComponentViz } from "../schema/types.js";
 
@@ -128,33 +129,47 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     // --- 3D ---
     let viewer: ThreeDmolViewer | null = null;
     let interaction: (BoundedZoom & Interaction) | null = null;
-    let style: string = "stick";
-    let spinning = false;
+    const styleSetting = choice(
+      "small-molecule.style",
+      "stick",
+      SMALL_MOL_STYLES.map((s) => s.id),
+    );
+    const spinSetting = flag("small-molecule.spin", false);
+    let style: string = styleSetting.get();
+    let spinning = spinSetting.get();
 
     const switcher = el(
       "div",
       OVERLAY_CONTROLS,
     );
     switcher.appendChild(
-      buttonGroup(SMALL_MOL_STYLES, style, (id) => {
-        style = id;
-        if (viewer) {
-          viewer.setStyle({}, SMALL_MOL_SPECS[id]);
-          viewer.render();
-        }
-      }),
+      buttonGroup(
+        SMALL_MOL_STYLES,
+        style,
+        (id) => {
+          style = id;
+          if (viewer) {
+            viewer.setStyle({}, SMALL_MOL_SPECS[id]);
+            viewer.render();
+          }
+        },
+        styleSetting,
+      ),
     );
-    const spinBtn = el("button", `${BTN_CSS}margin-left:4px;`, "Spin");
-    spinBtn.title = "Toggle continuous rotation";
-    spinBtn.onclick = () => {
-      spinning = !spinning;
-      spinBtn.style.background = spinning ? BUTTON.bgActive : BUTTON.bg;
-      try {
-        viewer?.spin(spinning ? "y" : false);
-      } catch {
-        /* 3Dmol v1 quirk */
-      }
-    };
+    const spinBtn = toggleButton(
+      "Spin",
+      spinning,
+      (on) => {
+        spinning = on;
+        try {
+          viewer?.spin(on ? "y" : false);
+        } catch {
+          /* 3Dmol v1 quirk */
+        }
+      },
+      { title: "Toggle continuous rotation", remember: spinSetting },
+    );
+    spinBtn.style.marginLeft = "4px";
     switcher.appendChild(spinBtn);
 
     const reset = resetControl(() => interaction?.reset());

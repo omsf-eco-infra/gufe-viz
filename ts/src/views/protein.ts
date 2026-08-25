@@ -13,8 +13,9 @@
  * indistinguishable on screen.
  */
 
-import { BTN_CSS, buttonGroup, el, errText, SELECT_CSS, viewerHost } from "../shared/dom.js";
+import { buttonGroup, dropdown, toggleButton, el, errText, viewerHost } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { choice, flag, type Setting } from "../shared/settings.js";
 import { load3Dmol, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
 import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import {
@@ -27,7 +28,7 @@ import {
   type ProteinRepresentation,
   type StatusFn,
 } from "../shared/pdb.js";
-import { BUTTON, FONT, SURFACE, TOOLBAR } from "../shared/style.js";
+import { FONT, SURFACE, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type {
   ProteinComponentViz,
@@ -65,7 +66,31 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     // thousand crystallographic waters would bury it.
     const solvated = payload.type !== "ProteinComponentViz";
 
-    const opts: ProteinOptions = { rep: "cartoon", color: "chain", waters: solvated, hetero: true };
+    // Every control here is a preference about how to look at a protein, so all
+    // of them survive a reload. Waters are the exception that proves the rule:
+    // the default depends on the payload - a solvated system opens with them
+    // shown - so a stored choice only overrides that once someone has made one.
+    const repSetting = choice(
+      "protein.representation",
+      "cartoon",
+      PROTEIN_REPS.map((r) => r.id),
+    );
+    const colorSetting = choice(
+      "protein.color",
+      "chain",
+      PROTEIN_COLOR_SCHEMES.map((c) => c.id),
+    );
+    const watersSetting = flag("protein.waters", solvated);
+    const heteroSetting = flag("protein.hetero", true);
+    const spinSetting = flag("protein.spin", false);
+
+    const opts: ProteinOptions = {
+      rep: repSetting.get() as ProteinRepresentation,
+      color: colorSetting.get() as ProteinColorScheme,
+      waters: watersSetting.get(),
+      hetero: heteroSetting.get(),
+      spin: spinSetting.get(),
+    };
     let viewer: ThreeDmolViewer | null = null;
     let interaction: (BoundedZoom & Interaction) | null = null;
     let stats: PdbStats | null = null;
@@ -85,43 +110,49 @@ export class GufeProtein extends GufeElement<PdbPayload> {
 
     toolbar.appendChild(groupLabel("Style:"));
     toolbar.appendChild(
-      buttonGroup(PROTEIN_REPS, opts.rep, (id) => {
-        opts.rep = id as ProteinRepresentation;
-        restyle();
-      }),
+      buttonGroup(
+        PROTEIN_REPS,
+        opts.rep,
+        (id) => {
+          opts.rep = id as ProteinRepresentation;
+          restyle();
+        },
+        repSetting,
+      ),
     );
 
     toolbar.appendChild(groupLabel("Color:"));
-    const colorSelect = el("select", SELECT_CSS);
-    for (const c of PROTEIN_COLOR_SCHEMES) {
-      const o = el("option", "", c.label);
-      o.value = c.id;
-      colorSelect.appendChild(o);
-    }
-    colorSelect.value = opts.color;
-    colorSelect.addEventListener("change", () => {
-      opts.color = colorSelect.value as ProteinColorScheme;
-      restyle();
-    });
-    toolbar.appendChild(colorSelect);
+    toolbar.appendChild(
+      dropdown(
+        PROTEIN_COLOR_SCHEMES,
+        opts.color,
+        (id) => {
+          opts.color = id as ProteinColorScheme;
+          restyle();
+        },
+        colorSetting,
+      ),
+    );
 
     const toggles = el("div", "display:flex;gap:4px;");
     toolbar.appendChild(toggles);
-    const toggleSpecs: [keyof ProteinOptions, string, string, () => void][] = [
-      ["waters", "Waters", "Show water molecules", () => restyle()],
-      ["hetero", "Hetero", "Show hetero atoms / ligands / ions / lipids", () => restyle()],
-      ["spin", "Spin", "Rotate the view continuously", () => viewer?.spin(opts.spin ? "y" : false)],
+    const toggleSpecs: [keyof ProteinOptions, string, string, Setting<boolean>, () => void][] = [
+      ["waters", "Waters", "Show water molecules", watersSetting, () => restyle()],
+      ["hetero", "Hetero", "Show hetero atoms / ligands / ions / lipids", heteroSetting, () => restyle()],
+      ["spin", "Spin", "Rotate the view continuously", spinSetting, () => viewer?.spin(opts.spin ? "y" : false)],
     ];
-    for (const [key, label, title, onChange] of toggleSpecs) {
-      const btn = el("button", BTN_CSS, label);
-      btn.title = title;
-      btn.style.background = opts[key] ? BUTTON.bgActive : BUTTON.bg;
-      btn.onclick = () => {
-        (opts[key] as boolean) = !opts[key];
-        btn.style.background = opts[key] ? BUTTON.bgActive : BUTTON.bg;
-        onChange();
-      };
-      toggles.appendChild(btn);
+    for (const [key, label, title, remember, onChange] of toggleSpecs) {
+      toggles.appendChild(
+        toggleButton(
+          label,
+          opts[key] as boolean,
+          (on) => {
+            (opts[key] as boolean) = on;
+            onChange();
+          },
+          { title, remember },
+        ),
+      );
     }
 
     toggles.appendChild(resetControl(() => interaction?.reset()));

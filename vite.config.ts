@@ -31,6 +31,8 @@ export default defineConfig({
     root: resolve(import.meta.dirname),
     environment: "jsdom",
     include: ["ts/tests/**/*.test.ts"],
+    // Views persist their settings, so each test starts from a clean store.
+    setupFiles: [resolve(import.meta.dirname, "ts/tests/setup.ts")],
     globals: true,
   },
 });
