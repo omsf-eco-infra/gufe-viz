@@ -117,6 +117,12 @@ const DEPICT_SIZE = 200;
 const DEPICT_PADDING = 4;
 const LABEL_MAX_CHARS = 14;
 const INITIALS_SIZE = 18;
+
+/**
+ * The node's name: its size under a node, how far under, the least it shrinks
+ * to when it sits inside one instead, and the width it has to fit there.
+ */
+const CAPTION = { fontSize: 11, below: NODE_RADIUS + 14, minFontSize: 7, insideWidth: (NODE_RADIUS - 6) * 2 };
 const EDGE_MIN_WIDTH = 1.5;
 const EDGE_MAX_WIDTH = 6.5;
 const EDGE_OPACITY = 0.9;
@@ -265,6 +271,7 @@ const truncate = (text: string, max: number): string => (text.length > max ? `${
 
 interface DetailParts {
   nodes: NetNode[];
+  circles: SVGCircleElement[];
   captions: SVGTextElement[];
   initials: SVGTextElement[];
   depictionGroups: SVGGElement[];
@@ -274,6 +281,10 @@ interface DetailParts {
 
 /**
  * Show and hide per-node detail according to the zoom.
+ *
+ * A depicted node loses its disc: the structure is drawn square and overhangs
+ * the circle, which reads as a mistake. A node without a depiction keeps the
+ * disc, and its name moves inside it, where there is nothing else to show.
  *
  * Two things are gated. Captions are cheap and toggle wholesale. Depictions cost
  * an RDKit call and an SVG subtree each, so they are built at most once per node
@@ -326,17 +337,51 @@ function levelOfDetail(parts: DetailParts): {
     else failed.add(index);
   };
 
+  const fitted: number[] = [];
+
+  /**
+   * The size a name shrinks to so it fits across the disc, measured once per
+   * node. Long names would otherwise run out over the edges.
+   */
+  const insideSize = (index: number, caption: SVGTextElement): number => {
+    if (fitted[index]) return fitted[index];
+    caption.setAttribute("font-size", String(CAPTION.fontSize));
+    let width = 0;
+    try {
+      width = caption.getBBox().width;
+    } catch {
+      return CAPTION.fontSize; // jsdom has no layout, and this is only a fit
+    }
+    if (!width) return CAPTION.fontSize; // not laid out yet; measure next time
+    const room = (CAPTION.fontSize * CAPTION.insideWidth) / width;
+    fitted[index] = Math.max(CAPTION.minFontSize, Math.min(CAPTION.fontSize, room));
+    return fitted[index];
+  };
+
+  /** Set one node's detail: disc, structure, initials and name together. */
+  const show = (index: number, captions: boolean, depicted: boolean): void => {
+    parts.depictionGroups[index].setAttribute("display", depicted ? "inline" : "none");
+    // Kept in place rather than hidden, so the whole node stays a hit target
+    // for hover and drag; a structure's thin strokes are nothing to grab.
+    const circle = parts.circles[index];
+    circle.setAttribute("fill", depicted ? "none" : T.netNodeFill);
+    circle.setAttribute("stroke", depicted ? "none" : T.netNodeStroke);
+    parts.initials[index].setAttribute("display", depicted || captions ? "none" : "inline");
+
+    const caption = parts.captions[index];
+    caption.setAttribute("display", captions ? "inline" : "none");
+    if (!captions) return;
+    const inside = !depicted;
+    caption.setAttribute("y", inside ? "0" : String(CAPTION.below));
+    caption.setAttribute("dominant-baseline", inside ? "middle" : "auto");
+    caption.setAttribute("font-size", String(inside ? insideSize(index, caption) : CAPTION.fontSize));
+  };
+
   const apply = (scale: number, tx: number, ty: number): void => {
     const wantCaptions = scale >= DETAIL.captions;
-    for (const caption of parts.captions) {
-      caption.setAttribute("display", wantCaptions ? "inline" : "none");
-    }
-
     const wantDepictions = scale >= DETAIL.depictions;
     for (let i = 0; i < parts.nodes.length; i++) {
-      const showing = wantDepictions && injected.has(i);
-      parts.depictionGroups[i].setAttribute("display", showing ? "inline" : "none");
-      parts.initials[i].setAttribute("display", showing ? "none" : "inline");
+      show(i, wantCaptions, wantDepictions && injected.has(i));
     }
     if (!wantDepictions) return;
 
@@ -358,9 +403,7 @@ function levelOfDetail(parts: DetailParts): {
         if (!RDKit) return;
         for (const index of visible) {
           inject(RDKit, index);
-          const showing = injected.has(index);
-          parts.depictionGroups[index].setAttribute("display", showing ? "inline" : "none");
-          parts.initials[index].setAttribute("display", showing ? "none" : "inline");
+          show(index, scale >= DETAIL.captions, injected.has(index));
         }
       })
       .catch(() => undefined);
@@ -1032,6 +1075,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     }
 
     const depictionGroups: SVGGElement[] = [];
+    const circles: SVGCircleElement[] = [];
     const initials: SVGTextElement[] = [];
     const captions: SVGTextElement[] = [];
     const groups = nodes.map((node) => {
@@ -1048,14 +1092,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         );
       });
       group.addEventListener("mouseleave", () => tip.hide());
-      group.appendChild(
-        svg("circle", {
-          r: NODE_RADIUS,
-          fill: T.netNodeFill,
-          stroke: T.netNodeStroke,
-          "stroke-width": 1.5,
-        }),
-      );
+      const circle = svg("circle", {
+        r: NODE_RADIUS,
+        fill: T.netNodeFill,
+        stroke: T.netNodeStroke,
+        "stroke-width": 1.5,
+        "pointer-events": "all",
+      }) as SVGCircleElement;
+      group.appendChild(circle);
+      circles.push(circle);
       const depiction = svg("g", { class: "gufe-node-depiction", "pointer-events": "none" });
       group.appendChild(depiction);
       depictionGroups.push(depiction);
@@ -1075,8 +1120,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       const caption = svg("text", {
         class: "gufe-node-caption",
         "text-anchor": "middle",
-        y: NODE_RADIUS + 14,
-        "font-size": 11,
+        y: CAPTION.below,
+        "font-size": CAPTION.fontSize,
         "font-weight": 600,
         fill: T.netNodeLabel,
         "pointer-events": "none",
@@ -1130,6 +1175,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     const detail = levelOfDetail({
       nodes,
+      circles,
       captions,
       initials,
       depictionGroups,
