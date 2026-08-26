@@ -71,6 +71,14 @@ export interface ThreeDmolModule {
 
 export interface RDKitMol {
   set_new_coords(useCoordGen: boolean): void;
+  /**
+   * The molecule back out as a MOL block, which is how a generated 2D layout is
+   * read: MinimalLib will write coordinates into a molecule but never lets a
+   * caller write them back, so the round trip goes through text. Optional for
+   * the same reason as `get_svg_with_highlights`, and a build without it simply
+   * draws whatever coordinates it was handed.
+   */
+  get_molblock?(details?: string): string;
   get_svg(width: number, height: number): string;
   /**
    * Optional because it is the newer of the two drawing entry points: an

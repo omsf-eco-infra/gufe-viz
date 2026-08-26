@@ -59,6 +59,7 @@ import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer
 import { guardWheel, type Interaction } from "../shared/interact.js";
 import { applyRT, kabsch, type Vec3 } from "../shared/kabsch.js";
 import { buildSDF, parseSDF, placeDepiction, type Molecule } from "../shared/sdf.js";
+import { layoutPair } from "../shared/depict-layout.js";
 import {
   DEPICT_STYLE,
   depictStyledSVG,
@@ -488,12 +489,12 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       // *How* those atoms are drawn is not decided here at all. It is one JSON
       // document, `shared/depict-style.ts`, authored by hand in the editor that
       // file links to and compiled into this bundle. At its defaults it draws
-      // exactly what this view drew before the document existed.
+      // what gufe draws.
       const style = DEPICT_STYLE;
       const custom = parseAtomSpec(style.customSpec);
       const sides = [
-        { mol: molA, sdf: from.sdf, uniques: uniquesA, side: "left" as Side, custom: custom.left },
-        { mol: molB, sdf: to.sdf, uniques: uniquesB, side: "right" as Side, custom: custom.right },
+        { mol: molA, uniques: uniquesA, side: "left" as Side, custom: custom.left },
+        { mol: molB, uniques: uniquesB, side: "right" as Side, custom: custom.right },
       ];
       const targets = sides.map((side) => {
         const wrap = el("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
@@ -520,8 +521,12 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
           // Asked once per pair rather than once per panel: it is a property of
           // the RDKit build, and the two panels must not disagree about it.
           const markStyle = effectiveMarkStyle(style, RDKit);
+          // Where the coordinates come from is decided once for the pair rather
+          // than per panel, because aligning the second molecule onto the first
+          // needs both layouts in hand. gufe does the same two things here.
+          const laid = layoutPair(RDKit, from.sdf, to.sdf, style.layout, style.alignPair ? pairs : null);
           for (const { box, side } of targets) {
-            const groups = markGroups(style, side.uniques, side.side);
+            const groups = markGroups(style, side.mol, side.uniques, side.side);
             const details = depictionDetails(
               style,
               DEPICT_SIZE,
@@ -530,7 +535,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
               markStyle,
               side.mol.symbols.length,
             );
-            const drawn = depictStyledSVG(RDKit, side.sdf, DEPICT_SIZE, details);
+            const drawn = depictStyledSVG(RDKit, side.side === "left" ? laid.left : laid.right, DEPICT_SIZE, details);
             box.replaceChildren();
             if (!drawn) {
               box.appendChild(centredMessage("Failed to parse molecule", true));

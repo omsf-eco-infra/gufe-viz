@@ -43,6 +43,7 @@ export {
   markedBonds,
   normaliseDepictStyle,
   parseAtomSpec,
+  uniqueBonds,
   type CircleStyle,
   type CustomAtoms,
   type DepictStyle,
@@ -52,6 +53,17 @@ export {
   type MarkStyle,
   type Side,
 } from "./shared/depict-style.js";
+export {
+  align2D,
+  alignedToPartner,
+  applyTurn,
+  laidOut,
+  layoutPair,
+  withCoords,
+  type Layout2D,
+  type Turn2D,
+  type Vec2,
+} from "./shared/depict-layout.js";
 export {
   boundedZoom,
   DEFAULT_ZOOM_BOUNDS,

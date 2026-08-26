@@ -31,15 +31,19 @@
  *
  * ## The defaults draw what this project has always drawn
  *
- * `DEFAULT_DEPICT_STYLE` reproduces the picture from before this file existed:
- * RDKit's own highlighting, gufe's black-and-white palette, atom indices on,
- * `continuousHighlight` off, and every numeric value equal to the RDKit default
- * it stands in for, so passing it explicitly changes nothing. That is what makes
- * an edited style a readable diff against a known picture instead of a jump to
- * a new one.
+ * `DEFAULT_DEPICT_STYLE` reproduces gufe's own `draw_mapping`: RDKit's
+ * highlighting of the marked atoms and of the bonds around them, gufe's
+ * black-and-white palette, atom indices on, `continuousHighlight` off, and every
+ * numeric value equal to the RDKit default it stands in for, so passing it
+ * explicitly changes nothing. That is what makes an edited style a readable diff
+ * against a known picture instead of a jump to a new one.
+ *
+ * The two exceptions are `layout` and `alignPair`, which default to what gufe
+ * does rather than to what this project used to do. See `DEFAULT_DEPICT_STYLE`.
  */
 
 import type { RDKitModule } from "./engines.js";
+import type { Layout2D } from "./depict-layout.js";
 import type { Molecule } from "./sdf.js";
 import { MAPPING_BW_PALETTE, MAPPING_COLORS } from "./atom-colors.js";
 import { errText } from "./dom.js";
@@ -64,6 +68,8 @@ export type ElementColors = "cpk" | "mono";
  */
 export interface DepictStyle {
   version: 1;
+  layout: Layout2D;
+  alignPair: boolean;
   style: MarkStyle;
   createdDestroyed: boolean;
   modified: boolean;
@@ -93,11 +99,19 @@ export interface DepictStyle {
  *
  * Every value here is either what gufe sets or what RDKit already defaults to,
  * which is the property that lets the whole pipeline run with the defaults in
- * place and emit byte-identical SVG to the single `get_svg_with_highlights`
- * call this project made before it had one.
+ * place and emit the drawing gufe's `draw_mapping` emits, out of a single
+ * `get_svg_with_highlights` call.
+ *
+ * `layout` and `alignPair` are the exception, and deliberately so. gufe calls
+ * `Compute2DCoords` and then `AlignMol` before it draws a pair; this project
+ * drew the stored conformer instead, which is not a flat depiction but a pose
+ * seen at whatever angle it was posed at. The defaults here are gufe's two
+ * calls, so they correct that rather than preserve it.
  */
 export const DEFAULT_DEPICT_STYLE: DepictStyle = {
   version: 1,
+  layout: "rdkit",
+  alignPair: true,
   style: "rdkit",
   createdDestroyed: true,
   modified: true,
@@ -122,6 +136,7 @@ export const DEFAULT_DEPICT_STYLE: DepictStyle = {
   customColor: "#7C3AED",
 };
 
+const LAYOUTS: readonly Layout2D[] = ["rdkit", "coordgen", "conformer"];
 const MARK_STYLES: readonly MarkStyle[] = ["rdkit", "recolor", "halo"];
 const CIRCLE_STYLES: readonly CircleStyle[] = ["outline", "filled", "off"];
 const HYDROGEN_MODES: readonly HydrogenMode[] = ["show", "dim", "hide"];
@@ -171,6 +186,8 @@ export function normaliseDepictStyle(input: unknown): DepictStyle {
   const d = DEFAULT_DEPICT_STYLE;
   return {
     version: 1,
+    layout: pickEnum(raw.layout, LAYOUTS, d.layout),
+    alignPair: pickBool(raw.alignPair, d.alignPair),
     style: pickEnum(raw.style, MARK_STYLES, d.style),
     createdDestroyed: pickBool(raw.createdDestroyed, d.createdDestroyed),
     modified: pickBool(raw.modified, d.modified),
@@ -292,25 +309,53 @@ export function tint(rgb: readonly [number, number, number], towardsWhite: numbe
 }
 
 /**
- * One set of atoms drawn in one colour, and how this set wants to be painted.
+ * The bonds each classified set claims, split the way gufe splits them.
  *
- * The two sets differ in what carries the colour, which is why they differ in
- * how the atom itself is painted:
+ * gufe's `_get_unique_bonds_and_atoms` walks the bonds once and sorts them into
+ * `bond_deletions` and `bond_changes`: a bond that touches a unique atom is a
+ * deletion and takes the created or destroyed colour, and a bond that touches an
+ * element change but no unique atom is a change and takes the element-change
+ * colour. Every marked bond therefore belongs to exactly one of the two, and the
+ * unique atom always wins the ones both could claim - a bond into a deleted
+ * fragment reads as deleted, not as altered.
  *
- *   unique atoms  their bonds are recoloured, so the mark is already
+ * `boundary` decides how far a set reaches for its own bonds. What it can never
+ * do is hand a deletion to the element changes, so the exclusion is taken with
+ * the full reach whatever `boundary` says.
+ */
+export function uniqueBonds(
+  mol: Molecule,
+  uniques: { atoms: readonly number[]; elements: readonly number[] },
+  boundary: boolean,
+): { deletions: number[]; changes: number[] } {
+  const atoms = new Set(uniques.atoms);
+  const touching = new Set(markedBonds(mol, atoms, true));
+  return {
+    deletions: markedBonds(mol, atoms, boundary),
+    changes: markedBonds(mol, new Set(uniques.elements), boundary).filter((k) => !touching.has(k)),
+  };
+}
+
+/**
+ * One set of atoms drawn in one colour, with the bonds it claims, and how the
+ * set wants to be painted.
+ *
+ * The two sets differ in what the atom itself does with the colour, because they
+ * differ in how much else is already carrying it:
+ *
+ *   unique atoms  every bond around them is recoloured, so the mark is already
  *                 unmistakable; over a filled disc the letter goes black,
  *                 because a coloured letter on a wash of its own colour reads
  *                 faint.
- *   element changes  `boundary` is off for them: they sit inside the common
- *                 core, and colouring the bonds around them would paint the
- *                 scaffold rather than point at the atom that changed. The atom
- *                 is the only thing carrying the colour, so the letter keeps it
- *                 and a filled disc gets a full-strength edge.
+ *   element changes  they sit inside the common core, where only the bonds that
+ *                 reach no deleted fragment are theirs to colour, so the atom
+ *                 carries most of the mark: the letter keeps the colour and a
+ *                 filled disc gets a full-strength edge.
  */
 export interface MarkGroup {
   atoms: Set<number>;
+  bonds: number[];
   color: string;
-  boundary: boolean;
   blackLabelOnFill: boolean;
   edgeOnFill: boolean;
 }
@@ -318,15 +363,17 @@ export interface MarkGroup {
 /** What one side's classified atoms become, under `style`, in draw order. */
 export function markGroups(
   style: DepictStyle,
+  mol: Molecule,
   uniques: { atoms: readonly number[]; elements: readonly number[] },
   side: Side,
 ): MarkGroup[] {
+  const bonds = uniqueBonds(mol, uniques, style.boundary);
   const groups: MarkGroup[] = [];
   if (style.createdDestroyed && uniques.atoms.length) {
     groups.push({
       atoms: new Set(uniques.atoms),
+      bonds: bonds.deletions,
       color: side === "left" ? style.destroyedColor : style.createdColor,
-      boundary: style.boundary,
       blackLabelOnFill: true,
       edgeOnFill: false,
     });
@@ -334,8 +381,8 @@ export function markGroups(
   if (style.modified && uniques.elements.length) {
     groups.push({
       atoms: new Set(uniques.elements),
+      bonds: bonds.changes,
       color: style.modifiedColor,
-      boundary: false,
       blackLabelOnFill: false,
       edgeOnFill: true,
     });
@@ -393,11 +440,11 @@ export function effectiveMarkStyle(style: DepictStyle, RDKit: RDKitModule): Mark
 /**
  * RDKit's drawing options for one panel.
  *
- * Bonds are never handed to RDKit for highlighting, in any style. Under `rdkit`
- * that is what this project has always done; under `recolor` and `halo` the
- * bonds are drawn afterwards from the SVG, because RDKit emits one filled
- * quadrilateral per highlighted bond and those mitre past each other at an
- * acute vertex.
+ * Bonds go to RDKit under `rdkit` only, which is what gufe does: it hands
+ * `DrawMolecules` both highlight sets and lets RDKit draw the red and blue bonds
+ * itself. `recolor` and `halo` ask for none and paint the same bonds afterwards
+ * from the SVG, because RDKit emits one filled quadrilateral per highlighted
+ * bond and those mitre past each other at an acute vertex.
  */
 export function depictionDetails(
   style: DepictStyle,
@@ -423,8 +470,10 @@ export function depictionDetails(
 
   const colors: Record<number, readonly [number, number, number]> = {};
   const radii: Record<number, number> = {};
+  const bondColors: Record<number, readonly [number, number, number]> = {};
   for (const group of groups) {
     const solid = rgbTriple(group.color);
+    if (markStyle === "rdkit") for (const bond of group.bonds) bondColors[bond] = solid;
     // Under `recolor` with rings off, the bonds carry the whole mark and asking
     // RDKit for a disc would put one under an atom that is meant to have none.
     if (markStyle === "recolor" && style.circles === "off") continue;
@@ -449,6 +498,11 @@ export function depictionDetails(
     details.atoms = atoms;
     details.highlightAtomColors = colors;
     details.highlightAtomRadii = radii;
+  }
+  const bonds = Object.keys(bondColors).map(Number);
+  if (bonds.length) {
+    details.bonds = bonds;
+    details.highlightBondColors = bondColors;
   }
   return details;
 }
@@ -528,14 +582,13 @@ function isFilled(el: Element): boolean {
  */
 function recolorMarked(
   svg: Element,
-  mol: Molecule,
   style: DepictStyle,
   atoms: ReadonlySet<number>,
+  bonds: readonly number[],
   hex: string,
   labelHex: string | null,
-  boundary: boolean,
 ): void {
-  for (const k of markedBonds(mol, atoms, boundary)) {
+  for (const k of bonds) {
     for (const el of bondEls(svg, k)) {
       const css = (el as SVGElement).style;
       if (isFilled(el)) {
@@ -562,21 +615,14 @@ function recolorMarked(
  * smoothly at any angle. All the clones live in one group that carries the
  * opacity, which composites the union once so overlaps never darken.
  */
-function haloBonds(
-  svg: Element,
-  mol: Molecule,
-  style: DepictStyle,
-  atoms: ReadonlySet<number>,
-  hex: string,
-  boundary: boolean,
-): void {
+function haloBonds(svg: Element, style: DepictStyle, bonds: readonly number[], hex: string): void {
   const doc = svg.ownerDocument;
   if (!doc) return;
   const group = doc.createElementNS(SVG_NS, "g");
   group.setAttribute("data-gufe-halo", "1");
   group.style.opacity = String(style.haloOpacity);
 
-  for (const k of markedBonds(mol, atoms, boundary)) {
+  for (const k of bonds) {
     for (const el of bondEls(svg, k)) {
       if (isFilled(el)) continue; // a wedge keeps its own shape
       const clone = el.cloneNode(true) as SVGElement;
@@ -676,19 +722,18 @@ export function postProcessDepiction(
         const filled = style.circles === "filled";
         recolorMarked(
           svg,
-          mol,
           style,
           group.atoms,
+          group.bonds,
           group.color,
           filled && group.blackLabelOnFill ? "#000000" : group.color,
-          group.boundary,
         );
         if (style.circles === "outline") outlineCircles(svg, style, group.atoms, custom, group.color);
         else if (filled && group.edgeOnFill) edgeCircles(svg, style, group.atoms, custom, group.color);
       } else {
         // The band underneath first, then the black centre bond repainted on it.
-        haloBonds(svg, mol, style, group.atoms, group.color, group.boundary);
-        recolorMarked(svg, mol, style, group.atoms, group.color, null, group.boundary);
+        haloBonds(svg, style, group.bonds, group.color);
+        recolorMarked(svg, style, group.atoms, group.bonds, group.color, null);
       }
     }
   }

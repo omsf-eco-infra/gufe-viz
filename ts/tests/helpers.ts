@@ -222,6 +222,10 @@ export function seedFakeEngines(options: SeedOptions = {}): SeededEnginesResult 
       result.depicted.push(source);
       return {
         set_new_coords: () => {},
+        // Handing the source straight back stands in for RDKit generating a
+        // layout: the coordinates do not move, but the views still run the
+        // whole layout and alignment path rather than skipping it.
+        get_molblock: () => source,
         get_svg: (w: number, h: number) => `<svg viewBox="0 0 ${w} ${h}"><title>fake</title></svg>`,
         delete: () => {},
       };

@@ -31,6 +31,7 @@ import { choice, flag, num, text as textSetting, type Setting } from "../shared/
 import { svg } from "../shared/svg.js";
 import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
+import { DEPICT_STYLE } from "../shared/depict-style.js";
 import { depictSVG } from "../shared/sdf.js";
 import { FONT, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
@@ -290,7 +291,7 @@ function levelOfDetail(parts: DetailParts): {
   const inject = (RDKit: RDKitModule, index: number): void => {
     if (injected.has(index) || failed.has(index)) return;
     const node = parts.nodes[index];
-    const drawn = node.sdf && depictSVG(RDKit, node.sdf, DEPICT_SIZE);
+    const drawn = node.sdf && depictSVG(RDKit, node.sdf, DEPICT_SIZE, DEPICT_STYLE.layout);
     if (!drawn) {
       failed.add(index);
       return;

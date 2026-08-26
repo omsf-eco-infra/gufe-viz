@@ -10,6 +10,7 @@
  */
 
 import { errText } from "./dom.js";
+import type { Layout2D } from "./depict-layout.js";
 import type { RDKitModule } from "./engines.js";
 
 export interface Molecule {
@@ -114,16 +115,27 @@ export function parseCounts(sdf: string): { atoms: number; bonds: number } | nul
   return isNaN(atoms) || isNaN(bonds) ? null : { atoms, bonds };
 }
 
-/** 2D depiction SVG from a molblock or a SMILES string. */
-export function depictSVG(RDKit: RDKitModule, source: string, size: number): string | null {
+/**
+ * 2D depiction SVG from a molblock or a SMILES string.
+ *
+ * `layout` says where the coordinates come from, and is the style document's
+ * `layout` at every call site; it is a parameter rather than a read of the
+ * document so that this file stays about SDF and RDKit and knows nothing about
+ * anyone's taste. Under `conformer` a molblock keeps the pose it arrived with,
+ * which for a `SmallMoleculeComponent` is a real 3D conformer flattened onto
+ * the page rather than a drawn structure.
+ */
+export function depictSVG(RDKit: RDKitModule, source: string, size: number, layout: Layout2D): string | null {
   let rdmol = null;
   try {
     rdmol = RDKit.get_mol(source, JSON.stringify({ removeHs: true }));
     if (!rdmol) return null;
-    try {
-      rdmol.set_new_coords(true);
-    } catch {
-      /* SMILES have no coords to replace */
+    if (layout !== "conformer") {
+      try {
+        rdmol.set_new_coords(layout === "coordgen");
+      } catch {
+        /* SMILES have no coords to replace */
+      }
     }
     return rdmol.get_svg(size, size) || null;
   } catch (e) {

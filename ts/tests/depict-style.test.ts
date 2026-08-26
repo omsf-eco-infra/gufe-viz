@@ -10,7 +10,8 @@
  *   2. the schema, the TypeScript type and the runtime defaults agree about
  *      which keys exist and what each one defaults to
  *   3. the defaults still reproduce the picture this project drew before the
- *      document existed
+ *      document existed, apart from `layout` and `alignPair`, which take what
+ *      gufe does instead
  *   4. the pipeline does what each key says it does
  */
 
@@ -97,7 +98,19 @@ describe("the contract", () => {
 describe("the defaults", () => {
   it("are what the committed document says, so the build draws what the file shows", () => {
     expect(DEPICT_STYLE).toEqual(normaliseDepictStyle(committed));
-    expect(DEPICT_STYLE).toEqual(DEFAULT_DEPICT_STYLE);
+  });
+
+  /**
+   * The one part of the document that is not taste. gufe regenerates 2D
+   * coordinates and aligns the pair before it draws, so a document that says
+   * nothing has to do both; drawing the stored conformer instead is a
+   * projection of a pose, and it is what this view used to do.
+   */
+  it("take gufe's two layout calls rather than the conformer", () => {
+    expect(DEFAULT_DEPICT_STYLE.layout).toBe("rdkit");
+    expect(DEFAULT_DEPICT_STYLE.alignPair).toBe(true);
+    expect(DEPICT_STYLE.layout).toBe("rdkit");
+    expect(DEPICT_STYLE.alignPair).toBe(true);
   });
 
   it("carry gufe's mapping colours", () => {
@@ -159,6 +172,14 @@ describe("normaliseDepictStyle", () => {
     expect(normaliseDepictStyle({ bondWidth: NaN }).bondWidth).toBe(DEFAULT_DEPICT_STYLE.bondWidth);
   });
 
+  it("takes a layout only from the three that name a real RDKit call", () => {
+    expect(normaliseDepictStyle({ layout: "coordgen" }).layout).toBe("coordgen");
+    expect(normaliseDepictStyle({ layout: "conformer" }).layout).toBe("conformer");
+    expect(normaliseDepictStyle({ layout: "flat" }).layout).toBe(DEFAULT_DEPICT_STYLE.layout);
+    expect(normaliseDepictStyle({ alignPair: false }).alignPair).toBe(false);
+    expect(normaliseDepictStyle({ alignPair: "yes" }).alignPair).toBe(true);
+  });
+
   it("takes a colour only in the one spelling the editor writes", () => {
     expect(normaliseDepictStyle({ createdColor: "#00FF00" }).createdColor).toBe("#00FF00");
     expect(normaliseDepictStyle({ createdColor: "#0f0" }).createdColor).toBe(DEFAULT_DEPICT_STYLE.createdColor);
@@ -194,26 +215,59 @@ describe("parseAtomSpec", () => {
   });
 });
 
+/** 0-1-2-3-4-5 in a line: long enough to hang a mark off either end. */
+const CHAIN6: Molecule = {
+  name: "chain6",
+  symbols: ["C", "C", "C", "C", "C", "C"],
+  bonds: [
+    [0, 1, 1],
+    [1, 2, 1],
+    [2, 3, 1],
+    [3, 4, 1],
+    [4, 5, 1],
+  ],
+  coords: [
+    [0, 0, 0],
+    [1, 0, 0],
+    [2, 0, 0],
+    [3, 0, 0],
+    [4, 0, 0],
+    [5, 0, 0],
+  ],
+};
+
 describe("markGroups", () => {
   const uniques = { atoms: [1, 2], elements: [5] };
 
   it("names the left molecule's unique atoms destroyed and the right's created", () => {
     const style = normaliseDepictStyle({ destroyedColor: "#111111", createdColor: "#222222" });
-    expect(markGroups(style, uniques, "left")[0].color).toBe("#111111");
-    expect(markGroups(style, uniques, "right")[0].color).toBe("#222222");
+    expect(markGroups(style, CHAIN6, uniques, "left")[0].color).toBe("#111111");
+    expect(markGroups(style, CHAIN6, uniques, "right")[0].color).toBe("#222222");
   });
 
-  it("keeps boundary bonds away from an element change, whatever the document says", () => {
-    const style = normaliseDepictStyle({ boundary: true });
-    const [unique, changed] = markGroups(style, uniques, "left");
-    expect(unique.boundary).toBe(true);
-    expect(changed.boundary).toBe(false);
+  it("gives each group the bonds gufe gives it", () => {
+    const [unique, changed] = markGroups(DEFAULT_DEPICT_STYLE, CHAIN6, uniques, "left");
+    expect(unique.bonds).toEqual([0, 1, 2]);
+    expect(changed.bonds).toEqual([4]);
+  });
+
+  it("lets the unique atom keep the bond an element change next to it would also claim", () => {
+    const [unique, changed] = markGroups(DEFAULT_DEPICT_STYLE, CHAIN6, { atoms: [1], elements: [2] }, "left");
+    expect(unique.bonds).toEqual([0, 1]);
+    expect(changed.bonds).toEqual([2]);
+  });
+
+  it("keeps a deletion bond out of the element changes even with boundary off", () => {
+    const style = normaliseDepictStyle({ boundary: false });
+    const [unique, changed] = markGroups(style, CHAIN6, { atoms: [1], elements: [2, 3] }, "left");
+    expect(unique.bonds).toEqual([]);
+    expect(changed.bonds).toEqual([2]);
   });
 
   it("draws nothing for a group the document switches off, or an empty one", () => {
-    expect(markGroups(normaliseDepictStyle({ createdDestroyed: false }), uniques, "left")).toHaveLength(1);
-    expect(markGroups(normaliseDepictStyle({ modified: false }), uniques, "left")).toHaveLength(1);
-    expect(markGroups(DEFAULT_DEPICT_STYLE, { atoms: [], elements: [] }, "left")).toHaveLength(0);
+    expect(markGroups(normaliseDepictStyle({ createdDestroyed: false }), CHAIN6, uniques, "left")).toHaveLength(1);
+    expect(markGroups(normaliseDepictStyle({ modified: false }), CHAIN6, uniques, "left")).toHaveLength(1);
+    expect(markGroups(DEFAULT_DEPICT_STYLE, CHAIN6, { atoms: [], elements: [] }, "left")).toHaveLength(0);
   });
 });
 
@@ -264,7 +318,7 @@ describe("colour helpers", () => {
 });
 
 describe("depictionDetails", () => {
-  const groups = markGroups(DEFAULT_DEPICT_STYLE, { atoms: [1], elements: [4] }, "left");
+  const groups = markGroups(DEFAULT_DEPICT_STYLE, CHAIN6, { atoms: [1], elements: [4] }, "left");
 
   it("gives RDKit the atoms to highlight and a radius for each", () => {
     const details = depictionDetails(DEFAULT_DEPICT_STYLE, 300, groups, new Set(), "rdkit", 10);
@@ -285,8 +339,30 @@ describe("depictionDetails", () => {
 
   it("washes the disc out under a filled ring, so the letter on top stays readable", () => {
     const style = normaliseDepictStyle({ style: "recolor", circles: "filled", destroyedColor: "#000000" });
-    const details = depictionDetails(style, 300, markGroups(style, { atoms: [1], elements: [] }, "left"), new Set(), "recolor", 10);
+    const details = depictionDetails(
+      style,
+      300,
+      markGroups(style, CHAIN6, { atoms: [1], elements: [] }, "left"),
+      new Set(),
+      "recolor",
+      10,
+    );
     expect((details.highlightAtomColors as Record<number, number[]>)[1][0]).toBeCloseTo(0.7);
+  });
+
+  it("hands the marked bonds to RDKit in each group's colour, the way gufe does", () => {
+    const style = normaliseDepictStyle({ destroyedColor: "#FF0000", modifiedColor: "#0000FF" });
+    const details = depictionDetails(style, 300, markGroups(style, CHAIN6, { atoms: [1], elements: [4] }, "left"), new Set(), "rdkit", 10);
+    expect(details.bonds).toEqual([0, 1, 3, 4]);
+    expect(details.highlightBondColors).toEqual({ 0: [1, 0, 0], 1: [1, 0, 0], 3: [0, 0, 1], 4: [0, 0, 1] });
+  });
+
+  it("asks RDKit for no bond highlight where the SVG is repainted instead", () => {
+    for (const markStyle of ["recolor", "halo"] as const) {
+      const details = depictionDetails(DEFAULT_DEPICT_STYLE, 300, groups, new Set(), markStyle, 10);
+      expect(details.bonds, markStyle).toBeUndefined();
+      expect(details.highlightBondColors, markStyle).toBeUndefined();
+    }
   });
 
   it("sets continuousHighlight only where gufe's own drawing does", () => {
@@ -359,7 +435,7 @@ describe("postProcessDepiction", () => {
   it("touches nothing but the hydrogens under the rdkit style", () => {
     const svg = rdkitLikeSVG();
     const before = svg.outerHTML;
-    const groups = markGroups(DEFAULT_DEPICT_STYLE, { atoms: [2], elements: [] }, "left");
+    const groups = markGroups(DEFAULT_DEPICT_STYLE, CHAIN, { atoms: [2], elements: [] }, "left");
     postProcessDepiction(svg, CHAIN, DEFAULT_DEPICT_STYLE, groups, new Set(), "rdkit");
     expect(svg.outerHTML).toBe(before);
   });
@@ -367,7 +443,7 @@ describe("postProcessDepiction", () => {
   it("recolours the marked bonds and turns the disc into a ring", () => {
     const svg = rdkitLikeSVG();
     const style = normaliseDepictStyle({ style: "recolor", destroyedColor: "#FF0000", markWidth: 3 });
-    const groups = markGroups(style, { atoms: [2], elements: [] }, "left");
+    const groups = markGroups(style, CHAIN, { atoms: [2], elements: [] }, "left");
     postProcessDepiction(svg, CHAIN, style, groups, new Set(), "recolor");
 
     const marked = styleOf(svg.querySelector('[class~="bond-1"]'));
@@ -384,7 +460,7 @@ describe("postProcessDepiction", () => {
   it("leaves the core bond black when boundary is off", () => {
     const svg = rdkitLikeSVG();
     const style = normaliseDepictStyle({ style: "recolor", boundary: false });
-    const groups = markGroups(style, { atoms: [2], elements: [] }, "left");
+    const groups = markGroups(style, CHAIN, { atoms: [2], elements: [] }, "left");
     postProcessDepiction(svg, CHAIN, style, groups, new Set(), "recolor");
     expect(styleOf(svg.querySelector('[class~="bond-1"]')).stroke).toBe("#000000");
   });
@@ -396,7 +472,7 @@ describe("postProcessDepiction", () => {
     ] as const) {
       const svg = rdkitLikeSVG();
       const style = normaliseDepictStyle({ style: "recolor", circles, destroyedColor: "#FF0000" });
-      const groups = markGroups(style, { atoms: [2], elements: [] }, "left");
+      const groups = markGroups(style, CHAIN, { atoms: [2], elements: [] }, "left");
       postProcessDepiction(svg, CHAIN, style, groups, new Set(), "recolor");
       expect(styleOf(letterOf(svg, 2)).fill, circles).toBe(expected);
     }
@@ -405,7 +481,7 @@ describe("postProcessDepiction", () => {
   it("puts the halo band behind the molecule, in one group carrying the opacity", () => {
     const svg = rdkitLikeSVG();
     const style = normaliseDepictStyle({ style: "halo", haloWidth: 12, haloOpacity: 0.5 });
-    const groups = markGroups(style, { atoms: [2], elements: [] }, "left");
+    const groups = markGroups(style, CHAIN, { atoms: [2], elements: [] }, "left");
     postProcessDepiction(svg, CHAIN, style, groups, new Set(), "halo");
 
     const band = svg.querySelector("[data-gufe-halo]") as SVGElement;
@@ -437,7 +513,7 @@ describe("postProcessDepiction", () => {
   it("leaves a custom atom its filled disc rather than ringing it", () => {
     const svg = rdkitLikeSVG();
     const style = normaliseDepictStyle({ style: "recolor", circles: "outline" });
-    const groups = markGroups(style, { atoms: [2], elements: [] }, "left");
+    const groups = markGroups(style, CHAIN, { atoms: [2], elements: [] }, "left");
     postProcessDepiction(svg, CHAIN, style, groups, new Set([2]), "recolor");
     expect(styleOf(svg.querySelector("ellipse")).fill).toBe("#DC3220");
   });

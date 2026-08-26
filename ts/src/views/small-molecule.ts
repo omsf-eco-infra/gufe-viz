@@ -10,6 +10,7 @@ import { defineElement, GufeElement, type ViewHandle } from "../shared/element.j
 import { choice, flag } from "../shared/settings.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
 import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
+import { DEPICT_STYLE } from "../shared/depict-style.js";
 import { depictSVG, ensureSDFTerminator, parseCounts, placeDepiction } from "../shared/sdf.js";
 import { OVERLAY_CONTROLS, PANE_LABEL, SURFACE } from "../shared/style.js";
 import { T } from "../shared/theme.js";
@@ -115,7 +116,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     depictBox.appendChild(centredMessage("Loading 2D depiction..."));
     loadRDKit()
       .then((RDKit) => {
-        const svg = depictSVG(RDKit, sdf, DEPICT_SIZE);
+        const svg = depictSVG(RDKit, sdf, DEPICT_SIZE, DEPICT_STYLE.layout);
         if (svg) {
           placeDepiction(depictBox, svg, DEPICT_SIZE);
         } else {

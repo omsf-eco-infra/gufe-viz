@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/omsf-eco-infra/gufe-viz/main/schema/depict-style.schema.json",
   "title": "gufe-viz 2D depiction style",
-  "description": "How a ligand pair is drawn in 2D. Separate from gufe-viz.schema.json on purpose: that schema describes what a payload IS, and nothing in it comes from a person's taste. This one is entirely taste, it describes no gufe object, and it is authored by hand in the editor at https://framejs.app/j/5df86d91e8824b20a02908b52a6f07c3 rather than written by a payload builder. The editor draws real transformation pairs with these values live, then exports this document; drop the exported file over ts/src/shared/depict-style.json and it is compiled into the bundle. The editor's own panel is the reference for what each key does to the picture. Every key is optional: what is absent takes the built-in default, and the built-in defaults reproduce the picture gufe-viz drew before this document existed.",
+  "description": "How a ligand pair is drawn in 2D. Separate from gufe-viz.schema.json on purpose: that schema describes what a payload IS, and nothing in it comes from a person's taste. This one is entirely taste, it describes no gufe object, and it is authored by hand in the editor at https://framejs.app/j/5df86d91e8824b20a02908b52a6f07c3 rather than written by a payload builder. The editor draws real transformation pairs with these values live, then exports this document; drop the exported file over ts/src/shared/depict-style.json and it is compiled into the bundle. The editor's own panel is the reference for what each key does to the picture. Every key is optional: what is absent takes the built-in default. The built-in defaults reproduce the picture gufe-viz drew before this document existed, with the exception of `layout` and `alignPair`, which default to what gufe itself does: gufe regenerates 2D coordinates and aligns the pair before drawing, and gufe-viz did neither.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version"],
@@ -14,22 +14,35 @@
       "const": 1
     },
 
+    "layout": {
+      "title": "layout",
+      "description": "Where the 2D coordinates come from. `rdkit` regenerates them with RDKit's own depiction algorithm, which is what gufe does (`AllChem.Compute2DCoords`) and is the default. `coordgen` regenerates them with the CoordGen library instead, which lays fused ring systems out closer to the way a chemist would draw them. `conformer` draws the coordinates the molecule already carries: a `SmallMoleculeComponent` holds a real 3D conformer, so this draws that conformer flattened onto the page, at whatever angle the ligand was posed at, rather than a flat structural formula. This applies to every 2D depiction, including the ligand thumbnails in a network, not only to a pair.",
+      "enum": ["rdkit", "coordgen", "conformer"],
+      "default": "rdkit"
+    },
+    "alignPair": {
+      "title": "alignPair",
+      "description": "Turn the right molecule's depiction to match the left one, through the mapping, the way gufe does (`AllChem.AlignMol` over the mapped atom pairs). Without it each molecule is laid out on its own, so a core shared by both can come out rotated or mirrored between the two panels and the eye has to do the matching. The turn is rigid, a rotation and a mirror where a mirror fits better, so no bond length or angle changes; a mirrored depiction has its wedge and hash bonds swapped with it, so the stereochemistry drawn is still the one the molecule carries. Ignored when `layout` is `conformer`, which has no generated layout to turn, and when the mapping holds fewer than two atom pairs, which fix no angle.",
+      "type": "boolean",
+      "default": true
+    },
+
     "style": {
       "title": "style",
-      "description": "How a marked atom's bonds are drawn. `rdkit` asks RDKit to highlight and post-processes nothing, which is what gufe-viz drew before this document existed and is the default. `recolor` takes RDKit's plain drawing and swaps the stroke of the affected bond paths to the marker colour, so there is no black bond underneath and the coloured line is a normal bond width. `halo` puts a wide translucent band under the bond instead, and repaints the black centre line on top of it. `recolor` and `halo` both need RDKit to tag its SVG with `class=\"bond-K atom-A atom-B\"`; a build that does not falls back to `rdkit`.",
+      "description": "How a marked atom's bonds are drawn. `rdkit` hands RDKit both the marked atoms and their bonds and post-processes nothing, which is what gufe-viz drew before this document existed and is the default. `recolor` takes RDKit's plain drawing and swaps the stroke of the affected bond paths to the marker colour, so there is no black bond underneath and the coloured line is a normal bond width. `halo` puts a wide translucent band under the bond instead, and repaints the black centre line on top of it. `recolor` and `halo` both need RDKit to tag its SVG with `class=\"bond-K atom-A atom-B\"`; a build that does not falls back to `rdkit`.",
       "enum": ["rdkit", "recolor", "halo"],
       "default": "rdkit"
     },
 
     "createdDestroyed": {
       "title": "createdDestroyed",
-      "description": "Mark the atoms that map to nothing at all: destroyed on the left molecule, created on the right. These are gufe's `uniques[\"atoms\"]`.",
+      "description": "Mark the atoms that map to nothing at all: destroyed on the left molecule, created on the right. These are gufe's `uniques[\"atoms\"]`, and the bonds that touch them are gufe's `uniques[\"bond_deletions\"]`, drawn in the same colour.",
       "type": "boolean",
       "default": true
     },
     "modified": {
       "title": "modified",
-      "description": "Mark the atoms that are mapped but change element (C to N, O to S). These are gufe's `uniques[\"elements\"]`. They sit inside the common core, so only the atom is ever marked and `boundary` does not extend to them: colouring the bonds around them would paint the scaffold rather than point at the atom that changed.",
+      "description": "Mark the atoms that are mapped but change element (C to N, O to S). These are gufe's `uniques[\"elements\"]`, and the bonds around them are gufe's `uniques[\"bond_changes\"]`: a bond that reaches no created or destroyed atom takes this colour too, exactly as gufe draws it. A bond both this and `createdDestroyed` could claim goes to `createdDestroyed`.",
       "type": "boolean",
       "default": true
     },
@@ -55,7 +68,7 @@
 
     "boundary": {
       "title": "boundary",
-      "description": "Also colour the bond that joins a created or destroyed atom to the mapped core, not only the bonds with both ends marked. With this off, a lone added carbon draws nothing at all, because a carbon carries no letter. Applies to `recolor` and `halo`; `rdkit` does not draw marked bonds.",
+      "description": "Also colour the bond that joins a marked atom to the mapped core, not only the bonds with both ends marked. This is what gufe does. With it off, a lone added carbon draws nothing at all, because a carbon carries no letter. Applies to every `style`.",
       "type": "boolean",
       "default": true
     },
