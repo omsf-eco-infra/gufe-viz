@@ -92,11 +92,12 @@ export interface Theme {
   netNodeFill: string;
   netNodeStroke: string;
   netNodeLabel: string;
+  /** A ligand's name under its structure: quieter than the structure itself. */
+  netNodeCaption: string;
   netInitials: string;
   netEdgeRamp: [string, string];
   netEdgeLine: string;
   netEdgeLabel: string;
-  netLabelBg: string;
   netHaloColor: string;
 
   // solvent schematic
@@ -157,11 +158,11 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netNodeFill: "#33334d",
     netNodeStroke: "#45455e",
     netNodeLabel: "#f2f3f7",
+    netNodeCaption: "#b9bccb",
     netInitials: "#51cbee",
     netEdgeRamp: ["#45455e", "#51cbee"],
     netEdgeLine: "#8f93a6",
     netEdgeLabel: "#f2f3f7",
-    netLabelBg: "#33334d",
     netHaloColor: "#51cbee",
 
     boxFill: "#1f3a63",
@@ -219,11 +220,11 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netNodeFill: "#ffffff",
     netNodeStroke: "#cccccc",
     netNodeLabel: "#333333",
+    netNodeCaption: "#666666",
     netInitials: "#4182e4",
     netEdgeRamp: ["#e8eaef", "#4182e4"],
     netEdgeLine: "#999999",
     netEdgeLabel: "#333333",
-    netLabelBg: "#ffffff",
     netHaloColor: "#51cbee",
 
     boxFill: "#e6effc",

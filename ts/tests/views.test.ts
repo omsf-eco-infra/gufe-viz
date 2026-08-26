@@ -14,6 +14,7 @@ import { buildRegistry } from "../src/schema/registry.js";
 import { mappingPayloadFor, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { parseConcentration } from "../src/views/solvent.js";
 import { diffStatus } from "../src/views/transformation.js";
+import { ZOOM_LEVELS, levelAt } from "../src/views/ligand-network.js";
 import { clearFakeEngines, exampleNames, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
 import type { LigandNetworkViz } from "../src/schema/types.js";
 
@@ -162,19 +163,61 @@ describe("<gufe-ligand-network>", () => {
     expect(depictionGroups.every((g) => g.getAttribute("display") === "none")).toBe(true);
   });
 
+  /** Wheel the view out far enough to reach the `shape` level. */
+  const zoomedOut = (node: HTMLElement): SVGSVGElement => {
+    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
+    root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    root.dispatchEvent(new WheelEvent("wheel", { deltaY: 600, bubbles: true, cancelable: true }));
+    return root;
+  };
+
   it("hides the captions when zoomed far enough out", async () => {
     // The shape of the network is what is worth seeing at that distance, and a
     // caption under every node buries it.
     const node = mount("gufe-ligand-network", network());
     await flush();
-    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
-
-    root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
-    root.dispatchEvent(new WheelEvent("wheel", { deltaY: 600, bubbles: true, cancelable: true }));
+    const root = zoomedOut(node);
 
     const captions = Array.from(node.querySelectorAll("text.gufe-node-caption"));
     expect(captions.length).toBeGreaterThan(0);
     expect(captions.every((c) => c.getAttribute("display") === "none")).toBe(true);
+    expect(root.getAttribute("data-detail")).toBe("shape");
+  });
+
+  /**
+   * Everything on the canvas is scaled by the zoom, so out here a 10px score is
+   * 5px on screen. It is not read at that size, it is just texture over the
+   * lines whose shape is the only reason to be this far out.
+   */
+  it("drops the edge scores at the zoom where names become initials", async () => {
+    const node = mount("gufe-ligand-network", network());
+    await flush();
+    const labels = node.querySelector<SVGGElement>("g.gufe-edge-label")!.parentElement as unknown as SVGGElement;
+
+    expect(node.querySelector("svg.gufe-graph")!.getAttribute("data-detail")).toBe("names");
+    expect(labels.getAttribute("display")).toBe("inline");
+    // The same zoom that turns the names into initials.
+    zoomedOut(node);
+    const initials = Array.from(node.querySelectorAll("text.gufe-node-initials"));
+    expect(initials.length).toBeGreaterThan(0);
+    expect(initials.every((t) => t.getAttribute("display") === "inline")).toBe(true);
+    expect(labels.getAttribute("display")).toBe("none");
+  });
+
+  it("names its levels, and puts each zoom in exactly one of them", () => {
+    // The table is the thing anyone edits to change what a zoom draws, so a gap
+    // or an overlap in it is worth catching here rather than on the canvas.
+    expect(ZOOM_LEVELS.map((l) => l.id)).toEqual(["structures", "names", "shape"]);
+    for (let i = 1; i < ZOOM_LEVELS.length; i++) {
+      expect(ZOOM_LEVELS[i].from, "levels run from the closest zoom down").toBeLessThan(ZOOM_LEVELS[i - 1].from);
+    }
+    expect(ZOOM_LEVELS[ZOOM_LEVELS.length - 1].from, "the last level catches every zoom left").toBe(0);
+    expect(levelAt(4).id).toBe("structures");
+    expect(levelAt(1.1).id).toBe("structures");
+    expect(levelAt(1).id).toBe("names");
+    expect(levelAt(0.5).id).toBe("names");
+    expect(levelAt(0.49).id).toBe("shape");
+    expect(levelAt(0).id).toBe("shape");
   });
 
   it("labels unnamed ligands from their gufe key, and named ones by name", async () => {
@@ -936,14 +979,16 @@ describe("<gufe-ligand-network> against the framejs prototype", () => {
     expect(node.querySelectorAll("marker").length).toBe(colours.size);
   });
 
-  it("backs each score with a chip so it stays readable over the line", async () => {
+  it("draws each score as bare text, with nothing behind it", async () => {
     const node = net();
     await flush();
     const labels = Array.from(node.querySelectorAll("g.gufe-edge-label"));
     expect(labels.length).toBeGreaterThan(0);
     for (const group of labels) {
-      expect(group.querySelector("rect")).toBeTruthy();
       expect(group.querySelector("text")).toBeTruthy();
+      // A chip behind the number would sit over the edge it belongs to and
+      // punch a hole in the line.
+      expect(group.querySelector("rect")).toBeNull();
     }
   });
 

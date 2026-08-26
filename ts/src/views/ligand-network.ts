@@ -121,8 +121,19 @@ const INITIALS_SIZE = 18;
 /**
  * The node's name: its size under a node, how far under, the least it shrinks
  * to when it sits inside one instead, and the width it has to fit there.
+ *
+ * `below` only applies to a depicted node, which has no disc left to clear, so
+ * it is measured from the structure's own box rather than from the radius. It
+ * is a baseline, so most of the 12 is the font's ascent and the name lands a
+ * few pixels under the structure: zoomed in the name belongs to the picture
+ * above it, and a wider gap reads as though it belonged to nothing.
  */
-const CAPTION = { fontSize: 11, below: NODE_RADIUS + 14, minFontSize: 7, insideWidth: (NODE_RADIUS - 6) * 2 };
+const CAPTION = {
+  fontSize: 11,
+  below: NODE_RADIUS - DEPICT_PADDING + 12,
+  minFontSize: 7,
+  insideWidth: (NODE_RADIUS - 6) * 2,
+};
 const EDGE_MIN_WIDTH = 1.5;
 const EDGE_MAX_WIDTH = 6.5;
 const EDGE_OPACITY = 0.9;
@@ -131,26 +142,71 @@ const HIT_WIDTH = 14;
 /** The arrowhead, and how far back from the node centre it stops. */
 const ARROW = { size: 8, clearance: 8 };
 
-/** The chip behind an edge's score, so it stays readable over a line. */
-const EDGE_LABEL = { fontSize: 10, padding: 3, backgroundOpacity: 0.92 };
+/**
+ * An edge's score, drawn straight onto the canvas with nothing behind it.
+ *
+ * Which zooms draw it at all is `ZOOM_LEVELS`, not here.
+ */
+const EDGE_LABEL = { fontSize: 10 };
 
 /** The selection halo, sized from the edge it sits under. */
 const HALO = { padding: 4, opacity: 0.95 };
 
 /**
- * Level of detail, keyed off the zoom.
+ * One zoom level: everything the network draws differently at that distance.
+ *
+ * The point of the shape is that a level is a row of data rather than a set of
+ * thresholds compared in the drawing code. Changing what a zoom shows is an
+ * edit to one row here; adding a level is adding a row. Nothing below reads a
+ * number off the zoom directly.
+ */
+export interface DetailLevel {
+  /** Its name, so the level in force can be read off the DOM and talked about. */
+  id: "structures" | "names" | "shape";
+  /** The lowest zoom this level covers. */
+  from: number;
+  /** The disc behind a node. A structure replaces it rather than sitting on it. */
+  disc: boolean;
+  /** The 2D structure inside a node. */
+  structure: boolean;
+  /** The ligand's name: under the node, across the disc, or not at all. */
+  name: "below" | "inside" | "none";
+  /** The two-letter stand-in, for when there is no room for a name. */
+  initials: boolean;
+  /** The mapping score over each edge. */
+  edgeScores: boolean;
+}
+
+/**
+ * The levels, closest zoom first. `from` is the lowest zoom each one covers.
  *
  * Zoomed out, the shape of the network is the thing worth seeing, and a caption
  * under every node buries it - a nine-hundred-ligand network is unreadable long
  * before it is slow. Zoomed in, the structures are what people navigate by:
  * project chemists know what a ligand looks like more reliably than what it is
- * called. So captions arrive first and depictions second.
+ * called. So names arrive first and structures second.
  *
- * Depictions are also the expensive part - one RDKit call and an SVG subtree per
+ * `shape` draws no edge scores. Everything on the canvas is scaled by the zoom,
+ * so at half size or less a 10px score is 5px on screen: it is not read, it is
+ * just texture over the lines whose shape is the whole reason to be out here.
+ *
+ * Structures are the expensive part - one RDKit call and an SVG subtree per
  * node - so they are built lazily, only for nodes actually on screen, and only
  * once each.
  */
-const DETAIL = { captions: 0.5, depictions: 1.1 };
+export const ZOOM_LEVELS: readonly DetailLevel[] = [
+  { id: "structures", from: 1.1, disc: false, structure: true, name: "below", initials: false, edgeScores: true },
+  { id: "names", from: 0.5, disc: true, structure: false, name: "inside", initials: false, edgeScores: true },
+  { id: "shape", from: 0, disc: true, structure: false, name: "none", initials: true, edgeScores: false },
+];
+
+/** The level a zoom falls in. */
+export const levelAt = (scale: number): DetailLevel =>
+  ZOOM_LEVELS.find((level) => scale >= level.from) ?? ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+
+/** The level below a given one - what a node falls back to, and the last one stays put. */
+const levelUnder = (level: DetailLevel): DetailLevel =>
+  ZOOM_LEVELS[Math.min(ZOOM_LEVELS.indexOf(level) + 1, ZOOM_LEVELS.length - 1)];
 
 /** How far outside the viewport to keep depictions, so panning does not tear. */
 const CULL_MARGIN = 200;
@@ -275,22 +331,28 @@ interface DetailParts {
   captions: SVGTextElement[];
   initials: SVGTextElement[];
   depictionGroups: SVGGElement[];
+  /** Every edge score in one group, so a level can drop the lot in one write. */
+  edgeLabels: SVGGElement;
+  /** The canvas, which carries the level in force as `data-detail`. */
+  stage: SVGSVGElement;
   rdkit: () => Promise<RDKitModule | null>;
   viewport: () => { width: number; height: number };
 }
 
 /**
- * Show and hide per-node detail according to the zoom.
+ * Draw the network at whatever level the zoom is in.
  *
- * A depicted node loses its disc: the structure is drawn square and overhangs
- * the circle, which reads as a mistake. A node without a depiction keeps the
- * disc, and its name moves inside it, where there is nothing else to show.
- *
- * Two things are gated. Captions are cheap and toggle wholesale. Depictions cost
- * an RDKit call and an SVG subtree each, so they are built at most once per node
- * and only for nodes currently on screen - which is what makes a network of
- * several hundred ligands draw at all, rather than paying for every depiction
+ * What each level shows is `ZOOM_LEVELS`, not this function: everything here
+ * reads a row and does as it says. The one thing it decides on its own is which
+ * structures to build, because that cannot come from a table - a structure
+ * costs an RDKit call and an SVG subtree, so they are built at most once per
+ * node and only for nodes currently on screen, which is what makes a network of
+ * several hundred ligands draw at all rather than paying for every structure
  * before the first frame.
+ *
+ * A node showing a structure loses its disc: the structure is drawn square and
+ * overhangs the circle, which reads as a mistake. A node without one keeps the
+ * disc, and its name moves inside it, where there is nothing else to show.
  */
 function levelOfDetail(parts: DetailParts): {
   apply(scale: number, tx: number, ty: number): void;
@@ -358,32 +420,40 @@ function levelOfDetail(parts: DetailParts): {
     return fitted[index];
   };
 
-  /** Set one node's detail: disc, structure, initials and name together. */
-  const show = (index: number, captions: boolean, depicted: boolean): void => {
-    parts.depictionGroups[index].setAttribute("display", depicted ? "inline" : "none");
-    // Kept in place rather than hidden, so the whole node stays a hit target
-    // for hover and drag; a structure's thin strokes are nothing to grab.
+  /**
+   * Draw one node at a level: disc, structure, initials and name together.
+   *
+   * A node asked for a structure it has not got yet draws the level below
+   * instead, which is what it will keep drawing if RDKit never arrives.
+   */
+  const show = (index: number, wanted: DetailLevel): void => {
+    const level = wanted.structure && !injected.has(index) ? levelUnder(wanted) : wanted;
+    parts.depictionGroups[index].setAttribute("display", level.structure ? "inline" : "none");
+    // The disc is painted out rather than removed, so the whole node stays a hit
+    // target for hover and drag; a structure's thin strokes are nothing to grab.
     const circle = parts.circles[index];
-    circle.setAttribute("fill", depicted ? "none" : T.netNodeFill);
-    circle.setAttribute("stroke", depicted ? "none" : T.netNodeStroke);
-    parts.initials[index].setAttribute("display", depicted || captions ? "none" : "inline");
+    circle.setAttribute("fill", level.disc ? T.netNodeFill : "none");
+    circle.setAttribute("stroke", level.disc ? T.netNodeStroke : "none");
+    parts.initials[index].setAttribute("display", level.initials ? "inline" : "none");
 
     const caption = parts.captions[index];
-    caption.setAttribute("display", captions ? "inline" : "none");
-    if (!captions) return;
-    const inside = !depicted;
+    caption.setAttribute("display", level.name === "none" ? "none" : "inline");
+    if (level.name === "none") return;
+    const inside = level.name === "inside";
     caption.setAttribute("y", inside ? "0" : String(CAPTION.below));
     caption.setAttribute("dominant-baseline", inside ? "middle" : "auto");
     caption.setAttribute("font-size", String(inside ? insideSize(index, caption) : CAPTION.fontSize));
   };
 
   const apply = (scale: number, tx: number, ty: number): void => {
-    const wantCaptions = scale >= DETAIL.captions;
-    const wantDepictions = scale >= DETAIL.depictions;
-    for (let i = 0; i < parts.nodes.length; i++) {
-      show(i, wantCaptions, wantDepictions && injected.has(i));
-    }
-    if (!wantDepictions) return;
+    const level = levelAt(scale);
+    // On the canvas rather than only in this closure: which level is in force is
+    // the first thing anyone asks when the picture looks wrong, and this way it
+    // is visible in devtools and assertable in a test.
+    parts.stage.setAttribute("data-detail", level.id);
+    parts.edgeLabels.setAttribute("display", level.edgeScores ? "inline" : "none");
+    for (let i = 0; i < parts.nodes.length; i++) show(i, level);
+    if (!level.structure) return;
 
     // Only what is on screen, plus a margin so panning does not tear.
     const { width, height } = parts.viewport();
@@ -403,7 +473,7 @@ function levelOfDetail(parts: DetailParts): {
         if (!RDKit) return;
         for (const index of visible) {
           inject(RDKit, index);
-          show(index, scale >= DETAIL.captions, injected.has(index));
+          show(index, level);
         }
       })
       .catch(() => undefined);
@@ -1005,8 +1075,6 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const lines = svg("g");
     const hits = svg("g");
     const labels = svg("g", { "pointer-events": "none" });
-    const labelChips: SVGRectElement[] = [];
-    const labelTexts: SVGTextElement[] = [];
     const nodeLayer = svg("g");
     scene.append(lines, hits, labels, nodeLayer);
 
@@ -1051,14 +1119,9 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       lines.append(halo, line);
       hits.appendChild(hit);
 
-      // The score, on a chip. A bare number over a coloured line at whatever
-      // width the score gave it is not reliably readable.
-      const chip = svg("rect", {
-        fill: T.netLabelBg,
-        opacity: edge.score == null ? 0 : EDGE_LABEL.backgroundOpacity,
-        rx: 3,
-        ry: 3,
-      });
+      // The score, as bare text. The group is kept even for an edge that has
+      // none, so a label's index is its edge's index and `place` can move them
+      // together.
       const text = svg("text", {
         "text-anchor": "middle",
         "dominant-baseline": "middle",
@@ -1068,10 +1131,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       });
       text.textContent = edge.score == null ? "" : edge.score.toFixed(2);
       const group = svg("g", { class: "gufe-edge-label" });
-      group.append(chip, text);
+      group.appendChild(text);
       labels.appendChild(group);
-      labelChips.push(chip);
-      labelTexts.push(text);
     }
 
     const depictionGroups: SVGGElement[] = [];
@@ -1106,6 +1167,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       depictionGroups.push(depiction);
 
       const initial = svg("text", {
+        class: "gufe-node-initials",
         "text-anchor": "middle",
         "dominant-baseline": "middle",
         "font-size": INITIALS_SIZE,
@@ -1123,7 +1185,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         y: CAPTION.below,
         "font-size": CAPTION.fontSize,
         "font-weight": 600,
-        fill: T.netNodeLabel,
+        fill: T.netNodeCaption,
         "pointer-events": "none",
       });
       caption.textContent = truncate(label(node), LABEL_MAX_CHARS);
@@ -1134,24 +1196,6 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       nodeLayer.appendChild(group);
       return group;
     });
-
-    /** Size each score chip to the text it sits behind. */
-    const fitLabels = (): void => {
-      labelTexts.forEach((text, i) => {
-        if (!text.textContent) return;
-        let box: DOMRect;
-        try {
-          box = text.getBBox();
-        } catch {
-          return; // jsdom has no layout, and a chip is decoration
-        }
-        const pad = EDGE_LABEL.padding;
-        labelChips[i].setAttribute("x", String(box.x - pad));
-        labelChips[i].setAttribute("y", String(box.y - pad));
-        labelChips[i].setAttribute("width", String(box.width + pad * 2));
-        labelChips[i].setAttribute("height", String(box.height + pad * 2));
-      });
-    };
 
     const place = () => {
       edges.forEach((edge, i) => {
@@ -1171,7 +1215,6 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       nodes.forEach((node, i) => groups[i].setAttribute("transform", `translate(${node.x},${node.y})`));
     };
     place();
-    fitLabels();
 
     const detail = levelOfDetail({
       nodes,
@@ -1179,6 +1222,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       captions,
       initials,
       depictionGroups,
+      edgeLabels: labels,
+      stage: root,
       rdkit: () => rdkitReady,
       viewport: () => ({ width, height }),
     });
