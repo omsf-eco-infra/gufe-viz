@@ -107,6 +107,22 @@ export interface Theme {
   netEdgeLine: string;
   netEdgeLabel: string;
   netHaloColor: string;
+  /**
+   * The compositions a network's chemical systems come in, one colour each.
+   *
+   * An alchemical network of a binding campaign is two graphs in one picture:
+   * the solvent leg and the complex leg, told apart by nothing but which
+   * components their systems carry. These are what say which is which, so they
+   * are categorical rather than a ramp - the difference between them means
+   * "made of different things", not "more" or "less".
+   *
+   * Five, from the same OpenFE palette as everything else here, and used in
+   * order of first appearance. A network with more compositions than this is
+   * one where the colouring has stopped answering anything, and the view drops
+   * back to a single neutral node rather than cycling.
+   */
+  netGroupFill: string[];
+  netGroupStroke: string[];
 
   // solvent schematic
   boxFill: string;
@@ -175,6 +191,8 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netEdgeLine: "#8f93a6",
     netEdgeLabel: "#f2f3f7",
     netHaloColor: "#51cbee",
+    netGroupFill: ["#1f3a63", "#12403c", "#3a1f37", "#4a3c22", "#243a5e"],
+    netGroupStroke: ["#4182e4", "#00bdaa", "#c060b8", "#e69f00", "#8f93a6"],
 
     boxFill: "#1f3a63",
     boxStroke: "#45455e",
@@ -240,6 +258,8 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netEdgeLine: "#999999",
     netEdgeLabel: "#333333",
     netHaloColor: "#51cbee",
+    netGroupFill: ["#e6effc", "#d9f5f2", "#f6e7f4", "#fdf1d8", "#eef0f4"],
+    netGroupStroke: ["#4182e4", "#009e8f", "#8a2283", "#c07d00", "#666666"],
 
     boxFill: "#e6effc",
     boxStroke: "#cccccc",

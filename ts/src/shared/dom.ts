@@ -331,6 +331,116 @@ export function viewerHost(): { wrap: HTMLDivElement; container: HTMLDivElement 
   return { wrap, container };
 }
 
+// --- panes that answer to their own width ----------------------------------
+
+/**
+ * Call `apply` with `host`'s width now, and again whenever it changes.
+ *
+ * A view has no window to ask about: it is as wide as whoever mounted it made
+ * it, and the same view is a full page in one place and a 300px detail pane in
+ * another. So a layout that depends on width has to watch the element, and this
+ * is the one place that plumbing lives.
+ *
+ * The first call is synchronous and reports `clientWidth`, which is 0 in a host
+ * that does no layout at all - jsdom, or an element not yet in the document.
+ * Callers treat 0 as "no measurement", not as "narrow".
+ *
+ * `ResizeObserver` is optional the same way it is in `element.ts`: where it is
+ * missing the layout is whatever the first call chose, which is a fixed layout
+ * rather than a broken one. The returned function stops watching.
+ */
+export function onWidth(host: HTMLElement, apply: (width: number) => void): () => void {
+  apply(host.clientWidth);
+  if (typeof ResizeObserver === "undefined") return () => {};
+  const observer = new ResizeObserver(() => apply(host.clientWidth));
+  observer.observe(host);
+  return () => observer.disconnect();
+}
+
+/** How a `splitter` may be dragged, as fractions of the row it divides. */
+export interface SplitterOptions {
+  /** The narrowest the first pane may become. */
+  min?: number;
+  /** The widest. The second pane gets the rest, and has the same floor. */
+  max?: number;
+  /**
+   * Remember where the divider was left. A reader who widened the detail pane
+   * to read a diff should not have to widen it again on the next payload.
+   */
+  remember?: Setting<number>;
+  /**
+   * Fired when a drag finishes, so a view that drew itself to a size can draw
+   * itself again. Deliberately not fired per pointer move: on the far side of
+   * this is a force layout, and re-running one per pixel is what melts a tab.
+   */
+  onResize?(fraction: number): void;
+}
+
+const SPLITTER_LIMITS = { min: 0.2, max: 0.8 };
+/** Wide enough to grab, narrow enough to read as a rule rather than a gutter. */
+const SPLITTER_WIDTH = 5;
+
+/**
+ * Turn the rule between two panes of a row into something draggable.
+ *
+ * Replaces the 1px divider the split views drew for themselves. Both panes are
+ * driven from one fraction rather than one being sized and the other left to
+ * fill, so what the divider is showing is always what the panes are doing, and
+ * a remembered position restores as the same picture at any window size.
+ *
+ * Returns the handle to place between the two panes.
+ */
+export function splitter(
+  row: HTMLElement,
+  before: HTMLElement,
+  after: HTMLElement,
+  options: SplitterOptions = {},
+): HTMLDivElement {
+  const min = options.min ?? SPLITTER_LIMITS.min;
+  const max = options.max ?? SPLITTER_LIMITS.max;
+
+  const handle = el(
+    "div",
+    `flex:0 0 ${SPLITTER_WIDTH}px;align-self:stretch;cursor:col-resize;touch-action:none;` +
+      `background:${T.splitBorder};`,
+  );
+  handle.setAttribute("role", "separator");
+  handle.setAttribute("aria-orientation", "vertical");
+  handle.setAttribute("aria-label", "Resize the panes");
+
+  let fraction = Math.min(max, Math.max(min, options.remember?.get() ?? 0.5));
+  const place = (): void => {
+    before.style.flex = `1 1 ${(fraction * 100).toFixed(2)}%`;
+    after.style.flex = `1 1 ${((1 - fraction) * 100).toFixed(2)}%`;
+  };
+  place();
+
+  let dragging = false;
+  handle.addEventListener("pointerdown", (event: PointerEvent) => {
+    dragging = true;
+    handle.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  handle.addEventListener("pointermove", (event: PointerEvent) => {
+    if (!dragging) return;
+    const box = row.getBoundingClientRect();
+    if (box.width <= 0) return;
+    fraction = Math.min(max, Math.max(min, (event.clientX - box.left) / box.width));
+    place();
+  });
+  const finish = (event: PointerEvent): void => {
+    if (!dragging) return;
+    dragging = false;
+    handle.releasePointerCapture(event.pointerId);
+    options.remember?.set(fraction);
+    options.onResize?.(fraction);
+  };
+  handle.addEventListener("pointerup", finish);
+  handle.addEventListener("pointercancel", finish);
+
+  return handle;
+}
+
 // --- the chrome menu -------------------------------------------------------
 //
 // One hamburger per view: same style, same place, same behaviour, different

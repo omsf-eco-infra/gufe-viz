@@ -46,7 +46,22 @@ function resetButton(node: HTMLElement): HTMLButtonElement | undefined {
 const VIEWS: [string, string][] = [
   ["gufe-small-molecule", "small_molecule.json"],
   ["gufe-protein", "protein.json"],
+  // Every 3D mode of the mapping view goes through one place, so covering the
+  // mode it opens on covers the rest. It is also the view embedded in the
+  // ligand network's edge panel, where a canvas that swallowed the wheel and
+  // did nothing with it was what sent this here.
+  ["gufe-atom-mapping", "ligand_atom_mapping.json"],
 ];
+
+/**
+ * The views that also carry a reset, which is not all of them.
+ *
+ * The mapping view is the exception, by request: its switcher is already six
+ * buttons wide and a reset beside them was one too many. Wheeling back out is
+ * the way back there, and the zoom is bounded either way, so there is nowhere
+ * unrecoverable to get to.
+ */
+const WITH_RESET: [string, string][] = VIEWS.filter(([tag]) => tag !== "gufe-atom-mapping");
 
 describe.each(VIEWS)("%s", (tag, fixture) => {
   let engines: SeededEnginesResult;
@@ -112,6 +127,18 @@ describe.each(VIEWS)("%s", (tag, fixture) => {
     const spent = wheel(240);
     container.dispatchEvent(spent);
     expect(spent.defaultPrevented).toBe(false);
+  });
+
+});
+
+describe.each(WITH_RESET)("%s", (tag, fixture) => {
+  let engines: SeededEnginesResult;
+  beforeEach(() => {
+    engines = seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
   });
 
   it("offers a way back to the opening framing", async () => {

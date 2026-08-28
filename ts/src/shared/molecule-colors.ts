@@ -32,9 +32,6 @@ interface MoleculeColors {
   pairA: string;
   pairB: string;
   pairLine: string;
-  /** The two molecules in Overlay mode, where both are translucent. */
-  overlayA: string;
-  overlayB: string;
 }
 
 const DARK: MoleculeColors = {
@@ -44,8 +41,6 @@ const DARK: MoleculeColors = {
   pairA: "0xff8888",
   pairB: "0x88ffaa",
   pairLine: "0xffee55",
-  overlayA: "0xff6666",
-  overlayB: "0x66ff99",
 };
 
 const LIGHT: MoleculeColors = {
@@ -55,8 +50,6 @@ const LIGHT: MoleculeColors = {
   pairA: "0xd62828",
   pairB: "0x2a9d4a",
   pairLine: "0xd9a300",
-  overlayA: "0xd62828",
-  overlayB: "0x2a9d4a",
 };
 
 function prefersDark(): boolean {

@@ -24,6 +24,7 @@ import {
   floatingWarning,
   headerStrip,
   SELECT_CSS,
+  splitter,
   statChip,
 } from "../shared/dom.js";
 import { defineElement, GufeElement, seededViewState, type ViewHandle } from "../shared/element.js";
@@ -194,6 +195,9 @@ function placeNodesAt(nodes: NetNode[], at: readonly [number, number][]): void {
 // Dimensions and force constants are the framejs prototype's, kept the same so
 // the two pictures are the same picture. Changing one here without changing it
 // there is how they drift apart.
+/** How much of the width the graph gets, before anyone drags the divider. */
+const CANVAS_SHARE = { initial: 0.58, min: 0.25, max: 0.8 };
+
 const NODE_RADIUS = 38;
 const DEPICT_SIZE = 200;
 const DEPICT_PADDING = 4;
@@ -1124,10 +1128,27 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     );
     split.appendChild(menu.panel);
 
-    const left = el("div", `flex:1 1 58%;min-width:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
-    const right = el("div", `flex:1 1 42%;min-width:0;display:flex;flex-direction:column;background:${T.appBg};`);
+    // Set once there is a graph to draw; a no-op until then, because a network
+    // with no ligands returns before there is one and the divider is still
+    // there to be dragged.
+    let redraw = () => {};
+
+    const left = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
+    const right = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.appBg};`);
     split.appendChild(left);
-    split.appendChild(el("div", `width:1px;flex-shrink:0;background:${T.splitBorder};`));
+    split.appendChild(
+      splitter(split, left, right, {
+        min: CANVAS_SHARE.min,
+        max: CANVAS_SHARE.max,
+        // How much of the width goes to the mapping rather than to the graph is
+        // a preference about how someone reads a network, so it is kept.
+        remember: num("ligand-network.canvasShare", CANVAS_SHARE.initial, CANVAS_SHARE.min, CANVAS_SHARE.max),
+        // The graph is drawn to a size, so a divider that moved is a graph that
+        // has to be drawn again - at the end of the drag rather than during it,
+        // because on the far side of this is a force simulation.
+        onResize: () => redraw(),
+      }),
+    );
     split.appendChild(right);
 
     const canvas = el("div", `flex:1;position:relative;overflow:hidden;min-height:0;background:${T.netCanvasBg};`);
@@ -1301,6 +1322,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       }, paint);
     };
 
+    redraw = () => draw();
     draw();
     detail.show(edges[selectedEdge] ?? null);
 

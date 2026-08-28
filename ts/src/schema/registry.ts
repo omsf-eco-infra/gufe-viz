@@ -88,6 +88,35 @@ export function lookupOfType<T extends RegistryEntry>(
 }
 
 /**
+ * The entries `keys` name, in the order first asked for, without duplicates.
+ *
+ * This is the registry half of cutting a payload loose. A view that hands part
+ * of its payload to another element - a network handing a chemical system to
+ * `<gufe-chemical-system>`, a transformation handing a mapping to
+ * `<gufe-atom-mapping>` - has to send the objects that part refers to along
+ * with it, because the receiving element resolves keys against its own payload
+ * and nothing else.
+ *
+ * Deduplicating matters rather than being tidy: the two states of a solvent-leg
+ * transformation name the same solvent, and a registry is unique by gufe key.
+ * A key that resolves to nothing is skipped, which leaves the receiving view to
+ * report the gap exactly as it would have if the whole payload had arrived with
+ * that hole in it.
+ */
+export function entriesFor(registry: RegistryIndex, keys: Iterable<GufeKey | undefined>): RegistryEntry[] {
+  const entries: RegistryEntry[] = [];
+  const seen = new Set<GufeKey>();
+  for (const key of keys) {
+    if (!key || seen.has(key)) continue;
+    const entry = registry.get(key);
+    if (!entry) continue;
+    seen.add(key);
+    entries.push(entry);
+  }
+  return entries;
+}
+
+/**
  * A label for a registry entry.
  *
  * gufe's own network fixtures have unnamed molecules, and a row of blank circles

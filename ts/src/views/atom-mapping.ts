@@ -13,27 +13,29 @@
  * cuts an edge loose into one - so there is one drawing path and the in-context
  * picture cannot drift from the standalone one.
  *
- * Seven ways to look at it:
+ * Six ways to look at it:
  *
- * Six of them are a port of the viewer panel in the framejs prototype at
+ * Five of them are a port of the viewer panel in the framejs prototype at
  * /j/019f2b55e1f57722af0293acbda78362, which is where the modes, the switcher,
  * the box labels and the 3D colours come from. Anything that looks arbitrary
  * here is arbitrary there, and changing it in one place means changing it in
  * both.
  *
- *   3D        both molecules, side by side, plain
- *   3D-Map    the same, with each molecule's unmapped atoms picked out
- *   3D Color  gufe's own `view_3d`, reproduced - see `renderOpenFE`
- *   Pairs     one above the other, Kabsch-aligned, a line per mapped pair
- *   Overlay   both superimposed and translucent
- *   2D        depictions with the mapping highlighted
- *   Info      the mapping in numbers - counts, the correspondence, annotations
+ *   3D          both molecules, side by side, plain
+ *   3D-Map      the same, with each molecule's unmapped atoms picked out
+ *   3D Overlay  gufe's own `view_3d`, reproduced - see `renderOpenFE`
+ *   Pairs       one above the other, Kabsch-aligned, a line per mapped pair
+ *   2D          depictions with the mapping highlighted
+ *   Info        the mapping in numbers - counts, the correspondence, annotations
  *
- * 3D Color is the exception: it is not the prototype's, it is
+ * 3D Overlay is the exception: it is not the prototype's, it is
  * `gufe.visualization.mapping_visualization.display_mapping_3d`, which is what
  * `LigandAtomMapping.view_3d()` calls and therefore the picture an OpenFE user
  * has already seen in a notebook. It is here so that the same mapping in the
- * browser and in the notebook are recognisably the same picture.
+ * browser and in the notebook are recognisably the same picture. It also
+ * replaced the prototype's own Overlay mode, which superimposed the two
+ * molecules translucently: the middle of this one is that picture, drawn the way
+ * OpenFE already draws it, so keeping both said the same thing twice.
  *
  * Info is last because it is a reading of the picture rather than a picture, and
  * it is where everything that is not a molecule now lives: the name, the type,
@@ -63,7 +65,7 @@ import { buttonGroup, centredMessage, EM_DASH, el, errText, statChip } from "../
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { choice } from "../shared/settings.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer } from "../shared/engines.js";
-import { guardWheel, type Interaction } from "../shared/interact.js";
+import { viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import { applyRT, kabsch, type Vec3 } from "../shared/kabsch.js";
 import { buildSDF, parseSDF, placeDepiction, type Molecule } from "../shared/sdf.js";
 import { layoutPair } from "../shared/depict-layout.js";
@@ -80,15 +82,14 @@ import {
 import { MAPPING_RAMP_3D } from "../shared/atom-colors.js";
 import { MOL } from "../shared/molecule-colors.js";
 import { FONT, MONO, NOTE, OVERLAY_CONTROLS, PANE_LABEL, SECTION_LABEL, SPACE, SURFACE, TEXT, WEIGHT } from "../shared/style.js";
-import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
+import { buildRegistry, entriesFor, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
 const MODES = [
   { id: "plain", label: "3D", title: "Plain 3D view" },
   { id: "colored", label: "3D-Map", title: "Colour-coded by mapping" },
-  { id: "openfe", label: "3D Color", title: "What LigandAtomMapping.view_3d() draws" },
+  { id: "openfe", label: "3D Overlay", title: "What LigandAtomMapping.view_3d() draws" },
   { id: "lines", label: "Pairs", title: "Dashed lines between mapped atoms" },
-  { id: "overlay", label: "Overlay", title: "Both molecules superimposed" },
   { id: "2d", label: "2D", title: "2D depictions with highlights" },
   { id: "info", label: "Info", title: "The mapping in numbers" },
 ] as const;
@@ -104,7 +105,6 @@ const STYLE = {
   uniqueStick: 0.18,
   uniqueSphere: 0.32,
   pairSphere: 0.22,
-  overlayOpacity: 0.7,
   lineRadius: 0.04,
 };
 
@@ -112,7 +112,15 @@ const STYLE = {
 const PAIRS = { gap: 2.5, minLiftFraction: 0.6 };
 
 /**
- * gufe's numbers for 3D Color, and not ours to tune.
+ * Room left at the sides when 3D Overlay is fitted to a pane, in pixels.
+ *
+ * Ours rather than gufe's, and the same number the ligand network fits its graph
+ * with. See `renderOpenFE` for why a fit with nothing to spare is not enough.
+ */
+const FIT_MARGIN = 24;
+
+/**
+ * gufe's numbers for 3D Overlay, and not ours to tune.
  *
  * Every one of them is read off `display_mapping_3d` and `_add_spheres`. A
  * different radius or a different floor draws a different picture from the
@@ -188,7 +196,9 @@ export function mappingPayloadFor(
   const from = lookupOfType<SmallMoleculeComponentViz>(registry, mapping.componentA, "SmallMoleculeComponentViz");
   const to = lookupOfType<SmallMoleculeComponentViz>(registry, mapping.componentB, "SmallMoleculeComponentViz");
   if (!from || !to) return null;
-  return { ...mapping, registry: from["gufe-key"] === to["gufe-key"] ? [from] : [from, to] };
+  // Both endpoints resolve, so `entriesFor` finds both; it also collapses a
+  // mapping of a ligand onto itself into the one entry a registry may hold.
+  return { ...mapping, registry: entriesFor(registry, [mapping.componentA, mapping.componentB]) };
 }
 
 /** Per-axis extent of a set of coordinates. */
@@ -225,7 +235,7 @@ export function liftFor(a: readonly Vec3[], b: readonly Vec3[]): { axis: number;
 }
 
 /**
- * How far along x 3D Color pushes each copy, from gufe's `_get_max_dist_in_x`.
+ * How far along x 3D Overlay pushes each copy, from gufe's `_get_max_dist_in_x`.
  *
  * gufe measures, in either molecule, the largest `x[j] - x[i]` for an atom `j`
  * at or after an atom `i` in file order, rounds that to a tenth, floors it at 5
@@ -349,7 +359,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     interface Box {
       container: HTMLDivElement;
       viewer: ThreeDmolViewer | null;
-      guard: Interaction | null;
+      interaction: (BoundedZoom & Interaction) | null;
     }
     let boxes: Box[] = [];
     let syncHandle = 0;
@@ -359,7 +369,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       if (syncHandle) cancelAnimationFrame(syncHandle);
       syncHandle = 0;
       for (const box of boxes) {
-        box.guard?.cleanup();
+        box.interaction?.cleanup();
         try {
           box.viewer?.clear();
         } catch {
@@ -383,7 +393,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       container.dataset.gufeViewer = "";
       wrap.appendChild(container);
       stage.appendChild(wrap);
-      const box: Box = { container, viewer: null, guard: null };
+      const box: Box = { container, viewer: null, interaction: null };
       boxes.push(box);
       return box;
     };
@@ -429,12 +439,24 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       const viewer = ThreeDmol!.createViewer(box.container, { backgroundColor: SURFACE.viewer });
       for (const { mol } of models) viewer.addModel(buildSDF(mol), "sdf");
       box.viewer = viewer;
-      // The same wheel rule as everywhere else: a plain scroll moves the page.
-      box.guard = guardWheel(box.container, {
-        hint: "Click or hold Ctrl to zoom",
-        onZoom: () => undefined,
-      });
       return viewer;
+    };
+
+    /**
+     * Hand a box its wheel and its zoom, once the mode has finished framing it.
+     *
+     * Deliberately not part of `open` above: a bounded zoom measures its limits
+     * from the framing a view opens with, and that framing is not settled until
+     * the mode has called `zoomTo` and whatever follows it. Attached any earlier
+     * and every bound would be a multiple of an arbitrary camera.
+     *
+     * The rule it brings is the one the other 3D views already follow: a plain
+     * scroll moves the page, zooming asks for a click on the canvas first or a
+     * modifier, and how far out it can go is bounded in the engine as well as
+     * here so a drag or a pinch cannot lose the molecule either.
+     */
+    const settle = (box: Box): void => {
+      if (box.viewer) box.interaction = viewerInteraction(box.container, box.viewer);
     };
 
     // --- the modes ---
@@ -449,6 +471,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         );
         viewer.zoomTo();
         viewer.render();
+        settle(box);
       }
       startSync();
     };
@@ -478,6 +501,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         }
         viewer.zoomTo();
         viewer.render();
+        settle(box);
       }
       startSync();
     };
@@ -535,11 +559,19 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       // a scene to the height alone. Three molecules across is much wider than
       // it is tall, so in a pane taller than it is wide - the ligand network's
       // detail pane is one - both shifted copies land off the sides. Pulling
-      // back by the aspect ratio is what the square view gives for free, and it
-      // does nothing at all in a pane already at least as wide as it is tall.
+      // back to the pane's width is what a square view gives for free.
+      //
+      // The margin is not decoration. `zoomTo` fits the scene's bounding sphere
+      // at the depth of its centre, and the camera is a perspective one, so the
+      // half nearer the camera draws larger than that fit allows for: fitted
+      // with nothing to spare, the near edge of each shifted copy is cut off.
+      // Nothing happens in a pane wide enough that the height is still what
+      // binds, which is the case `zoomTo` already had right.
       const { clientWidth, clientHeight } = box.container;
-      if (clientWidth > 0 && clientWidth < clientHeight) viewer.zoom(clientWidth / clientHeight);
+      const across = clientWidth - 2 * FIT_MARGIN;
+      if (across > 0 && across < clientHeight) viewer.zoom(across / clientHeight);
       viewer.render();
+      settle(box);
     };
 
     const renderLines = (): void => {
@@ -598,25 +630,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       if (axis === 2) viewer.rotate(90, "x");
       else if (axis === 0) viewer.rotate(-90, "z");
       viewer.render();
-    };
-
-    const renderOverlay = (): void => {
-      const box = makeBox(`${nameA} + ${nameB}  (overlay)`);
-      const viewer = open(box, [{ mol: molA }, { mol: molB }]);
-      for (const [model, colour] of [
-        [0, MOL.overlayA],
-        [1, MOL.overlayB],
-      ] as const) {
-        viewer.setStyle(
-          { model },
-          {
-            stick: { radius: STYLE.stick, color: colour, opacity: STYLE.overlayOpacity },
-            sphere: { scale: STYLE.pairSphere, color: colour, opacity: STYLE.overlayOpacity },
-          },
-        );
-      }
-      viewer.zoomTo();
-      viewer.render();
+      settle(box);
     };
 
     const render2D = (): void => {
@@ -770,7 +784,6 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
           if (mode === "colored") renderColored();
           else if (mode === "openfe") renderOpenFE();
           else if (mode === "lines") renderLines();
-          else if (mode === "overlay") renderOverlay();
           else renderPlain();
         })
         .catch((e: unknown) => {

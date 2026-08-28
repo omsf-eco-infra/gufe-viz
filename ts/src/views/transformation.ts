@@ -13,21 +13,64 @@
  * mappings, which is exactly what it is.
  */
 
-import { buttonGroup, centredMessage, el, headerStrip, statChip, typeBadge } from "../shared/dom.js";
+import { buttonGroup, centredMessage, el, headerStrip, onWidth, statChip, typeBadge } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { FONT, PANE_LABEL } from "../shared/style.js";
 import { T } from "../shared/theme.js";
-import { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryIndex } from "../schema/registry.js";
+import { buildRegistry, entriesFor, entryLabel, lookup, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import { mappingPayloadFor } from "./atom-mapping.js";
 import type {
   ChemicalSystemViz,
   ComponentKey,
   ComponentViz,
+  GufeKey,
   ProtocolViz,
   TransformationViz,
 } from "../schema/types.js";
 
 export type DiffStatus = "unchanged" | "changed" | "added" | "removed";
+
+/**
+ * The width below which the two states stop being columns and become rows.
+ *
+ * A diff is two cells and a label gutter, and this view is mounted inside an
+ * alchemical network's detail pane as often as it is opened on its own. Below
+ * this, side by side leaves each state about a hundred pixels, which is not
+ * enough to read a ligand's name in.
+ */
+const STACK_BELOW = 460;
+
+/**
+ * A transformation, cut loose as a payload that stands on its own.
+ *
+ * The counterpart to `mappingPayloadFor`, one level up: an edge of an alchemical
+ * network is already a whole `TransformationViz`, and what it lacks is a
+ * registry holding everything it names by key. That closure is four things, and
+ * naming them here rather than forwarding the whole network's registry is what
+ * keeps a cut-loose transformation the size of a transformation:
+ *
+ *   both states, so the diff has two systems to compare
+ *   their components, so each side of the diff has something to describe
+ *   the protocol, which has no name of its own and so must be resolved to be shown
+ *   both ligands of every mapping, which `mappingPayloadFor` cuts loose again
+ *
+ * Returns null when either state is missing, because a transformation whose
+ * endpoints cannot be resolved has no diff to draw - which is the one thing this
+ * view exists for, and is exactly what it reports when handed such a payload.
+ */
+export function transformationPayloadFor(
+  edge: TransformationViz,
+  registry: RegistryIndex,
+): TransformationViz | null {
+  const stateA = lookupOfType<ChemicalSystemViz>(registry, edge.stateA, "ChemicalSystemViz");
+  const stateB = lookupOfType<ChemicalSystemViz>(registry, edge.stateB, "ChemicalSystemViz");
+  if (!stateA || !stateB) return null;
+
+  const keys: (GufeKey | undefined)[] = [edge.stateA, edge.stateB, edge.protocol];
+  for (const state of [stateA, stateB]) keys.push(...Object.values(state.components ?? {}));
+  for (const mapping of edge.mappings ?? []) keys.push(mapping.componentA, mapping.componentB);
+  return { ...edge, registry: entriesFor(registry, keys) };
+}
 
 const STATUS_COLOR: Record<DiffStatus, string> = {
   unchanged: T.diffUnchanged,
@@ -64,24 +107,40 @@ function describe(component: ComponentViz | undefined): { name: string; type: st
   return { name: component.name || "(unnamed)", type };
 }
 
-/** One side of one row: what this state has under this label, if anything. */
-function componentCell(component: ComponentViz | undefined, status: DiffStatus): HTMLDivElement {
+/**
+ * One side of one row: what this state has under this label, if anything.
+ *
+ * The `side` marker is what the column headings say when the two cells are side
+ * by side, so it is built hidden and shown only once they stack - at which point
+ * nothing else on the row distinguishes state A's cell from state B's.
+ */
+function componentCell(
+  component: ComponentViz | undefined,
+  status: DiffStatus,
+  side: "A" | "B",
+): { cell: HTMLDivElement; sideMark: HTMLSpanElement } {
   const cell = el(
     "div",
     "flex:1 1 50%;min-width:0;display:flex;flex-direction:column;gap:4px;padding:8px 10px;border-radius:8px;" +
       `background:${T.cardBg};border:1px solid ${T.cardBorder};`,
   );
+  const sideMark = el(
+    "span",
+    `display:none;font-size:${FONT.tiny};font-weight:700;letter-spacing:.08em;color:${T.textMuted2};`,
+    side,
+  );
+  cell.appendChild(sideMark);
   const described = describe(component);
   if (!described) {
     cell.style.background = "transparent";
     cell.style.borderStyle = "dashed";
     cell.appendChild(el("span", `font-size:${FONT.body};color:${T.textMuted2};`, "absent"));
-    return cell;
+    return { cell, sideMark };
   }
   cell.style.borderColor = status === "unchanged" ? T.cardBorder : STATUS_COLOR[status];
   cell.appendChild(el("span", `font-size:${FONT.body};font-weight:600;color:${T.textPrimary};`, described.name));
   cell.appendChild(typeBadge(described.type));
-  return cell;
+  return { cell, sideMark };
 }
 
 /** "A to B" for a mapping whose endpoints are keys, for the picker. */
@@ -139,6 +198,12 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
     }
     diff.appendChild(heads);
 
+    // Kept so the width watcher below can turn every row from two columns into
+    // two rows without rebuilding the diff.
+    const rows: HTMLDivElement[] = [];
+    const gutters: HTMLDivElement[] = [];
+    const sideMarks: HTMLSpanElement[] = [];
+
     for (const label of labels) {
       const keyA = stateA.components?.[label];
       const keyB = stateB.components?.[label];
@@ -147,7 +212,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
       const b = lookup(registry, keyB) as ComponentViz | undefined;
 
       const row = el("div", "display:flex;align-items:stretch;gap:10px;padding:4px 0;");
-      const gutter = el("div", "flex:0 0 110px;display:flex;align-items:center;gap:6px;min-width:0;");
+      const gutter = el("div", "display:flex;align-items:center;gap:6px;min-width:0;");
       gutter.appendChild(
         el("span", `width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${STATUS_COLOR[status]};`),
       );
@@ -155,10 +220,32 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
       name.title = status;
       gutter.appendChild(name);
       row.appendChild(gutter);
-      row.appendChild(componentCell(a, status));
-      row.appendChild(componentCell(b, status));
+      for (const [component, side] of [
+        [a, "A"],
+        [b, "B"],
+      ] as const) {
+        const drawn = componentCell(component, status, side);
+        row.appendChild(drawn.cell);
+        sideMarks.push(drawn.sideMark);
+      }
+      rows.push(row);
+      gutters.push(gutter);
       diff.appendChild(row);
     }
+
+    // Two columns while there is room for two, one column under the label when
+    // there is not. The column headings only mean anything in the first of
+    // those, so they hand over to the per-cell A/B marks in the second.
+    let stacked: boolean | null = null;
+    const stopWatching = onWidth(host, (width) => {
+      const narrow = width > 0 && width < STACK_BELOW;
+      if (narrow === stacked) return;
+      stacked = narrow;
+      heads.style.display = narrow ? "none" : "flex";
+      for (const row of rows) row.style.flexDirection = narrow ? "column" : "row";
+      for (const gutter of gutters) gutter.style.flex = narrow ? "0 0 auto" : "0 0 110px";
+      for (const mark of sideMarks) mark.style.display = narrow ? "block" : "none";
+    });
 
     const legend = el(
       "div",
@@ -182,7 +269,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
           "This transformation carries no atom mapping - nothing here maps one small molecule onto another.",
         ),
       );
-      return {};
+      return { cleanup: stopWatching };
     }
 
     // Created before the picker that drives it, and appended after it, so the
@@ -222,7 +309,10 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
 
     return {
       onResize: () => child.resize?.(),
-      cleanup: () => child.remove(),
+      cleanup: () => {
+        stopWatching();
+        child.remove();
+      },
     };
   }
 }

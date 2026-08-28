@@ -10,19 +10,26 @@ import "../src/index.js";
 import { parseCounts, parseSDF } from "../src/shared/sdf.js";
 import { parsePdbStats } from "../src/shared/pdb.js";
 import { formatIssues, validatePayload } from "../src/schema/validate.js";
-import { buildRegistry } from "../src/schema/registry.js";
+import { buildRegistry, lookupOfType } from "../src/schema/registry.js";
+import { T } from "../src/shared/theme.js";
 import { mappingPayloadFor, openfeShift, pairColour, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { parseConcentration } from "../src/views/solvent.js";
-import { diffStatus } from "../src/views/transformation.js";
+import { diffStatus, transformationPayloadFor } from "../src/views/transformation.js";
+import { systemPayloadFor } from "../src/views/chemical-system.js";
 import { ZOOM_LEVELS, levelAt } from "../src/views/ligand-network.js";
 import { clearFakeEngines, exampleNames, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
-import type { LigandNetworkViz } from "../src/schema/types.js";
+import type { ChemicalSystemViz, LigandNetworkViz, TransformationViz } from "../src/schema/types.js";
 
 function mount<T extends HTMLElement>(tag: string, payload: unknown): T {
   const node = document.createElement(tag) as T & { payload: unknown };
   document.body.appendChild(node);
   node.payload = payload;
   return node;
+}
+
+/** The labels of a switcher's buttons, in order. */
+function modeLabels(node: HTMLElement): (string | null)[] {
+  return Array.from(node.querySelectorAll("button")).map((button) => button.textContent);
 }
 
 describe("<gufe-small-molecule>", () => {
@@ -547,7 +554,7 @@ describe("uniqueAtoms", () => {
 });
 
 describe("openfeShift", () => {
-  // gufe's `_get_max_dist_in_x`, which decides how far apart 3D Color pushes the
+  // gufe's `_get_max_dist_in_x`, which decides how far apart 3D Overlay pushes the
   // two copies. Copied rather than improved: a different number separates them
   // by a different amount than `view_3d` does for the same mapping.
   const along = (xs: number[]): [number, number, number][] => xs.map((x) => [x, 0, 0]);
@@ -572,7 +579,7 @@ describe("openfeShift", () => {
 });
 
 describe("pairColour", () => {
-  // The colour a mapped pair is marked with in 3D Color: matplotlib's `hsv`
+  // The colour a mapped pair is marked with in 3D Overlay: matplotlib's `hsv`
   // resampled to one entry per pair, which is what gufe's `_add_spheres` asks
   // for. Both atoms of a pair get it, and that is the whole message.
   it("hands back a colour 3Dmol can read", () => {
@@ -644,8 +651,7 @@ describe("<gufe-atom-mapping>", () => {
   it("offers the prototype's modes in its order, with gufe's own view after them", async () => {
     const node = mapping();
     await flush();
-    const labels = Array.from(node.querySelectorAll("button")).map((b) => b.textContent);
-    expect(labels).toEqual(["3D", "3D-Map", "3D Color", "Pairs", "Overlay", "2D", "Info"]);
+    expect(modeLabels(node)).toEqual(["3D", "3D-Map", "3D Overlay", "Pairs", "2D", "Info"]);
   });
 
   it("opens on the plain 3D view, with one box per molecule", async () => {
@@ -677,10 +683,10 @@ describe("<gufe-atom-mapping>", () => {
     expect(extra.every((c) => /serial":\s*[1-9]/.test(c))).toBe(true);
   });
 
-  it("draws gufe's own view_3d in 3D Color: four models, two spheres per pair", async () => {
+  it("draws gufe's own view_3d in 3D Overlay: four models, two spheres per pair", async () => {
     const node = mapping();
     await flush();
-    await setMode(node, "3D Color");
+    await setMode(node, "3D Overlay");
 
     // One scene, holding a shifted copy of each molecule and both of them again
     // unmoved in the middle - which is the four models gufe adds.
@@ -704,7 +710,7 @@ describe("<gufe-atom-mapping>", () => {
   it("marks the pair on each shifted copy, moved along x and nowhere else", async () => {
     const node = mapping();
     await flush();
-    await setMode(node, "3D Color");
+    await setMode(node, "3D Overlay");
 
     const payload = readExample("ligand_atom_mapping.json") as unknown as {
       componentA: string;
@@ -740,18 +746,6 @@ describe("<gufe-atom-mapping>", () => {
     expect(lines.every((l) => l.spec.dashed === true)).toBe(true);
   });
 
-  it("superimposes both molecules translucently in Overlay", async () => {
-    const node = mapping();
-    await flush();
-    await setMode(node, "Overlay");
-
-    expect(node.querySelectorAll("[data-gufe-viewer]").length).toBe(1);
-    const viewer = engines.viewers.at(-1)!;
-    expect(viewer.calls.filter((c) => c.startsWith("addModel")).length).toBe(2);
-    const styles = viewer.styles.map(({ style }) => (style as { stick?: { opacity?: number } }).stick?.opacity);
-    expect(styles.every((o) => o !== undefined && o < 1)).toBe(true);
-  });
-
   it("draws both depictions in 2D, keeping their hydrogens", async () => {
     const node = mapping();
     await flush();
@@ -783,7 +777,7 @@ describe("<gufe-atom-mapping>", () => {
     const node = mapping();
     await flush();
     const first = engines.viewers.slice();
-    await setMode(node, "Overlay");
+    await setMode(node, "Pairs");
     expect(first.every((v) => v.cleared)).toBe(true);
   });
 
@@ -826,8 +820,14 @@ describe("<gufe-ligand-network> detail pane", () => {
     expect(embedded).toBeTruthy();
     // It arrives with its own full switcher, which is how you know it is
     // the same element and not a second drawing path.
-    const labels = Array.from(embedded!.querySelectorAll("button")).map((b) => b.textContent);
-    expect(labels).toEqual(["3D", "3D-Map", "3D Color", "Pairs", "Overlay", "2D", "Info"]);
+    expect(modeLabels(embedded as HTMLElement)).toEqual([
+      "3D",
+      "3D-Map",
+      "3D Overlay",
+      "Pairs",
+      "2D",
+      "Info",
+    ]);
   });
 
   it("re-points that element when a different edge is selected", async () => {
@@ -922,14 +922,105 @@ describe("<gufe-alchemical-network>", () => {
     expect(text).toContain("transformations");
   });
 
-  it("shows a selected system's components, resolved through the registry", async () => {
+  it("draws a selected system through the chemical-system view, not a list of its own", async () => {
     const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
     await flush();
-    // It opens on the first system rather than an empty pane.
-    const text = node.textContent ?? "";
-    expect(text).toContain("ChemicalSystem");
+
+    // It opens on the first system rather than an empty pane, and what it opens
+    // on is the same element a chemical system dropped on the page renders
+    // through - so the components are drawn, not merely named.
+    const embedded = node.querySelector("gufe-chemical-system");
+    expect(embedded, "the node pane did not mount the chemical-system view").toBeTruthy();
+    const text = embedded!.textContent ?? "";
     expect(text).toContain("ligand");
-    expect(text).not.toContain("not in the registry");
+    expect(text).toContain("SmallMoleculeComponent");
+    expect(text).not.toContain("not in its registry");
+    // The nested dispatcher drew the ligand rather than stopping at the list.
+    expect(embedded!.querySelector("gufe-small-molecule")).toBeTruthy();
+  });
+
+  it("draws a selected transformation through the transformation view", async () => {
+    const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
+    await flush();
+
+    // The first of the two lines an edge draws: the visible one, over the
+    // invisible wider one that only makes it easier to hit.
+    const edge = node.querySelector("line") as SVGLineElement;
+    edge.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+
+    const embedded = node.querySelector("gufe-transformation");
+    expect(embedded, "the edge pane did not mount the transformation view").toBeTruthy();
+    const text = embedded!.textContent ?? "";
+    expect(text).toContain("State A");
+    expect(text).toContain("State B");
+    // Cut loose with a registry of its own, so it resolves its own endpoints.
+    expect(text).not.toContain("registry does not hold them");
+    expect(embedded!.querySelector("gufe-atom-mapping")).toBeTruthy();
+  });
+
+  it("cuts a node and an edge loose as payloads that validate on their own", async () => {
+    const payload = readExample("alchemical_network.json") as unknown as {
+      nodes: string[];
+      edges: TransformationViz[];
+    };
+    const registry = buildRegistry(payload);
+
+    const system = lookupOfType<ChemicalSystemViz>(registry, payload.nodes[0], "ChemicalSystemViz")!;
+    const standaloneSystem = systemPayloadFor(system, registry);
+    expect(validatePayload(standaloneSystem).valid, formatIssues(validatePayload(standaloneSystem).issues)).toBe(true);
+    expect(standaloneSystem.registry).toHaveLength(Object.keys(system.components).length);
+
+    for (const edge of payload.edges) {
+      const standalone = transformationPayloadFor(edge, registry)!;
+      const { valid, issues } = validatePayload(standalone);
+      expect(valid, formatIssues(issues)).toBe(true);
+      // Both states, the protocol, and every component either state names.
+      expect(standalone.registry!.some((entry) => entry["gufe-key"] === edge.stateA)).toBe(true);
+      expect(standalone.registry!.some((entry) => entry["gufe-key"] === edge.protocol)).toBe(true);
+      // The whole network's registry is bigger than any one transformation's.
+      expect(standalone.registry!.length).toBeLessThan(registry.size);
+    }
+  });
+
+  it("refuses to cut loose an edge whose states do not resolve", () => {
+    const payload = readExample("alchemical_network.json") as unknown as { edges: TransformationViz[] };
+    const orphan = { ...payload.edges[0], stateA: "ChemicalSystem-nosuchentry" };
+    expect(transformationPayloadFor(orphan, buildRegistry(payload))).toBeNull();
+  });
+
+  it("colours the systems by what they are made of, and says what the colours mean", async () => {
+    const payload = structuredClone(readExample("alchemical_network.json")) as {
+      registry: { type: string; components?: Record<string, string> }[];
+    };
+    // Two compositions where the fixture has one. This is the shape a binding
+    // campaign makes for real - a solvent leg and a complex leg, told apart by
+    // nothing but which components their systems carry.
+    const system = payload.registry.find((entry) => entry.type === "ChemicalSystemViz")!;
+    delete system.components!.solvent;
+
+    const node = mount("gufe-alchemical-network", payload);
+    await flush();
+
+    // Fills rather than strokes: a stroke also says which node is selected, and
+    // what is being asserted here is what the node is made of.
+    const fills = [...node.querySelectorAll("svg.gufe-graph rect")].map((box) => box.getAttribute("fill"));
+    expect(new Set(fills).size).toBe(2);
+    expect(fills.every((fill) => T.netGroupFill.includes(fill!))).toBe(true);
+    const text = node.textContent ?? "";
+    expect(text).toContain("systems made of");
+    expect(text).toContain("SmallMolecule + Solvent");
+  });
+
+  it("leaves a network of one composition uncoloured, with nothing to explain", async () => {
+    const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
+    await flush();
+
+    // Every system here is made of the same things, so a colour per composition
+    // would be one colour and a legend saying so is noise.
+    const fills = [...node.querySelectorAll("svg.gufe-graph rect")].map((box) => box.getAttribute("fill"));
+    expect(new Set(fills)).toEqual(new Set([T.cardBg]));
+    expect(node.textContent).not.toContain("systems made of");
   });
 
   it("drops a transformation naming a system it does not contain, and says so", async () => {

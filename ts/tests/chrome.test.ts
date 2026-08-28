@@ -11,7 +11,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { CHROME_OPEN_BY_DEFAULT, chromeMenu, headerStrip } from "../src/shared/dom.js";
+import { CHROME_OPEN_BY_DEFAULT, chromeMenu, el, headerStrip, splitter } from "../src/shared/dom.js";
+import { num } from "../src/shared/settings.js";
 
 describe("chromeMenu", () => {
   let header: ReturnType<typeof headerStrip>;
@@ -130,4 +131,103 @@ describe("chromeMenu", () => {
     expect(menu.panel.style.display).toBe("");
   });
 
+});
+
+/**
+ * The divider between a graph and its detail pane.
+ *
+ * Both panes are driven from one fraction, which is what makes a remembered
+ * position restore as the same picture at a different window size. The drag
+ * itself is asserted through synthesized pointer events, because what a reader
+ * would notice breaking is the divider not moving.
+ */
+describe("splitter", () => {
+  const row = (): { row: HTMLDivElement; before: HTMLDivElement; after: HTMLDivElement } => {
+    const wrap = el("div", "display:flex;") as HTMLDivElement;
+    const before = el("div") as HTMLDivElement;
+    const after = el("div") as HTMLDivElement;
+    wrap.append(before, after);
+    document.body.replaceChildren(wrap);
+    return { row: wrap, before, after };
+  };
+
+  /** jsdom lays nothing out and captures no pointers, so both are supplied. */
+  const draggable = (handle: HTMLElement, host: HTMLElement, width: number): void => {
+    handle.setPointerCapture = () => {};
+    handle.releasePointerCapture = () => {};
+    host.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width, height: 100, right: width, bottom: 100, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+  };
+
+  /** The percentage a pane was given, however the host chose to serialize it. */
+  const share = (pane: HTMLElement): number => Number(/([\d.]+)%/.exec(pane.style.flex)![1]);
+
+  const pointer = (type: string, clientX: number): MouseEvent => {
+    const event = new MouseEvent(type, { bubbles: true, clientX });
+    Object.defineProperty(event, "pointerId", { value: 1 });
+    return event;
+  };
+
+  it("sizes both panes from one fraction", () => {
+    const { row: host, before, after } = row();
+    host.appendChild(splitter(host, before, after, { remember: undefined }));
+    // The two shares are complements, so the divider is never showing one thing
+    // while the panes do another.
+    expect(share(before)).toBeCloseTo(50, 5);
+    expect(share(after)).toBeCloseTo(50, 5);
+  });
+
+  it("opens where it was left", () => {
+    const remember = num("test.splitter.remembered", 0.5, 0.2, 0.8);
+    remember.set(0.7);
+    const { row: host, before, after } = row();
+    host.appendChild(splitter(host, before, after, { remember }));
+    expect(share(before)).toBeCloseTo(70, 5);
+    expect(share(after)).toBeCloseTo(30, 5);
+  });
+
+  it("moves on a drag, remembers where it stopped, and redraws once", () => {
+    const remember = num("test.splitter.dragged", 0.5, 0.2, 0.8);
+    const onResize = vi.fn();
+    const { row: host, before, after } = row();
+    const handle = splitter(host, before, after, { remember, onResize });
+    host.appendChild(handle);
+    draggable(handle, host, 1000);
+
+    handle.dispatchEvent(pointer("pointerdown", 500));
+    handle.dispatchEvent(pointer("pointermove", 300));
+    // Mid-drag the panes have moved, and nothing has been asked to redraw yet:
+    // on the far side of that callback is a force simulation.
+    expect(share(before)).toBeCloseTo(30, 5);
+    expect(share(after)).toBeCloseTo(70, 5);
+    expect(onResize).not.toHaveBeenCalled();
+
+    handle.dispatchEvent(pointer("pointerup", 300));
+    expect(onResize).toHaveBeenCalledTimes(1);
+    expect(remember.get()).toBeCloseTo(0.3, 5);
+  });
+
+  it("stays inside its bounds however far the pointer goes", () => {
+    const { row: host, before } = row();
+    const after = host.lastElementChild as HTMLDivElement;
+    const handle = splitter(host, before, after, { min: 0.3, max: 0.6 });
+    host.appendChild(handle);
+    draggable(handle, host, 1000);
+
+    handle.dispatchEvent(pointer("pointerdown", 500));
+    handle.dispatchEvent(pointer("pointermove", -400));
+    expect(share(before)).toBeCloseTo(30, 5);
+    handle.dispatchEvent(pointer("pointermove", 4000));
+    expect(share(before)).toBeCloseTo(60, 5);
+  });
+
+  it("ignores a pointer that never went down on it", () => {
+    const { row: host, before, after } = row();
+    const handle = splitter(host, before, after);
+    host.appendChild(handle);
+    draggable(handle, host, 1000);
+
+    handle.dispatchEvent(pointer("pointermove", 100));
+    expect(share(before)).toBeCloseTo(50, 5);
+  });
 });

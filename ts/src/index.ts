@@ -20,7 +20,7 @@ import "./views/unknown-component.js";
 
 export { GufeView, VIEW_TAGS, describeProblem, dispatchProblem } from "./gufe-view.js";
 export { PAYLOAD_TYPES, SCHEMA_TYPES, formatIssues, validateAs, validatePayload } from "./schema/validate.js";
-export { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryEntry, type RegistryIndex } from "./schema/registry.js";
+export { buildRegistry, entriesFor, entryLabel, lookup, lookupOfType, type RegistryEntry, type RegistryIndex } from "./schema/registry.js";
 export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein, type PdbPayload } from "./views/protein.js";
 export { GufeProtocol } from "./views/protocol.js";
@@ -36,12 +36,20 @@ export {
   type Uniques,
 } from "./views/atom-mapping.js";
 export { applyRT, kabsch, type Transform, type Vec3 } from "./shared/kabsch.js";
-export { GufeChemicalSystem } from "./views/chemical-system.js";
+export { GufeChemicalSystem, systemPayloadFor } from "./views/chemical-system.js";
 export { GufeSolvent, parseConcentration } from "./views/solvent.js";
-export { GufeTransformation, diffStatus, type DiffStatus } from "./views/transformation.js";
+export { GufeTransformation, diffStatus, transformationPayloadFor, type DiffStatus } from "./views/transformation.js";
 export { GufeUnknownComponent } from "./views/unknown-component.js";
 export { GufeElement, defineElement, type ViewHandle } from "./shared/element.js";
-export { CHROME_OPEN_BY_DEFAULT, chromeMenu, type ChromeMenu, type ChromeMenuOptions } from "./shared/dom.js";
+export {
+  CHROME_OPEN_BY_DEFAULT,
+  chromeMenu,
+  onWidth,
+  splitter,
+  type ChromeMenu,
+  type ChromeMenuOptions,
+  type SplitterOptions,
+} from "./shared/dom.js";
 export { MAPPING_COLORS, MAPPING_RAMP_3D, MAPPING_RAMP_NAME } from "./shared/atom-colors.js";
 export {
   DEFAULT_DEPICT_STYLE,
