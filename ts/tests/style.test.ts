@@ -9,7 +9,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { BUTTON, FONT, SELECT } from "../src/shared/style.js";
+import { BUTTON, FONT, MENU_LIST, MENU_PANEL, SELECT } from "../src/shared/style.js";
 
 const SRC = join(import.meta.dirname, "..", "src");
 
@@ -65,6 +65,31 @@ describe("style.ts", () => {
     expect(BUTTON.base).toContain("cursor:pointer");
     expect(SELECT).toContain("cursor:pointer");
     expect(FONT.small).toBe("11px");
+  });
+
+  it("makes the menu's list the part that scrolls", () => {
+    // The list is the one thing in a menu that grows with the payload. It has
+    // to scroll inside the panel, or a network of two hundred nodes pushes the
+    // hint, the export block and the clear button off the bottom of the view.
+    expect(MENU_LIST).toContain("overflow:auto");
+    expect(MENU_LIST).toContain("flex:1");
+    // And it keeps a few rows in a menu too short for the list and the controls
+    // both - past that the panel scrolls rather than the list disappearing.
+    expect(MENU_LIST).toMatch(/min-height:\d+px/);
+    expect(MENU_PANEL).toContain("overflow-y:auto");
+  });
+});
+
+describe("the network menus", () => {
+  it("both build their panel and list from style.ts", () => {
+    // Two menus that lay themselves out separately drift, and the drift shows
+    // up as one of them scrolling on a long list and the other not.
+    for (const name of ["ligand-network.ts", "alchemical-network.ts"]) {
+      const text = readFileSync(join(SRC, "views", name), "utf-8");
+      expect(text, `${name} does not use MENU_PANEL`).toContain("MENU_PANEL");
+      expect(text, `${name} does not use MENU_LIST`).toContain("MENU_LIST");
+      expect(text, `${name} styles its own scrolling list`).not.toMatch(/min-height:0;overflow:auto/);
+    }
   });
 });
 

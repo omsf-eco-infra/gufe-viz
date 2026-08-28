@@ -127,3 +127,42 @@ describe("view teardown releases its engine handles", () => {
     expect(engines.viewers).toHaveLength(2);
   });
 });
+
+describe("how tall a view makes itself", () => {
+  afterEach(() => document.body.replaceChildren());
+
+  it("fills its parent, and stops at the viewport when the parent never says", () => {
+    // The page that does not size its container is the common one - a bare
+    // `<div>` in a notebook cell - and there `height:100%` is the content's own
+    // height. Without a ceiling a menu listing two hundred ligands grows the
+    // view instead of scrolling inside it, taking its own buttons off screen.
+    const probe = document.createElement("probe-element") as ProbeElement;
+    document.body.appendChild(probe);
+
+    expect(probe.style.height).toBe("100%");
+    expect(probe.style.maxHeight).toBe("100vh");
+  });
+
+  it("leaves the height a page set itself alone", () => {
+    const probe = document.createElement("probe-element") as ProbeElement;
+    probe.style.height = "1200px";
+    document.body.appendChild(probe);
+
+    expect(probe.style.height).toBe("1200px");
+    expect(probe.style.maxHeight, "a page that sized the view got a ceiling anyway").toBe("");
+  });
+
+  it("does not cap a view nested in another one", () => {
+    // The inner element's parent is the outer one's shell, which has a height
+    // already. Capping it again would leave the bottom of a view taller than
+    // the viewport empty.
+    const outer = document.createElement("probe-element") as ProbeElement;
+    document.body.appendChild(outer);
+    outer.payload = { id: "outer" };
+
+    const inner = document.createElement("probe-element") as ProbeElement;
+    outer.firstElementChild!.appendChild(inner);
+
+    expect(inner.style.maxHeight).toBe("");
+  });
+});
