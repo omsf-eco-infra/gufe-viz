@@ -26,7 +26,15 @@ export { GufeProtein, type PdbPayload } from "./views/protein.js";
 export { GufeProtocol } from "./views/protocol.js";
 export { GufeLigandNetwork, selectionText, type ExportAs } from "./views/ligand-network.js";
 export { GufeAlchemicalNetwork } from "./views/alchemical-network.js";
-export { GufeAtomMapping, liftFor, mappingPayloadFor, uniqueAtoms, type Uniques } from "./views/atom-mapping.js";
+export {
+  GufeAtomMapping,
+  liftFor,
+  mappingPayloadFor,
+  openfeShift,
+  pairColour,
+  uniqueAtoms,
+  type Uniques,
+} from "./views/atom-mapping.js";
 export { applyRT, kabsch, type Transform, type Vec3 } from "./shared/kabsch.js";
 export { GufeChemicalSystem } from "./views/chemical-system.js";
 export { GufeSolvent, parseConcentration } from "./views/solvent.js";

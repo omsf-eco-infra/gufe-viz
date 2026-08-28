@@ -13,20 +13,27 @@
  * cuts an edge loose into one - so there is one drawing path and the in-context
  * picture cannot drift from the standalone one.
  *
- * Six ways to look at it:
+ * Seven ways to look at it:
  *
- * This is a port of the viewer panel in the framejs prototype at
+ * Six of them are a port of the viewer panel in the framejs prototype at
  * /j/019f2b55e1f57722af0293acbda78362, which is where the modes, the switcher,
  * the box labels and the 3D colours come from. Anything that looks arbitrary
  * here is arbitrary there, and changing it in one place means changing it in
  * both.
  *
- *   3D       both molecules, side by side, plain
- *   3D-Map   the same, with each molecule's unmapped atoms picked out
- *   Pairs    one above the other, Kabsch-aligned, a line per mapped pair
- *   Overlay  both superimposed and translucent
- *   2D       depictions with the mapping highlighted
- *   Info     the mapping in numbers - counts, the correspondence, annotations
+ *   3D        both molecules, side by side, plain
+ *   3D-Map    the same, with each molecule's unmapped atoms picked out
+ *   3D Color  gufe's own `view_3d`, reproduced - see `renderOpenFE`
+ *   Pairs     one above the other, Kabsch-aligned, a line per mapped pair
+ *   Overlay   both superimposed and translucent
+ *   2D        depictions with the mapping highlighted
+ *   Info      the mapping in numbers - counts, the correspondence, annotations
+ *
+ * 3D Color is the exception: it is not the prototype's, it is
+ * `gufe.visualization.mapping_visualization.display_mapping_3d`, which is what
+ * `LigandAtomMapping.view_3d()` calls and therefore the picture an OpenFE user
+ * has already seen in a notebook. It is here so that the same mapping in the
+ * browser and in the notebook are recognisably the same picture.
  *
  * Info is last because it is a reading of the picture rather than a picture, and
  * it is where everything that is not a molecule now lives: the name, the type,
@@ -70,6 +77,7 @@ import {
   postProcessDepiction,
   type Side,
 } from "../shared/depict-style.js";
+import { MAPPING_RAMP_3D } from "../shared/atom-colors.js";
 import { MOL } from "../shared/molecule-colors.js";
 import { FONT, MONO, NOTE, OVERLAY_CONTROLS, PANE_LABEL, SECTION_LABEL, SPACE, SURFACE, TEXT, WEIGHT } from "../shared/style.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
@@ -78,6 +86,7 @@ import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/
 const MODES = [
   { id: "plain", label: "3D", title: "Plain 3D view" },
   { id: "colored", label: "3D-Map", title: "Colour-coded by mapping" },
+  { id: "openfe", label: "3D Color", title: "What LigandAtomMapping.view_3d() draws" },
   { id: "lines", label: "Pairs", title: "Dashed lines between mapped atoms" },
   { id: "overlay", label: "Overlay", title: "Both molecules superimposed" },
   { id: "2d", label: "2D", title: "2D depictions with highlights" },
@@ -101,6 +110,22 @@ const STYLE = {
 
 /** How far apart Pairs mode lifts the second molecule. */
 const PAIRS = { gap: 2.5, minLiftFraction: 0.6 };
+
+/**
+ * gufe's numbers for 3D Color, and not ours to tune.
+ *
+ * Every one of them is read off `display_mapping_3d` and `_add_spheres`. A
+ * different radius or a different floor draws a different picture from the
+ * notebook, which is the one thing this mode exists not to do.
+ */
+const OPENFE = {
+  sphereRadius: 0.6,
+  sphereAlpha: 0.8,
+  /** The smallest separation gufe will use, whatever the molecules measure. */
+  minSpread: 5,
+  /** What gufe multiplies that separation by before shifting each side. */
+  spreadFactor: 1.5,
+};
 
 /** One side of a mapping, classified the way gufe classifies it. */
 export interface Uniques {
@@ -197,6 +222,60 @@ export function liftFor(a: readonly Vec3[], b: readonly Vec3[]): { axis: number;
   const clearance = first.max[axis] - second.min[axis] + PAIRS.gap;
   const minimum = PAIRS.minLiftFraction * longest + PAIRS.gap;
   return { axis, lift: Math.max(clearance, minimum) };
+}
+
+/**
+ * How far along x 3D Color pushes each copy, from gufe's `_get_max_dist_in_x`.
+ *
+ * gufe measures, in either molecule, the largest `x[j] - x[i]` for an atom `j`
+ * at or after an atom `i` in file order, rounds that to a tenth, floors it at 5
+ * and multiplies by 1.5. Read in file order rather than as a plain extent
+ * because that is what gufe measures, and a number that matched the extent
+ * instead would separate the copies by a different amount than the notebook
+ * does for the same mapping.
+ */
+export function openfeShift(a: readonly Vec3[], b: readonly Vec3[]): number {
+  let widest = 0;
+  for (const coords of [a, b]) {
+    let earliest = Infinity;
+    for (const point of coords) {
+      if (point[0] < earliest) earliest = point[0];
+      if (point[0] - earliest > widest) widest = point[0] - earliest;
+    }
+  }
+  const rounded = Math.round(widest * 10) / 10;
+  return (rounded > OPENFE.minSpread ? rounded : OPENFE.minSpread) * OPENFE.spreadFactor;
+}
+
+/**
+ * The colour gufe paints on mapped pair `index` of `count`, in 3Dmol's form.
+ *
+ * `_add_spheres` asks matplotlib for `hsv` resampled to one entry per mapped
+ * pair and then takes entry `index`, which is `hsv` read at `index / (count -
+ * 1)`. `MAPPING_RAMP_3D` is that same colormap at 128 stops, so the colour is a
+ * lookup with a straight interpolation between neighbouring stops - the ramp is
+ * dense enough that the difference from evaluating `hsv` itself is invisible.
+ *
+ * Both atoms of a pair are given it, and the shared colour is the whole message:
+ * it says these two atoms map to each other. It says nothing about the element.
+ * `hsv` very nearly closes its circle, so the first and last pair of a mapping
+ * come out reds a shade apart; that is matplotlib's doing, and the notebook has
+ * it too.
+ */
+export function pairColour(index: number, count: number): string {
+  const stops = MAPPING_RAMP_3D;
+  const fraction = count > 1 ? Math.min(Math.max(index / (count - 1), 0), 1) : 0;
+  const position = fraction * (stops.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.min(lower + 1, stops.length - 1);
+  const blend = position - lower;
+  let hex = "0x";
+  for (let channel = 0; channel < 3; channel++) {
+    const at = (stop: string): number => parseInt(stop.slice(1 + channel * 2, 3 + channel * 2), 16);
+    const value = Math.round(at(stops[lower]) + (at(stops[upper]) - at(stops[lower])) * blend);
+    hex += value.toString(16).padStart(2, "0");
+  }
+  return hex;
 }
 
 export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
@@ -401,6 +480,66 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         viewer.render();
       }
       startSync();
+    };
+
+    /**
+     * `LigandAtomMapping.view_3d()`, drawn here instead of in a notebook.
+     *
+     * gufe's `display_mapping_3d` puts four models in one scene: a copy of each
+     * molecule pushed out along x, and both molecules again unmoved in the
+     * middle, where they overlap. Everything is plain sticks in element colours,
+     * and the mapping is said entirely with translucent spheres - one on each
+     * atom of a mapped pair, both the same colour, so following a colour from
+     * the left copy to the right one is following the mapping.
+     *
+     * The middle is the overlap on its own terms: no spheres, just how well the
+     * two conformers sit on each other.
+     *
+     * Every number here is gufe's, in `OPENFE` and `openfeShift`, because the
+     * point of the mode is that it matches. `show_atomIDs` is gufe's other
+     * option and it is off by default there, so it is absent here.
+     */
+    const renderOpenFE = (): void => {
+      const box = makeBox(`${nameA} (left), both overlaid (middle), ${nameB} (right)`);
+      const shift = openfeShift(molA.coords, molB.coords);
+      const pushed = (mol: Molecule, alongX: number): Molecule => ({
+        ...mol,
+        coords: mol.coords.map(([x, y, z]) => [x + alongX, y, z] as [number, number, number]),
+      });
+      const left = pushed(molA, -shift);
+      const right = pushed(molB, shift);
+
+      const viewer = open(box, [{ mol: left }, { mol: right }, { mol: molA }, { mol: molB }]);
+      // One style for every model, at 3Dmol's own defaults, which is what
+      // `setStyle({stick: {}})` asks for.
+      viewer.setStyle({}, { stick: {} });
+
+      const mapped = Array.from(pairs);
+      mapped.forEach(([a, b], index) => {
+        const here = left.coords[a];
+        const there = right.coords[b];
+        if (!here || !there) return;
+        const colour = pairColour(index, mapped.length);
+        for (const [x, y, z] of [here, there]) {
+          viewer.addSphere({
+            center: { x, y, z },
+            radius: OPENFE.sphereRadius,
+            color: colour,
+            alpha: OPENFE.sphereAlpha,
+          });
+        }
+      });
+
+      viewer.zoomTo();
+      // gufe frames this in a square 600 by 600 view, and 3Dmol's `zoomTo` fits
+      // a scene to the height alone. Three molecules across is much wider than
+      // it is tall, so in a pane taller than it is wide - the ligand network's
+      // detail pane is one - both shifted copies land off the sides. Pulling
+      // back by the aspect ratio is what the square view gives for free, and it
+      // does nothing at all in a pane already at least as wide as it is tall.
+      const { clientWidth, clientHeight } = box.container;
+      if (clientWidth > 0 && clientWidth < clientHeight) viewer.zoom(clientWidth / clientHeight);
+      viewer.render();
     };
 
     const renderLines = (): void => {
@@ -629,6 +768,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
           if (!alive) return;
           stage.replaceChildren();
           if (mode === "colored") renderColored();
+          else if (mode === "openfe") renderOpenFE();
           else if (mode === "lines") renderLines();
           else if (mode === "overlay") renderOverlay();
           else renderPlain();

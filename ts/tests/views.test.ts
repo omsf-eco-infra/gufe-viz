@@ -11,7 +11,7 @@ import { parseCounts, parseSDF } from "../src/shared/sdf.js";
 import { parsePdbStats } from "../src/shared/pdb.js";
 import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry } from "../src/schema/registry.js";
-import { mappingPayloadFor, uniqueAtoms } from "../src/views/atom-mapping.js";
+import { mappingPayloadFor, openfeShift, pairColour, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { parseConcentration } from "../src/views/solvent.js";
 import { diffStatus } from "../src/views/transformation.js";
 import { ZOOM_LEVELS, levelAt } from "../src/views/ligand-network.js";
@@ -546,6 +546,59 @@ describe("uniqueAtoms", () => {
   });
 });
 
+describe("openfeShift", () => {
+  // gufe's `_get_max_dist_in_x`, which decides how far apart 3D Color pushes the
+  // two copies. Copied rather than improved: a different number separates them
+  // by a different amount than `view_3d` does for the same mapping.
+  const along = (xs: number[]): [number, number, number][] => xs.map((x) => [x, 0, 0]);
+
+  it("floors a small molecule's spread at gufe's five", () => {
+    expect(openfeShift(along([0, 1]), along([0, 1]))).toBe(7.5);
+  });
+
+  it("takes the wider of the two molecules once past that floor", () => {
+    expect(openfeShift(along([0, 2]), along([0, 8]))).toBe(12);
+  });
+
+  it("measures in file order, as gufe does, not as a plain extent", () => {
+    // The widest atom comes first, so no later atom is further along x than an
+    // earlier one and gufe measures nothing at all. Its floor is what is left.
+    expect(openfeShift(along([20, 0]), along([0, 0]))).toBe(7.5);
+  });
+
+  it("rounds to a tenth before applying the floor", () => {
+    expect(openfeShift(along([0, 8.06]), along([0, 0]))).toBeCloseTo(12.15, 10);
+  });
+});
+
+describe("pairColour", () => {
+  // The colour a mapped pair is marked with in 3D Color: matplotlib's `hsv`
+  // resampled to one entry per pair, which is what gufe's `_add_spheres` asks
+  // for. Both atoms of a pair get it, and that is the whole message.
+  it("hands back a colour 3Dmol can read", () => {
+    expect(pairColour(0, 4)).toMatch(/^0x[0-9a-f]{6}$/);
+  });
+
+  it("starts at the red hsv starts at", () => {
+    expect(pairColour(0, 6)).toBe("0xff0000");
+  });
+
+  it("ends where hsv ends, a red just short of coming back round", () => {
+    // matplotlib's `hsv` does not quite close its circle, and the last pair of
+    // a mapping is drawn in whatever it ends on rather than in the first red.
+    expect(pairColour(5, 6)).toBe("0xff0018");
+  });
+
+  it("gives a lone pair the first colour rather than dividing by zero", () => {
+    expect(pairColour(0, 1)).toBe("0xff0000");
+  });
+
+  it("gives every pair in between a colour of its own", () => {
+    const colours = Array.from({ length: 8 }, (_, i) => pairColour(i, 9));
+    expect(new Set(colours).size).toBe(colours.length);
+  });
+});
+
 describe("<gufe-atom-mapping>", () => {
   let engines: SeededEnginesResult;
   beforeEach(() => {
@@ -588,11 +641,11 @@ describe("<gufe-atom-mapping>", () => {
     for (const name of names) expect(node.textContent).toContain(name);
   });
 
-  it("offers the prototype's six modes, in its order", async () => {
+  it("offers the prototype's modes in its order, with gufe's own view after them", async () => {
     const node = mapping();
     await flush();
     const labels = Array.from(node.querySelectorAll("button")).map((b) => b.textContent);
-    expect(labels).toEqual(["3D", "3D-Map", "Pairs", "Overlay", "2D", "Info"]);
+    expect(labels).toEqual(["3D", "3D-Map", "3D Color", "Pairs", "Overlay", "2D", "Info"]);
   });
 
   it("opens on the plain 3D view, with one box per molecule", async () => {
@@ -622,6 +675,55 @@ describe("<gufe-atom-mapping>", () => {
     // One addStyle per unmapped atom, and 3Dmol counts atoms from one.
     expect(extra.length).toBeGreaterThan(0);
     expect(extra.every((c) => /serial":\s*[1-9]/.test(c))).toBe(true);
+  });
+
+  it("draws gufe's own view_3d in 3D Color: four models, two spheres per pair", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "3D Color");
+
+    // One scene, holding a shifted copy of each molecule and both of them again
+    // unmoved in the middle - which is the four models gufe adds.
+    expect(node.querySelectorAll("[data-gufe-viewer]").length).toBe(1);
+    const viewer = engines.viewers.at(-1)!;
+    expect(viewer.calls.filter((c) => c.startsWith("addModel")).length).toBe(4);
+
+    const payload = readExample("ligand_atom_mapping.json") as unknown as {
+      componentA_to_componentB: unknown[];
+    };
+    const spheres = viewer.shapes.filter((s) => s.kind === "sphere");
+    expect(spheres.length).toBe(payload.componentA_to_componentB.length * 2);
+    // gufe's numbers, and a pair's two spheres sharing one colour is the whole
+    // of what the picture says.
+    expect(spheres.every((s) => s.spec.radius === 0.6 && s.spec.alpha === 0.8)).toBe(true);
+    for (let i = 0; i < spheres.length; i += 2) {
+      expect(spheres[i].spec.color).toBe(spheres[i + 1].spec.color);
+    }
+  });
+
+  it("marks the pair on each shifted copy, moved along x and nowhere else", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "3D Color");
+
+    const payload = readExample("ligand_atom_mapping.json") as unknown as {
+      componentA: string;
+      componentB: string;
+      componentA_to_componentB: { index_A: number; index_B: number }[];
+      registry: { "gufe-key": string; sdf: string }[];
+    };
+    const sdfFor = (key: string) => payload.registry.find((entry) => entry["gufe-key"] === key)!.sdf;
+    const molA = parseSDF(sdfFor(payload.componentA));
+    const molB = parseSDF(sdfFor(payload.componentB));
+    const shift = openfeShift(molA.coords, molB.coords);
+
+    const spheres = engines.viewers.at(-1)!.shapes.filter((s) => s.kind === "sphere");
+    const centre = (i: number) => spheres[i].spec.center as { x: number; y: number; z: number };
+    const first = payload.componentA_to_componentB[0];
+    expect(centre(0).x).toBeCloseTo(molA.coords[first.index_A][0] - shift, 6);
+    expect(centre(0).y).toBeCloseTo(molA.coords[first.index_A][1], 6);
+    expect(centre(1).x).toBeCloseTo(molB.coords[first.index_B][0] + shift, 6);
+    expect(centre(1).z).toBeCloseTo(molB.coords[first.index_B][2], 6);
   });
 
   it("draws one line per mapped pair in Pairs, into a single box", async () => {
@@ -722,10 +824,10 @@ describe("<gufe-ligand-network> detail pane", () => {
     // drift apart.
     const embedded = node.querySelector("gufe-atom-mapping");
     expect(embedded).toBeTruthy();
-    // It arrives with its own six-mode switcher, which is how you know it is
+    // It arrives with its own full switcher, which is how you know it is
     // the same element and not a second drawing path.
     const labels = Array.from(embedded!.querySelectorAll("button")).map((b) => b.textContent);
-    expect(labels).toEqual(["3D", "3D-Map", "Pairs", "Overlay", "2D", "Info"]);
+    expect(labels).toEqual(["3D", "3D-Map", "3D Color", "Pairs", "Overlay", "2D", "Info"]);
   });
 
   it("re-points that element when a different edge is selected", async () => {

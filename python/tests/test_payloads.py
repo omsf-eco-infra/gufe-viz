@@ -548,6 +548,64 @@ class TestBuilders:
         assert len(protocols) == 1
         assert {edge["protocol"] for edge in network["edges"]} == {protocols[0]["gufe-key"]}
 
+    def test_the_three_alchemical_network_sizes_are_all_present_and_well_formed(self):
+        """The alchemical trio, pinned the way the ligand trio is.
+
+        Same argument as ``test_the_three_network_sizes_are_all_present_and_
+        well_formed``: the sizes are the point of having three, so a
+        regeneration that quietly produced three networks of one size would
+        still pass everything else here. The middle one is a binding campaign,
+        so its edge count is twice its mappings - one solvent leg and one
+        complex leg each - and its node count is twice its ligands.
+        """
+        from .conftest import read_example
+
+        sizes = {
+            "alchemical_network.json": (3, 3),
+            "alchemical_network_medium.json": (20, 18),
+            "alchemical_network_large.json": (200, 594),
+        }
+
+        for name, (nodes, edges) in sizes.items():
+            payload = read_example(name)
+            assert payload["type"] == "AlchemicalNetworkViz", name
+            assert len(payload["nodes"]) == nodes, name
+            assert len(payload["edges"]) == edges, name
+            assert len(set(payload["nodes"])) == nodes, name
+
+            registry = _registry(payload)
+            for edge in payload["edges"]:
+                assert edge["stateA"] in payload["nodes"], name
+                assert edge["stateB"] in payload["nodes"], name
+                # Every node resolves, and every component of every node with it.
+                for state in (edge["stateA"], edge["stateB"]):
+                    for component in registry[state]["components"].values():
+                        assert registry[component]["type"].endswith("ComponentViz"), name
+
+            _validate(payload)
+
+    def test_the_binding_campaign_shares_one_protein_across_its_complex_leg(self):
+        """The claim the shared-protocol test makes about proteins, on real data.
+
+        ``alchemical_network_medium.json`` is the only fixture where a protein
+        reaches an alchemical node, and it reaches half of them: ten complex
+        systems and ten solvent ones. The registry carries that protein once, so
+        the payload is the size of one protein rather than of ten - which is the
+        whole argument for a registry, made at the size where it matters.
+        """
+        from .conftest import read_example
+
+        payload = read_example("alchemical_network_medium.json")
+        registry = _registry(payload)
+
+        proteins = [entry for entry in payload["registry"] if entry["type"] == "ProteinComponentViz"]
+        assert len(proteins) == 1
+
+        with_protein = [
+            key for key in payload["nodes"] if proteins[0]["gufe-key"] in registry[key]["components"].values()
+        ]
+        assert len(with_protein) == len(payload["nodes"]) // 2
+
     def test_a_registry_entry_is_the_same_object_as_a_standalone_payload(self):
         """The claim the one-object-per-gufe-class rule is making, asserted directly.
 

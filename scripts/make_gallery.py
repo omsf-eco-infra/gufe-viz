@@ -82,6 +82,16 @@ NOTES = {
         "brings them back. **The mappings are synthetic** - paired by atom index, scored by an "
         "arithmetic ramp - so this is a picture of the view under load, not of any chemistry."
     ),
+    "alchemical_network_medium": (
+        "The same ten TYK2 ligands as a binding campaign: every mapping becomes two transformations, "
+        "a solvent leg and a complex leg, so the graph is two components rather than one. The complex "
+        "leg's systems each carry the TYK2 protein, which the registry holds once for all ten."
+    ),
+    "alchemical_network_large": (
+        "The two-hundred-ligand graph one layer up from `ligand_network_large`, with the same 594 "
+        "edges - the level-of-detail rule seen on the alchemical view at the size it was written for. "
+        "**The mappings are synthetic**, as they are in the ligand view of the same graph."
+    ),
     "chemical_system": "No view yet: the dispatcher's panel, which is what the degradation rule looks like.",
     "ligand_atom_mapping": "No view yet - the standalone mapping viewer is Phase 4.",
     "solvent": "No view yet - a solvent component is a specification, so its view is a settings card.",

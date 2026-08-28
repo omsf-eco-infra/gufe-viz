@@ -223,6 +223,106 @@ def _alchemical_network(network: gufe.LigandNetwork, protocol: gufe.Protocol) ->
     )
 
 
+def _tyk2_rbfe_network() -> gufe.AlchemicalNetwork:
+    """The ten TYK2 ligands as the binding campaign OpenFE plans from them.
+
+    :func:`_alchemical_network` promotes a ligand network into solvated
+    transformations, which is the shape of a hydration campaign. A *binding*
+    campaign is the other shape, and the difference shows up in the view: every
+    mapping becomes two transformations - a solvent leg and a complex leg - so
+    the graph is two components rather than one, and the complex leg's chemical
+    systems carry a protein. It is the only fixture where an alchemical node
+    holds anything but a ligand and a solvent, which is what makes the
+    node-level component dispatch reachable from the alchemical view at all.
+
+    The protein is the TYK2 kinase domain from the same RBFE tutorial the
+    mappings come from, committed as ``scripts/data/tyk2_protein.pdb`` for the
+    reason given in :func:`_tyk2_network`: neither it nor the planner is a
+    dependency of this repository, so it is read rather than rebuilt.
+
+    Unlike :func:`_solvated_transformation`, the ligands are not renamed here.
+    They arrive from the GraphML already named - ``lig_ejm_31`` and friends - and
+    a real campaign's labels are the point of the fixture.
+    """
+    from gufe import AlchemicalNetwork, ChemicalSystem, ProteinComponent, SolventComponent, Transformation
+
+    protocol = _dummy_protocol()
+    solvent = SolventComponent()
+    protein = ProteinComponent.from_pdb_file(str(DATA / "tyk2_protein.pdb"), name="tyk2")
+
+    # Insertion order is iteration order, so the leg loop below is deterministic.
+    legs = {
+        "solvent": {"solvent": solvent},
+        "complex": {"solvent": solvent, "protein": protein},
+    }
+    systems: dict[tuple[str, str], gufe.ChemicalSystem] = {}
+
+    def system(mol: gufe.SmallMoleculeComponent, leg: str) -> gufe.ChemicalSystem:
+        """One shared system per (ligand, leg), so each leg is a connected graph."""
+        return systems.setdefault(
+            (str(mol.key), leg),
+            ChemicalSystem({"ligand": mol, **legs[leg]}, name=f"{mol.name}_{leg}"),
+        )
+
+    # Sorted by gufe key for the same byte-stability reason as everywhere else here.
+    edges = sorted(_tyk2_network().edges, key=lambda e: (str(e.componentA.key), str(e.componentB.key)))
+    return AlchemicalNetwork(
+        [
+            Transformation(
+                stateA=system(edge.componentA, leg),
+                stateB=system(edge.componentB, leg),
+                mapping=edge,
+                protocol=protocol,
+                name=f"{edge.componentA.name} to {edge.componentB.name} ({leg})",
+            )
+            for edge in edges
+            for leg in legs
+        ],
+        name="TYK2 RBFE campaign",
+    )
+
+
+def _large_alchemical_network() -> gufe.AlchemicalNetwork:
+    """The two-hundred-ligand load fixture, one layer up.
+
+    The same nodes and the same 594 mappings as ``ligand_network_large.json``,
+    promoted to chemical systems and transformations - so the level-of-detail
+    rule can be seen on the alchemical view at the size it was written for, and
+    against the ligand view of a graph that is the same underneath.
+
+    Solvated rather than a binding campaign: a second leg would double both the
+    payload and the transformation count without reaching a drawing case
+    :func:`_tyk2_rbfe_network` does not already cover. **The mappings are
+    synthetic**, exactly as in the ligand network - see :func:`_large_network`.
+    """
+    from gufe import AlchemicalNetwork, ChemicalSystem, SolventComponent, Transformation
+
+    protocol = _dummy_protocol()
+    solvent = SolventComponent()
+    systems: dict[str, gufe.ChemicalSystem] = {}
+
+    def system(mol: gufe.SmallMoleculeComponent) -> gufe.ChemicalSystem:
+        return systems.setdefault(
+            str(mol.key),
+            ChemicalSystem({"ligand": mol, "solvent": solvent}, name=f"{mol.name} in water"),
+        )
+
+    edges = sorted(_large_network().edges, key=lambda e: (str(e.componentA.key), str(e.componentB.key)))
+    return AlchemicalNetwork(
+        [
+            Transformation(
+                stateA=system(edge.componentA),
+                stateB=system(edge.componentB),
+                mapping=edge,
+                protocol=protocol,
+                name=f"{edge.componentA.name} to {edge.componentB.name}",
+            )
+            for edge in edges
+        ],
+        name="two hundred solvated ligands",
+    )
+
+
 def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
     """``network`` again, with every ligand named after its SMILES.
 
@@ -352,7 +452,14 @@ def build() -> dict[str, GufeTokenizable]:
         # The two kinds that need a Protocol. Both are the same three ligands as
         # the network above, one layer up, so the gallery reads as one story.
         "transformation.json": _solvated_transformation(mapping, protocol),
+        # The alchemical network at the same three sizes as the ligand network
+        # above, for the same reason: a view that reads on three nodes can be
+        # unusable on two hundred. The middle one is a binding campaign rather
+        # than a hydration one, which is the only place a protein reaches an
+        # alchemical node.
         "alchemical_network.json": _alchemical_network(network, protocol),
+        "alchemical_network_medium.json": _tyk2_rbfe_network(),
+        "alchemical_network_large.json": _large_alchemical_network(),
         # Not a gufe class at all, which is the only way to produce this type.
         "unknown_component.json": _somebodys_own_component(),
         "chemical_system.json": ChemicalSystem(
