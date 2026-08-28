@@ -42,8 +42,8 @@ import { withoutLayout } from "../shared/layout.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { DEPICT_STYLE, rgbTriple } from "../shared/depict-style.js";
 import { depictSVG } from "../shared/sdf.js";
-import { createMatcher, type MatchOutcome } from "../shared/smarts.js";
-import { FONT, TOOLBAR } from "../shared/style.js";
+import { createMatcher, smartsBox, type MatchOutcome } from "../shared/smarts.js";
+import { FONT, MENU_LIST, MENU_PANEL, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import { mappingPayloadFor } from "./atom-mapping.js";
@@ -270,18 +270,8 @@ const ARROW = { size: 8, clearance: 8 };
  */
 const EDGE_LABEL = { fontSize: 10 };
 
-/**
- * Colouring by SMARTS match.
- *
- * `debounceMs` is what stands between a typed pattern and a molecule parse per
- * ligand: long enough that a half-typed pattern - mostly invalid anyway - does
- * not start a sweep, short enough that a finished one feels answered. The
- * matcher cancels a superseded run on its own, so this is about not starting
- * work rather than about correctness.
- *
- * `atomRadius` is the disc RDKit draws behind a matched atom, in its own units.
- */
-const MATCH = { debounceMs: 250, atomRadius: 0.4 };
+/** The disc RDKit draws behind a matched atom, in its own units. */
+const MATCH_ATOM_RADIUS = 0.4;
 
 /** The match colour as RDKit wants it, converted once. */
 const MATCH_RGB = rgbTriple(T.netMatchAtom);
@@ -526,7 +516,7 @@ function levelOfDetail(parts: DetailParts): {
         node.sdf,
         DEPICT_SIZE,
         DEPICT_STYLE.layout,
-        atoms && { atoms, color: MATCH_RGB, radius: MATCH.atomRadius },
+        atoms && { atoms, color: MATCH_RGB, radius: MATCH_ATOM_RADIUS },
       );
     if (!drawn) {
       failed.add(index);
@@ -698,19 +688,8 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   // network on screen, and restoring it onto a different one would restore
   // nonsense.
   const querySetting = textSetting("ligand-network.query");
-  const smartsSetting = textSetting("ligand-network.smarts");
   const scoreSetting = num("ligand-network.minScore", 0, 0, 1);
-  // Stretches to the panel it is placed in rather than fixing its own width, so
-  // that anything else the panel holds - today the debug export block, which is
-  // wider than 236px - lines up with the controls instead of hanging off the
-  // edge of the background. The floor is the width this menu was designed at;
-  // the ceiling stops one long unbroken SMILES in the ligand list from dragging
-  // the whole panel across the view.
-  const panel = el(
-    "div",
-    "display:flex;flex-direction:column;gap:8px;flex:1;min-width:236px;max-width:340px;box-sizing:border-box;" +
-      `padding:10px;min-height:0;background:${T.panelBg};border-right:1px solid ${T.splitBorder};`,
-  );
+  const panel = el("div", MENU_PANEL);
 
   const search = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
   search.type = "search";
@@ -726,68 +705,17 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   // the search narrows the list, and this hides nothing at all. Asked for that
   // way on purpose - which ligands do *not* contain the scaffold is the half of
   // the answer a filter throws away.
-  const smarts = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
-  smarts.type = "text";
-  smarts.placeholder = "Colour by SMARTS";
-  smarts.value = smartsSetting.get();
-  smarts.spellcheck = false;
-  smarts.setAttribute("aria-label", "Colour the ligands matching this SMARTS pattern");
-  panel.appendChild(smarts);
-
-  /**
-   * What the pattern did, in words.
-   *
-   * A pattern that matches nothing and a pattern RDKit refused look identical
-   * on the canvas - nothing is coloured either way - and they need different
-   * things done about them. Matching is also not instant on a large network, so
-   * this is where the wait is visible instead of the view looking inert.
-   */
-  const smartsNote = el(
-    "div",
-    // One line held open whether or not there is anything to say, so this reads
-    // as a line that changes rather than as the ligand list twitching up and
-    // down under it every time a pattern is typed, matched or refused. Every
-    // message fits one line at this panel width; a longer one would want the
-    // wording shortened rather than the space here grown.
-    `font-size:${FONT.tiny};line-height:1.5;min-height:1.5em;color:${T.textMuted2};`,
-  );
-  panel.appendChild(smartsNote);
-
-  const describe = (outcome: MatchOutcome): string => {
-    switch (outcome.status) {
-      case "ok": {
-        const unread = outcome.unreadable ? `, ${outcome.unreadable} could not be read` : "";
-        return `${outcome.matched.size} of ${parts.nodes.length} ligands match${unread}`;
-      }
-      case "invalid":
-        return "RDKit does not accept that as a SMARTS pattern.";
-      case "unsupported":
-        return "This RDKit build cannot match SMARTS.";
-      default:
-        return "";
-    }
-  };
-
-  const runSmarts = (pattern: string): void => {
-    smartsNote.textContent = pattern.trim() ? "Matching..." : "";
-    parts.match(pattern).then(
-      (outcome) => {
-        // A superseded run is one someone has already typed past, and its count
-        // would be the answer to a pattern that is no longer in the box.
-        if (outcome.status !== "superseded") smartsNote.textContent = describe(outcome);
-      },
-      () => {
-        smartsNote.textContent = "Matching failed.";
-      },
-    );
-  };
-
-  let smartsTimer = 0;
-  smarts.oninput = () => {
-    smartsSetting.set(smarts.value);
-    window.clearTimeout(smartsTimer);
-    smartsTimer = window.setTimeout(() => runSmarts(smarts.value), MATCH.debounceMs);
-  };
+  const smarts = smartsBox({
+    placeholder: "Colour by SMARTS",
+    label: "Colour the ligands matching this SMARTS pattern",
+    remember: textSetting("ligand-network.smarts"),
+    run: (pattern) => parts.match(pattern),
+    describe: (outcome) => {
+      const unread = outcome.unreadable ? `, ${outcome.unreadable} could not be read` : "";
+      return `${outcome.matched.size} of ${parts.nodes.length} ligands match${unread}`;
+    },
+  });
+  panel.appendChild(smarts.element);
 
   const scoreRow = el("div", `display:flex;align-items:center;gap:8px;font-size:${FONT.small};color:${T.textMuted};`);
   const scoreValue = el("span", `min-width:28px;color:${T.textPrimary};`, "0.00");
@@ -807,7 +735,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const count = el("div", `font-size:${FONT.small};color:${T.textMuted2};`);
   panel.appendChild(count);
 
-  const list = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
+  const list = el("div", MENU_LIST);
   panel.appendChild(list);
 
   // Under the list rather than over it: it explains what the rows do, and it is
@@ -911,8 +839,8 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   render();
   // A remembered pattern is applied when the menu is built, which is the first
   // time it is opened - the same point at which the remembered search text
-  // starts filtering. Nothing here runs for a network nobody opened the menu on.
-  if (smarts.value.trim()) runSmarts(smarts.value);
+  // starts filtering.
+  smarts.apply();
   return panel;
 }
 

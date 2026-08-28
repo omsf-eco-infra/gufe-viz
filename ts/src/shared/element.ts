@@ -71,6 +71,14 @@ export function seededViewState(key: string): unknown {
  * simulation, and dragging a window edge would otherwise fire that per pixel. */
 const RESIZE_DEBOUNCE_MS = 150;
 
+/**
+ * Marks the wrapper every view is built inside.
+ *
+ * Read by `connectedCallback`: a view whose parent carries this is nested in
+ * another one, and so already has a height to fill.
+ */
+const SHELL_ATTRIBUTE = "data-gufe-shell";
+
 export abstract class GufeElement<P> extends HTMLElement {
   #payload: P | null = null;
   #handle: ViewHandle | null = null;
@@ -109,9 +117,29 @@ export abstract class GufeElement<P> extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.style.display = "block";
+    // A flex column rather than a block, so the shell inside is an item this
+    // element can shrink. That is what makes the ceiling below bite.
+    this.style.display = "flex";
+    this.style.flexDirection = "column";
     this.style.width = this.style.width || "100%";
-    this.style.height = this.style.height || "100%";
+    const ownHeight = this.style.height;
+    this.style.height = ownHeight || "100%";
+    // The ceiling that goes with that `100%`, and only with it.
+    //
+    // A page that never says how tall the container is - a bare `<div>` in a
+    // notebook cell, a document without `height:100%` on `html, body` - makes
+    // the `100%` resolve to the content's own height. The view then grows to
+    // whatever it holds instead of scrolling inside a frame, and a menu listing
+    // two hundred ligands pushes its own buttons off the bottom of the page.
+    // The viewport is the honest ceiling for a view that was told to fill its
+    // parent and never told what that means.
+    //
+    // Three cases keep their own height instead: an element the page sized
+    // itself, one nested in another gufe view - whose parent is our own shell,
+    // which always has a height - and one the page gave a `max-height`.
+    if (!ownHeight && !this.parentElement?.closest(`[${SHELL_ATTRIBUTE}]`) && this.#noMaxHeight()) {
+      this.style.maxHeight = "100vh";
+    }
     this.style.background = T.appBg;
     this.style.color = T.textPrimary;
     this.style.fontFamily = "'Inter',system-ui,sans-serif";
@@ -153,13 +181,29 @@ export abstract class GufeElement<P> extends HTMLElement {
     this.#shell = null;
   }
 
+  /**
+   * Whether nothing has given this element a `max-height` already - inline, or
+   * in a stylesheet, which is how a page raises the ceiling above.
+   */
+  #noMaxHeight(): boolean {
+    if (typeof getComputedStyle !== "function") return true;
+    const declared = getComputedStyle(this).maxHeight;
+    return !declared || declared === "none";
+  }
+
   /** Tear the mounted view down and hand back a fresh, empty shell. */
   #resetShell(): HTMLDivElement {
     this.#teardown();
     this.#shell = el(
       "div",
-      `width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;background:${T.appBg};`,
+      // `flex:1;min-height:0` and not height alone: inside a host clamped by the
+      // ceiling above, the shell has to be shrinkable or it overflows it.
+      `width:100%;height:100%;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;` +
+        `overflow:hidden;background:${T.appBg};`,
     );
+    // What tells a nested view that its parent has a height already. See the
+    // ceiling in `connectedCallback`.
+    this.#shell.setAttribute(SHELL_ATTRIBUTE, "");
     this.appendChild(this.#shell);
     return this.#shell;
   }

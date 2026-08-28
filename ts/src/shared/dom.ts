@@ -244,6 +244,11 @@ export interface HeaderStrip extends HTMLDivElement {
    * a view asks for a menu.
    */
   toggleEl: HTMLDivElement;
+  /**
+   * Title and stats together, so the pair share a baseline while the strip
+   * itself centres them against the menu button.
+   */
+  textEl: HTMLDivElement;
 }
 
 /**
@@ -266,14 +271,16 @@ export function headerStrip(title: string): HeaderStrip {
     "div",
     `display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto;font-size:${FONT.small};color:${TEXT.muted};`,
   );
-  // `align-self` rather than inheriting the strip's `baseline`: the button holds
-  // an icon and no text, so its baseline is its bottom edge and it would hang
-  // low against the title. The text either side keeps its baseline alignment.
-  bar.toggleEl = el("div", "display:flex;align-items:center;align-self:center;flex-shrink:0;");
+  // The text sits in a row of its own so the two alignments do not fight: the
+  // stats keep the title's baseline in here, and the strip centres this whole
+  // row against the menu button, which is taller than a line of title text.
+  bar.textEl = el("div", "display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;flex:1;min-width:0;");
+  bar.toggleEl = el("div", "display:flex;align-items:center;flex-shrink:0;");
   // First, so the menu button is at the top left wherever a view carries one.
   bar.appendChild(bar.toggleEl);
-  bar.appendChild(bar.titleEl);
-  bar.appendChild(bar.statsEl);
+  bar.textEl.appendChild(bar.titleEl);
+  bar.textEl.appendChild(bar.statsEl);
+  bar.appendChild(bar.textEl);
   return bar;
 }
 

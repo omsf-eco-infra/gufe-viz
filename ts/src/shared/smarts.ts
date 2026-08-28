@@ -6,6 +6,11 @@
  * too. So what comes back is which molecules matched and which of their atoms
  * did, and nothing here decides what that should look like.
  *
+ * The control that drives it is at the bottom of this file: an input, a status
+ * line and the debounce between them, which both network views had written out
+ * identically. What a match then *means* still belongs to the view - the ligand
+ * network colours with it, the alchemical network filters with it.
+ *
  * RDKit is already in the page for the depictions, so matching costs no extra
  * download. It does cost a molecule parse each, which is the whole reason for
  * the shape of this file:
@@ -26,8 +31,11 @@
  *   `finally`, including on the cancelled path.
  */
 
-import { errText } from "./dom.js";
+import { el, errText, SELECT_CSS } from "./dom.js";
 import type { RDKitModule, RDKitMol } from "./engines.js";
+import type { Setting } from "./settings.js";
+import { FONT } from "./style.js";
+import { T } from "./theme.js";
 
 /**
  * How long a slice of matching may hold the thread before it yields, and how
@@ -181,4 +189,103 @@ export function createMatcher(
   };
 
   return { run, cancel: () => void ++generation };
+}
+
+// --- the control -----------------------------------------------------------
+
+/**
+ * How long typing pauses before a sweep starts.
+ *
+ * Long enough that a pattern typed at speed sweeps once rather than once per
+ * character, short enough that a pause reads as "it is working" rather than as
+ * "nothing happened". The sweep is cancellable either way, so this is about
+ * work not started rather than about correctness.
+ */
+export const MATCH_DEBOUNCE_MS = 250;
+
+export interface SmartsBoxOptions {
+  /** In the empty box: "Colour by SMARTS", "Filter by SMARTS". */
+  placeholder: string;
+  /** For a screen reader, where the placeholder alone does not say what it does. */
+  label: string;
+  /** Where the pattern is kept, so it survives a reload. */
+  remember: Setting<string>;
+  /** Run a pattern. What a match then means is the view's business. */
+  run(pattern: string): Promise<MatchOutcome>;
+  /** What a successful sweep is worth saying. Only the counts differ per view. */
+  describe(outcome: { matched: Map<number, number[]>; unreadable: number }): string;
+}
+
+/**
+ * A SMARTS box and the line under it that says what the pattern did.
+ *
+ * The status line is not decoration. A pattern that matches nothing and a
+ * pattern RDKit refused look identical on a canvas - nothing changes either way
+ * - and they need different things done about them. Matching is also not
+ * instant on a large network, so this is where the wait is visible instead of
+ * the view looking inert.
+ *
+ * `apply` runs whatever is remembered. Views call it when the menu is built,
+ * which is the first time it is opened: nothing here runs for a network nobody
+ * opened the menu on.
+ */
+export function smartsBox(options: SmartsBoxOptions): { element: HTMLDivElement; apply(): void } {
+  const element = el("div", "display:flex;flex-direction:column;gap:8px;");
+
+  const input = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
+  input.type = "text";
+  input.placeholder = options.placeholder;
+  input.value = options.remember.get();
+  input.spellcheck = false;
+  input.setAttribute("aria-label", options.label);
+  element.appendChild(input);
+
+  // One line held open whether or not there is anything to say, so this reads
+  // as a line that changes rather than as the list below twitching up and down
+  // every time a pattern is typed, matched or refused. Every message fits one
+  // line at the panel width these sit in; a longer one would want the wording
+  // shortened rather than the space here grown.
+  const note = el("div", `font-size:${FONT.tiny};line-height:1.5;min-height:1.5em;color:${T.textMuted2};`);
+  element.appendChild(note);
+
+  const describe = (outcome: MatchOutcome): string => {
+    switch (outcome.status) {
+      case "ok":
+        return options.describe(outcome);
+      case "invalid":
+        return "RDKit does not accept that as a SMARTS pattern.";
+      case "unsupported":
+        return "This RDKit build cannot match SMARTS.";
+      default:
+        return "";
+    }
+  };
+
+  const run = (pattern: string): void => {
+    note.textContent = pattern.trim() ? "Matching..." : "";
+    options.run(pattern).then(
+      (outcome) => {
+        // A superseded run is one someone has already typed past, and its count
+        // would be the answer to a pattern that is no longer in the box.
+        if (outcome.status !== "superseded") note.textContent = describe(outcome);
+      },
+      () => {
+        note.textContent = "Matching failed.";
+      },
+    );
+  };
+
+  let timer = 0;
+  input.oninput = () => {
+    options.remember.set(input.value);
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => run(input.value), MATCH_DEBOUNCE_MS);
+  };
+
+  return {
+    element,
+    apply: () => {
+      if (input.value.trim()) run(input.value);
+    },
+  };
 }

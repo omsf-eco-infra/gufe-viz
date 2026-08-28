@@ -112,10 +112,54 @@ export const INPUT = `${SELECT}width:100%;box-sizing:border-box;cursor:text;`;
 
 // --- containers ------------------------------------------------------------
 
-/** The strip at the top of a view: menu slot, title, stats. */
+/**
+ * The strip at the top of a view: menu slot, title, stats.
+ *
+ * Centred, not baseline-aligned. The menu button is taller than the title's
+ * line box, and a baseline-aligned line puts its baseline group flush to the
+ * top, which left the title sitting a few pixels above the button beside it.
+ * Title and stats keep their shared baseline inside `headerStrip`'s own row.
+ */
 export const HEADER =
-  `display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:9px ${SPACE.xxl};flex-shrink:0;` +
+  `display:flex;align-items:center;gap:12px;padding:9px ${SPACE.xxl};flex-shrink:0;` +
   `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};`;
+
+/**
+ * The chrome menu's own column: the network views' search, filters, list and
+ * export controls.
+ *
+ * Stretches to the row it is placed in rather than fixing its own width, so that
+ * anything wider than the controls - the export block, the debug one - lines up
+ * with them instead of hanging off the edge of the background. The floor is the
+ * width the menus were designed at; the ceiling stops one long unbroken SMILES
+ * in a ligand list from dragging the whole panel across the view.
+ *
+ * `overflow-y:auto` is the last resort, and only bites in a view too short to
+ * hold `MENU_LIST`'s floor and the controls both: the panel scrolls, so nothing
+ * in it is ever unreachable. Above that height the list is the part that gives.
+ */
+export const MENU_PANEL =
+  `display:flex;flex-direction:column;gap:${SPACE.lg};flex:1;min-width:236px;max-width:340px;` +
+  `box-sizing:border-box;padding:${SPACE.xl};min-height:0;overflow-y:auto;` +
+  `background:${T.panelBg};border-right:1px solid ${T.splitBorder};`;
+
+/**
+ * The scrolling list of nodes or edges inside `MENU_PANEL`.
+ *
+ * `flex` with a floor and `overflow:auto` together are the whole point: the
+ * list is the one part of the menu that grows with the payload, so it is the
+ * part that gives. It is also the only item here that can shrink at all - a
+ * scroll container's automatic minimum size is zero, where a button's is the
+ * button - which is what makes the shrinking land on the list rather than
+ * squashing the controls. Without this a network of two hundred ligands makes a
+ * list two hundred rows tall and pushes the hint, the export block and the
+ * clear button off the bottom of the view.
+ *
+ * The floor is about three rows. A list squeezed below that has stopped being a
+ * list you can pick from, and it is better for the panel to scroll than for the
+ * list to vanish between the filters and the buttons.
+ */
+export const MENU_LIST = "flex:1 1 auto;min-height:84px;overflow:auto;display:flex;flex-direction:column;gap:3px;";
 
 /** A row of controls, under or over the thing they control. */
 export const TOOLBAR = {

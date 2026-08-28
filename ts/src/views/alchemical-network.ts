@@ -45,12 +45,14 @@ import {
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { extentOf, sceneCamera } from "../shared/camera.js";
 import { withoutLayout } from "../shared/layout.js";
-import { loadD3 } from "../shared/engines.js";
+import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { resetControl } from "../shared/interact.js";
 import { flag, num, text as textSetting } from "../shared/settings.js";
 import { exportBlock, MULTI_SELECT_HINT } from "../shared/selection.js";
+import { createMatcher, smartsBox, type MatchOutcome } from "../shared/smarts.js";
+import { errText } from "../shared/dom.js";
 import { svg, titled } from "../shared/svg.js";
-import { FONT, PANE_LABEL, TOOLBAR } from "../shared/style.js";
+import { FONT, MENU_LIST, MENU_PANEL, PANE_LABEL, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookup, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import { systemPayloadFor } from "./chemical-system.js";
@@ -58,7 +60,9 @@ import { transformationPayloadFor } from "./transformation.js";
 import type {
   AlchemicalNetworkViz,
   ChemicalSystemViz,
+  GufeKey,
   ProtocolViz,
+  SmallMoleculeComponentViz,
   TransformationViz,
 } from "../schema/types.js";
 
@@ -252,6 +256,48 @@ function systemHaystack(system: ChemicalSystemViz, registry: RegistryIndex): str
   return parts.join(" ").toLowerCase();
 }
 
+/** The molecules a network's systems are built from, and who carries what. */
+interface LigandIndex {
+  /** One structure per distinct small molecule, which is what the matcher sweeps. */
+  sources: string[];
+  /** Which of those each system carries, indexed as the nodes are. */
+  perNode: number[][];
+}
+
+/**
+ * Index the small molecules of a network once, by molecule rather than by
+ * system.
+ *
+ * A campaign runs every ligand twice - once in solvent, once in complex - so
+ * indexing per system would parse the same molecule twice for every pattern.
+ * Indexing per molecule and mapping back afterwards halves the sweep, and on a
+ * network with a shared cofactor it does much better than that.
+ *
+ * Only small molecules: a protein has no SMARTS anyone is asking about, and
+ * handing a matcher a PDB the size of a receptor per keystroke would be a
+ * frozen tab for an answer nobody wanted.
+ */
+function ligandIndex(nodes: readonly GraphNode[], registry: RegistryIndex): LigandIndex {
+  const sources: string[] = [];
+  const at = new Map<GufeKey, number>();
+  const perNode = nodes.map((node) => {
+    const mine: number[] = [];
+    for (const key of Object.values(node.components ?? {})) {
+      const component = lookupOfType<SmallMoleculeComponentViz>(registry, key, "SmallMoleculeComponentViz");
+      if (!component) continue;
+      let index = at.get(key);
+      if (index === undefined) {
+        index = sources.length;
+        at.set(key, index);
+        sources.push(component.sdf ?? "");
+      }
+      mine.push(index);
+    }
+    return mine;
+  });
+  return { sources, perNode };
+}
+
 interface MenuParts {
   nodes: readonly GraphNode[];
   edges: readonly GraphEdge[];
@@ -270,6 +316,17 @@ interface MenuParts {
   refresh(): void;
   /** Bring one system into view and open it. */
   focus(index: number): void;
+  /**
+   * Which systems the current SMARTS pattern left, or null when there is none.
+   *
+   * A function rather than a value: the sweep is asynchronous, so what it
+   * answers changes under a menu that has already been built.
+   */
+  matched(): ReadonlySet<number> | null;
+  /** Sweep a pattern. The view decides what its result then hides. */
+  match(smarts: string): Promise<MatchOutcome>;
+  /** Hand back the list's own redraw, for when a sweep finishes. */
+  mounted(rerender: () => void): void;
 }
 
 /**
@@ -294,14 +351,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const querySetting = textSetting("alchemical-network.query");
   const compositionSetting = textSetting("alchemical-network.composition");
 
-  // Stretches to the panel it is placed in rather than fixing its own width, so
-  // that the debug export block, which is wider than 236px, lines up with the
-  // controls instead of hanging off the edge of the background.
-  const panel = el(
-    "div",
-    "display:flex;flex-direction:column;gap:8px;flex:1;min-width:236px;max-width:340px;box-sizing:border-box;" +
-      `padding:10px;min-height:0;background:${T.panelBg};border-right:1px solid ${T.splitBorder};`,
-  );
+  const panel = el("div", MENU_PANEL);
 
   const search = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
   search.type = "search";
@@ -310,6 +360,24 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   parts.query.text = search.value;
   search.setAttribute("aria-label", "Search systems by name, component or gufe key");
   panel.appendChild(search);
+
+  // Under the search and doing the same job by a different route: the search
+  // knows a system by its name, this one knows it by what its ligands are made
+  // of. Both narrow, so both feed the same list - which is the difference from
+  // the ligand network, where a node *is* a molecule and a match has a
+  // structure to colour rather than a box to hide.
+  const smarts = smartsBox({
+    placeholder: "Filter by SMARTS",
+    label: "Show only the systems whose ligands match this SMARTS pattern",
+    remember: textSetting("alchemical-network.smarts"),
+    run: (pattern) => parts.match(pattern),
+    describe: (outcome) => {
+      const unread = outcome.unreadable ? `, ${outcome.unreadable} could not be read` : "";
+      const left = parts.matched()?.size ?? parts.nodes.length;
+      return `${left} of ${parts.nodes.length} systems contain it${unread}`;
+    },
+  });
+  panel.appendChild(smarts.element);
 
   // Only when there is more than one, which is also the rule the legend and the
   // node colouring follow: a network whose systems are all made of the same
@@ -336,7 +404,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const count = el("div", `font-size:${FONT.small};color:${T.textMuted2};`);
   panel.appendChild(count);
 
-  const list = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
+  const list = el("div", MENU_LIST);
   panel.appendChild(list);
 
   panel.appendChild(el("div", `font-size:${FONT.tiny};line-height:1.5;color:${T.textMuted2};`, MULTI_SELECT_HINT));
@@ -361,11 +429,13 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   };
   panel.appendChild(clear);
 
-  /** Whether a system survives both filters. The list and the canvas ask this. */
+  /** Whether a system survives every filter. The list and the canvas ask this. */
   const shows = (index: number): boolean => {
     const text = parts.query.text.trim().toLowerCase();
     if (text && !parts.haystacks[index].includes(text)) return false;
     if (parts.filter.composition && parts.signatures[index] !== parts.filter.composition) return false;
+    const matched = parts.matched();
+    if (matched && !matched.has(index)) return false;
     return true;
   };
 
@@ -431,6 +501,10 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   };
 
   render();
+  // The sweep is asynchronous and the pattern may be one this menu opened with,
+  // so the list has to be redrawable from outside it.
+  parts.mounted(render);
+  smarts.apply();
   return panel;
 }
 
@@ -565,6 +639,44 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     // whether a remembered search works.
     const haystacks = nodes.map((node) => systemHaystack(node, registry));
 
+    /**
+     * RDKit, fetched once and only if something asks.
+     *
+     * Behind an accessor rather than started here, so that a network nobody
+     * types a pattern into never fetches seven megabytes of WebAssembly to do
+     * nothing with. This view draws no structures of its own, so unlike the
+     * ligand network there is nothing else that would have paid for it.
+     */
+    let rdkitPromise: Promise<RDKitModule | null> | null = null;
+    const rdkit = (): Promise<RDKitModule | null> =>
+      (rdkitPromise ??= loadRDKit().catch((e: unknown) => {
+        console.warn("[gufe-viz] RDKit failed to load:", errText(e));
+        return null;
+      }));
+
+    const ligands = ligandIndex(nodes, registry);
+    const matcher = createMatcher(rdkit, ligands.sources);
+    /** The systems the pattern left, or null when there is no pattern in force. */
+    let matched: ReadonlySet<number> | null = null;
+    let refreshList = () => {};
+
+    const runMatch = async (pattern: string): Promise<MatchOutcome> => {
+      const outcome = await matcher.run(pattern);
+      // A superseded run says nothing about what should be on screen; the run
+      // that superseded it is still going and will.
+      if (outcome.status === "superseded") return outcome;
+      // Only a sweep that worked filters anything. A pattern RDKit refused
+      // leaves the network alone rather than emptying it, which would read as
+      // "nothing matches" - a different answer, and the wrong one.
+      matched =
+        outcome.status === "ok"
+          ? new Set(nodes.flatMap((_node, index) => (ligands.perNode[index].some((i) => outcome.matched.has(i)) ? [index] : [])))
+          : null;
+      refreshList();
+      applyEmphasis();
+      return outcome;
+    };
+
     const menu = chromeMenu(
       bar,
       () =>
@@ -579,6 +691,11 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
           filter,
           query,
           refresh: () => applyEmphasis(),
+          matched: () => matched,
+          match: (pattern) => runMatch(pattern),
+          mounted: (rerender) => {
+            refreshList = rerender;
+          },
           // Finding a system in the list and opening it are one action: the
           // list is how you reach one you cannot see on the canvas, and
           // reaching it is not the point.
@@ -706,17 +823,24 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
          */
         applyEmphasis = () => {
           const text = query.text.trim().toLowerCase();
-          const filtering = selected.size > 0 || text.length > 0 || filter.composition !== "";
+          const filtering = selected.size > 0 || text.length > 0 || filter.composition !== "" || matched !== null;
           if (!filtering) {
             scene.setEmphasis(null, null);
             return;
           }
 
+          // A selection on its own lights only what is in it: with no search
+          // and no composition chosen there is nothing for the two filters to
+          // narrow, and a `shown` that answered "yes, trivially" would light
+          // the whole canvas back up.
+          const narrowing = text.length > 0 || filter.composition !== "" || matched !== null;
           const litNodes = new Set<string>();
           nodes.forEach((node, index) => {
             const shown =
+              narrowing &&
               (!text || haystacks[index].includes(text)) &&
-              (!filter.composition || groups.signatures[index] === filter.composition);
+              (!filter.composition || groups.signatures[index] === filter.composition) &&
+              (!matched || matched.has(index));
             if (selected.has(node["gufe-key"]) || shown) litNodes.add(node["gufe-key"]);
           });
 
