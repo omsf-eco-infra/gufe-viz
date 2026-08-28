@@ -13,12 +13,18 @@ import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry, lookupOfType } from "../src/schema/registry.js";
 import { T } from "../src/shared/theme.js";
 import { mappingPayloadFor, openfeShift, pairColour, uniqueAtoms } from "../src/views/atom-mapping.js";
+import { DEPICT_STYLE, markGroups, threeDmolColor } from "../src/shared/depict-style.js";
 import { parseConcentration } from "../src/views/solvent.js";
 import { diffStatus, transformationPayloadFor } from "../src/views/transformation.js";
 import { systemPayloadFor } from "../src/views/chemical-system.js";
 import { ZOOM_LEVELS, levelAt } from "../src/views/ligand-network.js";
 import { clearFakeEngines, exampleNames, flush, readExample, seedFakeEngines, type SeededEnginesResult } from "./helpers.js";
-import type { ChemicalSystemViz, LigandNetworkViz, TransformationViz } from "../src/schema/types.js";
+import type {
+  ChemicalSystemViz,
+  LigandNetworkViz,
+  SmallMoleculeComponentViz,
+  TransformationViz,
+} from "../src/schema/types.js";
 
 function mount<T extends HTMLElement>(tag: string, payload: unknown): T {
   const node = document.createElement(tag) as T & { payload: unknown };
@@ -648,10 +654,10 @@ describe("<gufe-atom-mapping>", () => {
     for (const name of names) expect(node.textContent).toContain(name);
   });
 
-  it("offers the prototype's modes in its order, with gufe's own view after them", async () => {
+  it("offers 2D first, then the 3D modes, with Info last", async () => {
     const node = mapping();
     await flush();
-    expect(modeLabels(node)).toEqual(["3D", "3D-Map", "3D Overlay", "Pairs", "2D", "Info"]);
+    expect(modeLabels(node)).toEqual(["2D", "3D", "3D-Map", "3D Overlay", "Pairs", "Info"]);
   });
 
   it("opens on the plain 3D view, with one box per molecule", async () => {
@@ -672,15 +678,62 @@ describe("<gufe-atom-mapping>", () => {
     expect(engines.viewers.every((v) => typeof v.getView === "function")).toBe(true);
   });
 
-  it("picks out each molecule's unmapped atoms in 3D-Map", async () => {
-    const node = mapping();
+  it("marks in 3D-Map the atoms 2D marks, in the colours 2D marks them with", async () => {
+    // A mapping with an element change on one side and unique atoms on the
+    // other, so both of the style's mark colours have to appear and cannot be
+    // told apart by luck. The standalone fixture has neither.
+    const network = readExample("ligand_network_medium.json") as unknown as LigandNetworkViz;
+    const withChange = network.edges[5];
+    const node = mount("gufe-atom-mapping", mappingPayloadFor(withChange, buildRegistry(network))!);
     await flush();
     await setMode(node, "3D-Map");
 
-    const extra = engines.viewers.flatMap((v) => v.calls.filter((c) => c.startsWith("addStyle")));
-    // One addStyle per unmapped atom, and 3Dmol counts atoms from one.
-    expect(extra.length).toBeGreaterThan(0);
-    expect(extra.every((c) => /serial":\s*[1-9]/.test(c))).toBe(true);
+    const from = lookupOfType<SmallMoleculeComponentViz>(
+      buildRegistry(network),
+      withChange.componentA,
+      "SmallMoleculeComponentViz",
+    )!;
+    const to = lookupOfType<SmallMoleculeComponentViz>(
+      buildRegistry(network),
+      withChange.componentB,
+      "SmallMoleculeComponentViz",
+    )!;
+    const molA = parseSDF(from.sdf);
+    const molB = parseSDF(to.sdf);
+    const pairs = new Map(withChange.componentA_to_componentB!.map((p) => [p.index_A, p.index_B]));
+    const flipped = new Map(Array.from(pairs, ([a, b]) => [b, a] as [number, number]));
+    const sides = [
+      { mol: molA, uniques: uniqueAtoms(pairs, molA.symbols, molB.symbols), side: "left" as const },
+      { mol: molB, uniques: uniqueAtoms(flipped, molB.symbols, molA.symbols), side: "right" as const },
+    ];
+
+    // The last two viewers are this mode's; switching modes opens new ones.
+    const boxes = engines.viewers.slice(-2);
+    const seen = new Set<string>();
+    sides.forEach((side, index) => {
+      // What 2D would paint, asked of the very function 2D asks.
+      const wanted = new Map<number, string>();
+      for (const group of markGroups(DEPICT_STYLE, side.mol, side.uniques, side.side)) {
+        for (const atom of group.atoms) wanted.set(atom, threeDmolColor(group.color));
+      }
+
+      const painted = new Map<number, string>();
+      for (const { selection, style } of boxes[index].styles) {
+        const serial = (selection as { serial?: number }).serial;
+        if (serial === undefined) continue;
+        // 3Dmol counts atoms from one, and the payload counts from zero.
+        const colour = (style as { sphere: { color: string } }).sphere.color;
+        painted.set(serial - 1, colour);
+        seen.add(colour);
+      }
+      expect(painted).toEqual(wanted);
+    });
+
+    // Not a colour invented here: both are the style document's, and the two
+    // meanings are not painted the same.
+    expect(seen).toEqual(
+      new Set([threeDmolColor(DEPICT_STYLE.modifiedColor), threeDmolColor(DEPICT_STYLE.createdColor)]),
+    );
   });
 
   it("draws gufe's own view_3d in 3D Overlay: four models, two spheres per pair", async () => {
@@ -821,11 +874,11 @@ describe("<gufe-ligand-network> detail pane", () => {
     // It arrives with its own full switcher, which is how you know it is
     // the same element and not a second drawing path.
     expect(modeLabels(embedded as HTMLElement)).toEqual([
+      "2D",
       "3D",
       "3D-Map",
       "3D Overlay",
       "Pairs",
-      "2D",
       "Info",
     ]);
   });

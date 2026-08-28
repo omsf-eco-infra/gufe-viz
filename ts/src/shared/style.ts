@@ -133,6 +133,23 @@ export const PANE_LABEL =
   `flex-shrink:0;padding:${SPACE.sm} ${SPACE.xl};font-size:${FONT.heading};` +
   `font-weight:${WEIGHT.bold};color:${T.labelFg};background:${T.labelBg};`;
 
+/**
+ * The same name, floating over the top left of a pane rather than in a bar
+ * above it. A bar costs every pane a row of height whether or not the name
+ * needs one, and in a pair of molecules the picture wants that height more than
+ * the name does. It keeps the bar's own background so it stays readable over a
+ * dark viewer and a white depiction alike, and takes no pointer events so it
+ * cannot swallow a drag meant for the molecule underneath.
+ *
+ * The pane it sits in must be `position:relative`.
+ */
+export const PANE_LABEL_OVERLAY =
+  `position:absolute;top:${SPACE.md};left:${SPACE.md};z-index:10;pointer-events:none;` +
+  `max-width:calc(100% - ${SPACE.xxl} - ${SPACE.xxl});white-space:nowrap;overflow:hidden;` +
+  `text-overflow:ellipsis;padding:${SPACE.xs} ${SPACE.lg};border-radius:${RADIUS.md};` +
+  `font-size:${FONT.heading};font-weight:${WEIGHT.bold};color:${T.labelFg};background:${T.labelBg};` +
+  "box-shadow:0 2px 8px rgba(0,0,0,0.25);";
+
 /** A bordered box: the standard container for anything that is not a viewer. */
 export const CARD =
   `display:flex;flex-direction:column;gap:${SPACE.xs};padding:${SPACE.xxl} 18px;` +

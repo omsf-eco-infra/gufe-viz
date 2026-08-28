@@ -284,6 +284,17 @@ export function markedBonds(mol: Molecule, atoms: ReadonlySet<number>, boundary:
   return out;
 }
 
+/**
+ * `#rrggbb` as the `0xrrggbb` string 3Dmol's style specifications take.
+ *
+ * Here beside `rgbTriple` because it is the same job for the other engine: 3D-Map
+ * paints the mapping in these very colours, so the one place a style colour is
+ * authored feeds both drawings.
+ */
+export function threeDmolColor(hex: string): string {
+  return `0x${hex.replace("#", "")}`;
+}
+
 /** `#rrggbb` as the 0-to-1 RGB triple RDKit's drawing options take. */
 export function rgbTriple(hex: string): [number, number, number] {
   const h = hex.replace("#", "");

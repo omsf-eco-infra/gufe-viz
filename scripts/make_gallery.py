@@ -63,12 +63,12 @@ NOTES = {
     "protein": "3Dmol with representation and colour-scheme switchers; waters hidden by default.",
     "protein_fragment": "A small protein, so the 3D view loads fast while iterating.",
     "protein_membrane": (
-        "**Not drawn**, and worth noticing: Python's MRO walk gives a membrane system the protein "
-        "*builder*, but the payload it emits says `ProteinMembraneComponentViz`, and the browser's "
-        "dispatch table has no entry for that. Inheritance on one side of the contract is not "
-        "inheritance on the other."
+        "The same element, reached the other way. Python's MRO walk gives a membrane system the "
+        "protein *builder*, but the payload it emits says `ProteinMembraneComponentViz`, and that "
+        "type needs its own entry in the browser's dispatch table - inheritance on one side of the "
+        "contract is not inheritance on the other, so both sides say it separately."
     ),
-    "solvated_pdb": "**Not drawn**, for the same reason as `protein_membrane` above.",
+    "solvated_pdb": "`SolvatedPDBComponentViz`, dispatched to the same element for the same reason.",
     "ligand_network": "Radial graph of the ligands, with the selected edge's atom mapping on the right.",
     "ligand_network_named": "The same network with the ligands named, so labels replace gufe keys.",
     "ligand_network_medium": (
@@ -82,6 +82,25 @@ NOTES = {
         "brings them back. **The mappings are synthetic** - paired by atom index, scored by an "
         "arithmetic ramp - so this is a picture of the view under load, not of any chemistry."
     ),
+    "ligand_atom_mapping": (
+        "One mapping on its own, in the same element the ligand network's detail pane mounts. "
+        "Gufe's own first edge, ethanol to ethane: two atoms paired, which is the shape of a "
+        "mapping and little else. All three mapping cards open on plain 3D - the correspondence "
+        "itself is drawn by the other modes in the switcher, `3D-Map`, `Pairs` and `2D`."
+    ),
+    "ligand_atom_mapping_medium": (
+        "The same view on a real mapping, cut out of `ligand_network_medium`: the LOMAP-scored TYK2 "
+        "edge that grows a methyl into a cyclopentyl. 28 of ligand A's 32 atoms map and 14 of "
+        "ligand B's 42 do not, which is the difference `3D-Map` and `2D` colour - unique atoms "
+        "against element changes, coloured the way gufe colours them."
+    ),
+    "ligand_atom_mapping_large": (
+        "The largest pair in `ligand_network_large`, 36 atoms against 31 with all 31 paired. The "
+        "load network's ligands are built from small scaffolds, so this is barely bigger than the "
+        "TYK2 edge above - it is here for what it is rather than for its size. **The "
+        "correspondence is synthetic**, paired by atom index like every edge of that network, so "
+        "the modes that draw it are drawing nothing a chemist should read."
+    ),
     "alchemical_network_medium": (
         "The same ten TYK2 ligands as a binding campaign: every mapping becomes two transformations, "
         "a solvent leg and a complex leg, so the graph is two components rather than one. The complex "
@@ -92,9 +111,16 @@ NOTES = {
         "edges - the level-of-detail rule seen on the alchemical view at the size it was written for. "
         "**The mappings are synthetic**, as they are in the ligand view of the same graph."
     ),
-    "chemical_system": "No view yet: the dispatcher's panel, which is what the degradation rule looks like.",
-    "ligand_atom_mapping": "No view yet - the standalone mapping viewer is Phase 4.",
-    "solvent": "No view yet - a solvent component is a specification, so its view is a settings card.",
+    "chemical_system": (
+        "The system's components down the left, the selected one drawn on the right in whichever "
+        "view its own type gets - so a chemical system is a chooser over the views above rather "
+        "than a picture of its own."
+    ),
+    "solvent": (
+        "A solvent component is a specification rather than a structure, so its view is a settings "
+        "card beside a schematic that shows which ions are present - and says under itself, in "
+        "words, that it is not showing how many."
+    ),
 }
 
 
@@ -236,9 +262,10 @@ Every view gufe-viz draws today, as a picture.
 > regenerates them, and is what to run whenever you change what a view draws.
 > [`README.md`](./README.md) is the full note.
 
-Three payload types are drawn today. The rest reach the dispatcher and get the
-"no visualization for X yet" panel, which is the graceful-degradation rule
-working rather than failing, and is included here for the same reason.
+Every payload type the schema declares is drawn, so what follows is the whole of
+what gufe-viz can show. Where two types share an element - the three PDB kinds,
+the mapping standalone and inside a network - both are here, because sharing a
+drawing path is a claim that has to be checked by looking.
 """,
             0,
         )

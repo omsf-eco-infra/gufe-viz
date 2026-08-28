@@ -11,7 +11,8 @@
  * Two chemical sources, and this is the second of them:
  *
  *   `atom-colors.ts`      generated, mirrored from gufe and matplotlib - the
- *                         2D mapping highlights and the 3D pair ramp
+ *                         mapping highlights, in 2D and now in 3D-Map, and the
+ *                         3D Overlay pair ramp
  *   this file             the framejs prototype's 3D mode colours, at
  *                         /j/019f2b55e1f57722af0293acbda78362
  *
@@ -23,32 +24,19 @@
 
 /** How light and dark differ. Only the light values are tuned for print. */
 interface MoleculeColors {
-  /** Atoms that carry over between the two molecules. */
+  /** Atoms that carry over between the two molecules, and 3D-Map's unmarked ones. */
   core: string;
-  /** Atoms unique to molecule A, and to molecule B. */
-  uniqueA: string;
-  uniqueB: string;
-  /** The two molecules in Pairs mode, and the line drawn between a pair. */
-  pairA: string;
-  pairB: string;
+  /** The line drawn between a mapped pair in Pairs mode. */
   pairLine: string;
 }
 
 const DARK: MoleculeColors = {
   core: "0xaaaaaa",
-  uniqueA: "0xff4d4d",
-  uniqueB: "0x4dff88",
-  pairA: "0xff8888",
-  pairB: "0x88ffaa",
   pairLine: "0xffee55",
 };
 
 const LIGHT: MoleculeColors = {
   core: "0x888888",
-  uniqueA: "0xd62828",
-  uniqueB: "0x2a9d4a",
-  pairA: "0xd62828",
-  pairB: "0x2a9d4a",
   pairLine: "0xd9a300",
 };
 

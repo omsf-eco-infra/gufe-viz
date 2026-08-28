@@ -21,11 +21,11 @@
  * here is arbitrary there, and changing it in one place means changing it in
  * both.
  *
+ *   2D          depictions with the mapping highlighted
  *   3D          both molecules, side by side, plain
- *   3D-Map      the same, with each molecule's unmapped atoms picked out
+ *   3D-Map      the same, with the mapping marked in the 2D colours
  *   3D Overlay  gufe's own `view_3d`, reproduced - see `renderOpenFE`
  *   Pairs       one above the other, Kabsch-aligned, a line per mapped pair
- *   2D          depictions with the mapping highlighted
  *   Info        the mapping in numbers - counts, the correspondence, annotations
  *
  * 3D Overlay is the exception: it is not the prototype's, it is
@@ -44,17 +44,24 @@
  * neither, the box labels already name both ligands, and anything else above
  * the molecules is saying a second time what Info says properly.
  *
- * **The one deliberate divergence is 2D.** The prototype colours core atoms grey
- * and each molecule's unique atoms by side. gufe colours by *meaning* - an
- * element change against a unique atom, with core atoms not highlighted at all -
- * and that is what OpenFE users are taught, so 2D follows gufe. See
- * `shared/atom-colors.ts`.
+ * **2D and 3D-Map diverge from the prototype together, and in the same
+ * direction.** The prototype colours core atoms grey and each molecule's unique
+ * atoms by side. gufe colours by *meaning* - an element change against a unique
+ * atom, with core atoms not highlighted at all - and that is what OpenFE users
+ * are taught, so both modes follow gufe. See `shared/atom-colors.ts`.
  *
- * 2D is also the one mode whose *appearance* is not decided in this file. Marking
+ * They follow it through one call rather than two implementations:
+ * `markGroups` in `shared/depict-style.ts` says which atoms are marked and in
+ * what colour, and `render2D` and `renderColored` both ask it. Someone looking
+ * at a mapping flat and then in space is looking at one claim drawn twice, so
+ * the two must not be able to disagree about a single atom.
+ *
+ * That also makes their *appearance* something not decided in this file. Marking
  * style, ring shape, hydrogen treatment, letter and bond sizes and every colour
  * come from one JSON document, `shared/depict-style.json`, which is authored in
  * a live editor and compiled into the bundle. `shared/depict-style.ts` is the
- * whole of it, and it carries the editor's URL.
+ * whole of it, and it carries the editor's URL. 3D-Map takes the colours from
+ * there; the rest is 2D's alone, because a stick has no letter and no ring.
  *
  * Every mode takes the same two molecules, so this element is what any view
  * showing a pair of ligands should mount: the ligand network's detail pane and
@@ -77,20 +84,21 @@ import {
   markGroups,
   parseAtomSpec,
   postProcessDepiction,
+  threeDmolColor,
   type Side,
 } from "../shared/depict-style.js";
 import { MAPPING_RAMP_3D } from "../shared/atom-colors.js";
 import { MOL } from "../shared/molecule-colors.js";
-import { FONT, MONO, NOTE, OVERLAY_CONTROLS, PANE_LABEL, SECTION_LABEL, SPACE, SURFACE, TEXT, WEIGHT } from "../shared/style.js";
+import { FONT, MONO, NOTE, OVERLAY_CONTROLS, PANE_LABEL_OVERLAY, SECTION_LABEL, SPACE, SURFACE, TEXT, WEIGHT } from "../shared/style.js";
 import { buildRegistry, entriesFor, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
 const MODES = [
+  { id: "2d", label: "2D", title: "2D depictions with highlights" },
   { id: "plain", label: "3D", title: "Plain 3D view" },
-  { id: "colored", label: "3D-Map", title: "Colour-coded by mapping" },
+  { id: "colored", label: "3D-Map", title: "The 2D mapping colours, on the structures" },
   { id: "openfe", label: "3D Overlay", title: "What LigandAtomMapping.view_3d() draws" },
   { id: "lines", label: "Pairs", title: "Dashed lines between mapped atoms" },
-  { id: "2d", label: "2D", title: "2D depictions with highlights" },
   { id: "info", label: "Info", title: "The mapping in numbers" },
 ] as const;
 
@@ -98,12 +106,18 @@ type Mode = (typeof MODES)[number]["id"];
 
 const DEPICT_SIZE = 420;
 
-/** Styling, all of it the prototype's. */
+/**
+ * Sizes, all of them the prototype's.
+ *
+ * `markStick` and `markSphere` are what a marked atom swells to in 3D-Map. The
+ * prototype marked only each molecule's unique atoms; the same sizes now carry
+ * element changes too, which is why they are not named for either.
+ */
 const STYLE = {
   stick: 0.15,
   sphere: 0.25,
-  uniqueStick: 0.18,
-  uniqueSphere: 0.32,
+  markStick: 0.18,
+  markSphere: 0.32,
   pairSphere: 0.22,
   lineRadius: 0.04,
 };
@@ -382,16 +396,12 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
 
     const makeBox = (labelText: string): Box => {
       const wrap = el("div", "flex:1;display:flex;flex-direction:column;position:relative;min-height:0;");
-      wrap.appendChild(
-        el(
-          "div",
-          PANE_LABEL,
-          labelText,
-        ),
-      );
       const container = el("div", "flex:1;position:relative;min-height:0;");
       container.dataset.gufeViewer = "";
       wrap.appendChild(container);
+      // Over the picture rather than above it: see `PANE_LABEL_OVERLAY`. After
+      // the container so it draws on top of the canvas 3Dmol puts there.
+      wrap.appendChild(el("div", PANE_LABEL_OVERLAY, labelText));
       stage.appendChild(wrap);
       const box: Box = { container, viewer: null, interaction: null };
       boxes.push(box);
@@ -476,10 +486,25 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       startSync();
     };
 
+    /**
+     * The mapping, marked on the structures in the colours 2D marks it with.
+     *
+     * *Which* atom is marked and *in which colour* is not decided here: it is
+     * `markGroups`, the same call `render2D` makes, reading the same style
+     * document. So an atom cannot be a unique atom in one picture and an element
+     * change in the other, and the two cannot disagree about what a colour
+     * means - which is the whole reason someone looks at both.
+     *
+     * What 2D does with a group and this does not is bonds and letters. A stick
+     * has no letter, and 3Dmol colours a bond from the atoms at its ends, so a
+     * marked atom simply swells and takes the colour.
+     */
     const renderColored = (): void => {
+      const style = DEPICT_STYLE;
+      const custom = parseAtomSpec(style.customSpec);
       const sides = [
-        { mol: molA, uniques: uniquesA, colour: MOL.uniqueA },
-        { mol: molB, uniques: uniquesB, colour: MOL.uniqueB },
+        { mol: molA, uniques: uniquesA, side: "left" as Side, custom: custom.left },
+        { mol: molB, uniques: uniquesB, side: "right" as Side, custom: custom.right },
       ];
       for (const side of sides) {
         const box = makeBox(side.mol.name);
@@ -488,16 +513,23 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
           {},
           { stick: { radius: STYLE.stick, color: MOL.core }, sphere: { scale: STYLE.sphere, color: MOL.core } },
         );
-        // Everything that does not carry over, picked out. 3Dmol counts atoms
-        // from one, and the payload counts from zero.
-        for (const index of side.uniques.atoms) {
+        // 3Dmol counts atoms from one, and the payload counts from zero.
+        const mark = (index: number, colour: string): void => {
           viewer.addStyle(
             { serial: index + 1 },
             {
-              stick: { radius: STYLE.uniqueStick, color: side.colour },
-              sphere: { scale: STYLE.uniqueSphere, color: side.colour },
+              stick: { radius: STYLE.markStick, color: threeDmolColor(colour) },
+              sphere: { scale: STYLE.markSphere, color: threeDmolColor(colour) },
             },
           );
+        };
+        for (const group of markGroups(style, side.mol, side.uniques, side.side)) {
+          for (const atom of group.atoms) mark(atom, group.color);
+        }
+        // Last, so an atom named in `customSpec` takes the custom colour
+        // whatever the mapping would have given it, exactly as it does in 2D.
+        for (const atom of side.custom) {
+          if (atom < side.mol.symbols.length) mark(atom, style.customColor);
         }
         viewer.zoomTo();
         viewer.render();
@@ -602,15 +634,16 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         }),
       };
 
+      // Both molecules in the element colours the plain 3D view uses. Which is
+      // which is already said by where they sit and by the line between them,
+      // so colouring them by side would only cost the reader the elements.
       const viewer = open(box, [{ mol: molA }, { mol: lifted }]);
-      viewer.setStyle(
-        { model: 0 },
-        { stick: { radius: STYLE.stick, color: MOL.pairA }, sphere: { scale: STYLE.pairSphere, color: MOL.pairA } },
-      );
-      viewer.setStyle(
-        { model: 1 },
-        { stick: { radius: STYLE.stick, color: MOL.pairB }, sphere: { scale: STYLE.pairSphere, color: MOL.pairB } },
-      );
+      const pairStyle = {
+        stick: { radius: STYLE.stick, colorscheme: "Jmol" },
+        sphere: { scale: STYLE.pairSphere, colorscheme: "Jmol" },
+      };
+      viewer.setStyle({ model: 0 }, pairStyle);
+      viewer.setStyle({ model: 1 }, pairStyle);
       for (const [a, b] of pairs) {
         const pa = molA.coords[a];
         const pb = lifted.coords[b];
@@ -650,14 +683,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         { mol: molB, uniques: uniquesB, side: "right" as Side, custom: custom.right },
       ];
       const targets = sides.map((side) => {
-        const wrap = el("div", "flex:1;display:flex;flex-direction:column;min-height:0;");
-        wrap.appendChild(
-          el(
-            "div",
-            PANE_LABEL,
-            side.mol.name,
-          ),
-        );
+        const wrap = el("div", "flex:1;display:flex;flex-direction:column;position:relative;min-height:0;");
         const box = el(
           "div",
           "flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:8px;" +
@@ -665,6 +691,9 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         );
         box.appendChild(centredMessage("Loading 2D depiction..."));
         wrap.appendChild(box);
+        // On the depiction, not above it, and outside the box the depiction
+        // replaces the contents of when RDKit comes back.
+        wrap.appendChild(el("div", PANE_LABEL_OVERLAY, side.mol.name));
         stage.appendChild(wrap);
         return { box, side };
       });

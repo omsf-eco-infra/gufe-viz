@@ -351,6 +351,22 @@ def _named_network(network: gufe.LigandNetwork) -> gufe.LigandNetwork:
     )
 
 
+def _mapping_between(network: gufe.LigandNetwork, name_a: str, name_b: str) -> gufe.LigandAtomMapping:
+    """The edge of ``network`` running from the ligand ``name_a`` to ``name_b``.
+
+    Named rather than indexed, for the reason the base ``ligand_atom_mapping``
+    fixture is sorted by gufe key: a network's edges are a frozenset, so the
+    n-th of them is whatever order this process happened to yield, and these
+    files are committed and have to be byte-identical across runs. Naming the
+    pair also puts the choice in the source, where the reason for it can be
+    read - see :func:`build` for why each of these two was picked.
+    """
+    for edge in network.edges:
+        if (edge.componentA.name, edge.componentB.name) == (name_a, name_b):
+            return edge
+    raise LookupError(f"this network has no mapping from {name_a!r} to {name_b!r}")
+
+
 def _tyk2_network() -> gufe.LigandNetwork:
     """Ten TYK2 ligands and the nine mappings OpenFE planned between them.
 
@@ -448,7 +464,20 @@ def build() -> dict[str, GufeTokenizable]:
         # validators and the "no visualization for X yet" panel are all exercised
         # against real data before the views exist.
         "solvent.json": SolventComponent(),
+        # A mapping on its own, at three sizes cut from the three networks
+        # above, so the standalone mapping view can be seen on the same data as
+        # the network view that embeds it.
+        #
+        # The small one is gufe's own first edge: ethanol to ethane, two atoms
+        # paired, which is the shape of a mapping and nothing else. The medium
+        # one is the real thing - a LOMAP-scored TYK2 edge that grows a methyl
+        # into a cyclopentyl, so 28 of ligand A's 32 atoms map and 14 of ligand
+        # B's 42 are left unmapped, which is what the colouring is for. The
+        # large one is the biggest pair the load network holds, 36 atoms against
+        # 31; its correspondence is synthetic, as every edge of that network is.
         "ligand_atom_mapping.json": mapping,
+        "ligand_atom_mapping_medium.json": _mapping_between(_tyk2_network(), "lig_ejm_31", "lig_ejm_48"),
+        "ligand_atom_mapping_large.json": _mapping_between(_large_network(), "lig_0195", "lig_0198"),
         # The two kinds that need a Protocol. Both are the same three ligands as
         # the network above, one layer up, so the gallery reads as one story.
         "transformation.json": _solvated_transformation(mapping, protocol),
