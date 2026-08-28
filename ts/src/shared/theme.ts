@@ -95,6 +95,14 @@ export interface Theme {
   /** A ligand's name under its structure: quieter than the structure itself. */
   netNodeCaption: string;
   netInitials: string;
+  /**
+   * A ligand matching the SMARTS pattern: its disc, and the atoms that matched
+   * inside its structure. Amber against a palette that is otherwise blue, so
+   * the two are told apart by hue *and* by warmth rather than by hue alone.
+   */
+  netMatchFill: string;
+  netMatchStroke: string;
+  netMatchAtom: string;
   netEdgeRamp: [string, string];
   netEdgeLine: string;
   netEdgeLabel: string;
@@ -160,6 +168,9 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netNodeLabel: "#f2f3f7",
     netNodeCaption: "#b9bccb",
     netInitials: "#51cbee",
+    netMatchFill: "#4a3c22",
+    netMatchStroke: "#e69f00",
+    netMatchAtom: "#e69f00",
     netEdgeRamp: ["#45455e", "#51cbee"],
     netEdgeLine: "#8f93a6",
     netEdgeLabel: "#f2f3f7",
@@ -222,6 +233,9 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netNodeLabel: "#333333",
     netNodeCaption: "#666666",
     netInitials: "#4182e4",
+    netMatchFill: "#fdf1d8",
+    netMatchStroke: "#e69f00",
+    netMatchAtom: "#c07d00",
     netEdgeRamp: ["#e8eaef", "#4182e4"],
     netEdgeLine: "#999999",
     netEdgeLabel: "#333333",

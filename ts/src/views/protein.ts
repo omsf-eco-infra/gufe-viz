@@ -167,7 +167,7 @@ export class GufeProtein extends GufeElement<PdbPayload> {
     const statusEl = el(
       "div",
       "position:absolute;top:12px;left:50%;transform:translateX(-50%);padding:6px 14px;border-radius:6px;" +
-        "font-size:${FONT.body};z-index:20;display:none;pointer-events:none;",
+        `font-size:${FONT.body};z-index:20;display:none;pointer-events:none;`,
     );
     pane.wrap.appendChild(statusEl);
 

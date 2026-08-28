@@ -202,7 +202,7 @@ export class GufeTransformation extends GufeElement<TransformationViz> {
     if (mappings.length > 1) {
       const picker = el(
         "div",
-        "display:flex;align-items:center;gap:8px;padding:6px 10px;flex-shrink:0;font-size:${FONT.small};" +
+        `display:flex;align-items:center;gap:8px;padding:6px 10px;flex-shrink:0;font-size:${FONT.small};` +
           `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};color:${T.textMuted};`,
       );
       picker.appendChild(

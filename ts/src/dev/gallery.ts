@@ -12,6 +12,7 @@
  */
 
 import { mount } from "../index.js";
+import { withDebugFlag } from "../shared/debug.js";
 import { errText } from "../shared/dom.js";
 import { T } from "../shared/theme.js";
 
@@ -61,7 +62,7 @@ export async function buildGallery(host: HTMLElement): Promise<void> {
     `<h1 style="margin:0 0 4px;font-size:18px;color:${T.titleColor};">gufe-viz gallery</h1>` +
     `<div>${paths.length} example payload${paths.length === 1 ? "" : "s"} from <code>examples/</code>, ` +
     "each rendered through <code>&lt;gufe-view&gt;</code>. " +
-    `<a href="./parity.html" style="color:${T.titleColor};">mapping parity -&gt;</a></div>`;
+    `<a href="${withDebugFlag("./parity.html")}" style="color:${T.titleColor};">mapping parity -&gt;</a></div>`;
   host.appendChild(header);
 
   if (!paths.length) {
@@ -83,7 +84,10 @@ export async function buildGallery(host: HTMLElement): Promise<void> {
     bar.style.cssText =
       "display:flex;align-items:baseline;gap:10px;padding:8px 14px;font:12px ui-sans-serif,system-ui,sans-serif;" +
       `background:${T.panelBg};border-bottom:1px solid ${T.cardBorder};color:${T.textMuted};`;
-    const href = `./index.html?file=${encodeURIComponent(EXAMPLE_URLS[path] ?? "")}`;
+    // Through `withDebugFlag` so that `?debug` on the gallery follows the link:
+    // the page being opened reads its own URL, and an example worth opening
+    // alone is usually one being debugged.
+    const href = withDebugFlag(`./index.html?file=${encodeURIComponent(EXAMPLE_URLS[path] ?? "")}`);
     bar.innerHTML =
       `<b style="color:${T.textPrimary};font-family:ui-monospace,Menlo,monospace;">${name}</b>` +
       `<a href="${href}" style="margin-left:auto;color:${T.titleColor};">open alone -></a>`;

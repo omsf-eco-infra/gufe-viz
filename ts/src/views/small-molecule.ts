@@ -12,7 +12,7 @@ import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared
 import { resetControl, viewerInteraction, type BoundedZoom, type Interaction } from "../shared/interact.js";
 import { DEPICT_STYLE } from "../shared/depict-style.js";
 import { depictSVG, ensureSDFTerminator, parseCounts, placeDepiction } from "../shared/sdf.js";
-import { OVERLAY_CONTROLS, PANE_LABEL, SURFACE } from "../shared/style.js";
+import { FONT, OVERLAY_CONTROLS, PANE_LABEL, SURFACE } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import type { SmallMoleculeComponentViz } from "../schema/types.js";
 
@@ -70,7 +70,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     // --- info bar ---
     const infoBar = el(
       "div",
-      "flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:${FONT.body};" +
+      `flex-shrink:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 20px;padding:8px 16px;font-size:${FONT.body};` +
         `background:${T.toolbarBg};border-top:1px solid ${T.toolbarBorder};color:${T.textPrimary};`,
     );
     host.appendChild(infoBar);
@@ -88,7 +88,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
       cell.appendChild(
         el(
           "span",
-          "font-size:${FONT.tiny};font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;" +
+          `font-size:${FONT.tiny};font-weight:700;letter-spacing:.08em;text-transform:uppercase;flex-shrink:0;` +
             `color:${T.textMuted2};`,
           label,
         ),
@@ -96,7 +96,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
       const v = el(
         "span",
         `user-select:text;cursor:text;color:${T.textPrimary}` +
-          (mono ? ";font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:${FONT.small};overflow-wrap:anywhere;" : ""),
+          (mono ? `;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:${FONT.small};overflow-wrap:anywhere;` : ""),
         value,
       );
       v.title = value;

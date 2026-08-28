@@ -26,13 +26,14 @@ import {
   SELECT_CSS,
   statChip,
 } from "../shared/dom.js";
-import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { defineElement, GufeElement, seededViewState, type ViewHandle } from "../shared/element.js";
 import { choice, flag, num, text as textSetting, type Setting } from "../shared/settings.js";
 import { svg } from "../shared/svg.js";
 import { guardWheel, resetControl } from "../shared/interact.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
-import { DEPICT_STYLE } from "../shared/depict-style.js";
+import { DEPICT_STYLE, rgbTriple } from "../shared/depict-style.js";
 import { depictSVG } from "../shared/sdf.js";
+import { createMatcher, type MatchOutcome } from "../shared/smarts.js";
 import { FONT, TOOLBAR } from "../shared/style.js";
 import { T } from "../shared/theme.js";
 import { buildRegistry, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
@@ -109,6 +110,87 @@ interface NetEdge extends LigandAtomMappingViz {
 const LAYOUTS = ["Force-directed", "Circular", "Radial"] as const;
 type Layout = (typeof LAYOUTS)[number];
 
+// --- restoring a view ------------------------------------------------------
+//
+// What a `Setting` does not cover, because none of it is a preference: the
+// layout the force simulation settled on, where the canvas is panned to, and
+// which edge is open. All three are about the network on screen rather than
+// about how someone likes to read networks, which is the line `settings.ts`
+// draws and the reason these travel separately.
+//
+// The positions are here because they are the expensive, unrepeatable half. A
+// force layout converges against the canvas it was given, so the same network
+// laid out again in a window of a different size is a different picture - and
+// any node the reader dragged is a decision no layout would reproduce at all.
+
+/** What `<gufe-ligand-network>` saves, and what it will take back. */
+export interface NetworkViewState {
+  /** Every node's position, in the order the payload lists them. */
+  nodes: [number, number][];
+  /** The canvas transform: zoom, then pan. */
+  scale: number;
+  tx: number;
+  ty: number;
+  /** The open edge, or -1 for none. */
+  selected: number;
+}
+
+/** The key this view's state travels under. See `seededViewState`. */
+const VIEW_STATE_KEY = "ligand-network";
+
+/**
+ * How to select more than one ligand.
+ *
+ * Written once and shown in two places - under the list, and again when Edges
+ * comes back empty - because those are the two moments it is needed: before
+ * anyone has tried, and after the one thing that goes wrong has gone wrong.
+ *
+ * Named for the platform's own word rather than a key: someone on a Mac reaches
+ * for Cmd and someone on Linux for Ctrl, and a hint that names the wrong one
+ * reads as though the feature is not for them.
+ */
+const MULTI_SELECT_HINT = "Cmd/Ctrl-click to select several.";
+
+/** Two decimals is under a thousandth of a node radius, and a third of the size. */
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+/**
+ * Read back what this view saved, or null.
+ *
+ * Checked the way `settings.ts` checks a stored value, and for the same reason:
+ * it arrives as data from outside, possibly written by an older version of this
+ * file. The node count has to match as well, because positions are matched to
+ * the payload by position - a state restored onto a network with a different
+ * number of ligands would place them all wrong rather than fail.
+ */
+function asNetworkViewState(value: unknown, nodeCount: number): NetworkViewState | null {
+  if (!value || typeof value !== "object") return null;
+  const state = value as Partial<NetworkViewState>;
+  const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
+  if (!finite(state.scale) || state.scale <= 0 || !finite(state.tx) || !finite(state.ty)) return null;
+  if (!Array.isArray(state.nodes) || state.nodes.length !== nodeCount) return null;
+  if (!state.nodes.every((at) => Array.isArray(at) && at.length === 2 && at.every(finite))) return null;
+  const selected = finite(state.selected) ? Math.trunc(state.selected) : -1;
+  return { nodes: state.nodes, scale: state.scale, tx: state.tx, ty: state.ty, selected };
+}
+
+/**
+ * Put the nodes back where they were.
+ *
+ * Called after `seedPositions`, so it overwrites a seeding rather than racing
+ * it, and it carries `fx`/`fy` along wherever the layout was using them - a
+ * pinned node whose pin still names its old position would snap back on the
+ * next `place()`.
+ */
+function placeNodesAt(nodes: NetNode[], at: readonly [number, number][]): void {
+  nodes.forEach((node, i) => {
+    node.x = at[i][0];
+    node.y = at[i][1];
+    if (node.fx !== undefined) node.fx = node.x;
+    if (node.fy !== undefined) node.fy = node.y;
+  });
+}
+
 // Dimensions and force constants are the framejs prototype's, kept the same so
 // the two pictures are the same picture. Changing one here without changing it
 // there is how they drift apart.
@@ -148,6 +230,22 @@ const ARROW = { size: 8, clearance: 8 };
  * Which zooms draw it at all is `ZOOM_LEVELS`, not here.
  */
 const EDGE_LABEL = { fontSize: 10 };
+
+/**
+ * Colouring by SMARTS match.
+ *
+ * `debounceMs` is what stands between a typed pattern and a molecule parse per
+ * ligand: long enough that a half-typed pattern - mostly invalid anyway - does
+ * not start a sweep, short enough that a finished one feels answered. The
+ * matcher cancels a superseded run on its own, so this is about not starting
+ * work rather than about correctness.
+ *
+ * `atomRadius` is the disc RDKit draws behind a matched atom, in its own units.
+ */
+const MATCH = { debounceMs: 250, atomRadius: 0.4 };
+
+/** The match colour as RDKit wants it, converted once. */
+const MATCH_RGB = rgbTriple(T.netMatchAtom);
 
 /** The selection halo, sized from the edge it sits under. */
 const HALO = { padding: 4, opacity: 0.95 };
@@ -217,8 +315,15 @@ const FIT_MARGIN = 24;
 /** How far down what is not emphasised goes. Dimmed, never removed. */
 const DIM = { node: 0.12, edge: 0.06 };
 
-/** Zoom to at least this when jumping to a ligand, so its name is legible. */
-const FOCUS_SCALE = 1.2;
+/**
+ * Zoom to at least this when jumping to a ligand from the sidebar.
+ *
+ * It has to clear the `structures` level's `from`, or clicking a ligand lands
+ * on a disc and a name rather than the structure that was asked for. Well clear
+ * of it, since landing exactly on the threshold draws the structure at the
+ * smallest size it is ever drawn. This is the knob for how close that lands.
+ */
+const FOCUS_SCALE = 1.8;
 
 const FORCE = {
   linkBaseDistance: 18,
@@ -257,7 +362,7 @@ function hoverTooltip(host: HTMLElement): {
   const tip = el(
     "div",
     "position:absolute;z-index:30;pointer-events:none;opacity:0;transition:opacity .12s ease;" +
-      "padding:7px 10px;border-radius:6px;font-size:${FONT.small};line-height:1.5;max-width:260px;" +
+      `padding:7px 10px;border-radius:6px;font-size:${FONT.small};line-height:1.5;max-width:260px;` +
       `background:${T.tooltipBg};border:1px solid ${T.tooltipBorder};color:${T.textPrimary};` +
       "box-shadow:0 4px 14px rgba(0,0,0,0.28);",
   );
@@ -335,6 +440,8 @@ interface DetailParts {
   edgeLabels: SVGGElement;
   /** The canvas, which carries the level in force as `data-detail`. */
   stage: SVGSVGElement;
+  /** Node index to the atoms a SMARTS pattern matched, for whatever is current. */
+  matched: () => ReadonlyMap<number, number[]>;
   rdkit: () => Promise<RDKitModule | null>;
   viewport: () => { width: number; height: number };
 }
@@ -357,14 +464,28 @@ interface DetailParts {
 function levelOfDetail(parts: DetailParts): {
   apply(scale: number, tx: number, ty: number): void;
   drawn(): number;
+  forget(): void;
 } {
   const injected = new Set<number>();
   let failed = new Set<number>();
 
+  /** The match a structure was drawn against, so a new one knows what to redraw. */
+  const drawnAgainst: string[] = [];
+  const marking = (index: number): string => (parts.matched().get(index) ?? []).join(",");
+
   const inject = (RDKit: RDKitModule, index: number): void => {
     if (injected.has(index) || failed.has(index)) return;
     const node = parts.nodes[index];
-    const drawn = node.sdf && depictSVG(RDKit, node.sdf, DEPICT_SIZE, DEPICT_STYLE.layout);
+    const atoms = parts.matched().get(index);
+    const drawn =
+      node.sdf &&
+      depictSVG(
+        RDKit,
+        node.sdf,
+        DEPICT_SIZE,
+        DEPICT_STYLE.layout,
+        atoms && { atoms, color: MATCH_RGB, radius: MATCH.atomRadius },
+      );
     if (!drawn) {
       failed.add(index);
       return;
@@ -395,8 +516,26 @@ function levelOfDetail(parts: DetailParts): {
       target.appendChild(document.importNode(child, true));
       appended++;
     }
-    if (appended) injected.add(index);
-    else failed.add(index);
+    if (appended) {
+      injected.add(index);
+      drawnAgainst[index] = marking(index);
+    } else failed.add(index);
+  };
+
+  /**
+   * Drop the structures whose highlighting the current pattern has outdated.
+   *
+   * Only those: a structure is expensive and a new pattern usually changes a
+   * handful of nodes, so redrawing every one of them would make typing a
+   * pattern cost more than drawing the network did. A dropped structure is
+   * rebuilt by the next `apply`, and only if it is on screen.
+   */
+  const forget = (): void => {
+    for (const index of [...injected]) {
+      if (drawnAgainst[index] === marking(index)) continue;
+      parts.depictionGroups[index].replaceChildren();
+      injected.delete(index);
+    }
   };
 
   const fitted: number[] = [];
@@ -429,14 +568,20 @@ function levelOfDetail(parts: DetailParts): {
   const show = (index: number, wanted: DetailLevel): void => {
     const level = wanted.structure && !injected.has(index) ? levelUnder(wanted) : wanted;
     parts.depictionGroups[index].setAttribute("display", level.structure ? "inline" : "none");
+    // A match has to be visible at every level, and each level has a different
+    // thing to say it with: the disc when there is one, the name when there is
+    // one, and the matched atoms themselves once the structure is drawn - which
+    // is also the level where the disc is gone.
+    const hit = parts.matched().has(index);
     // The disc is painted out rather than removed, so the whole node stays a hit
     // target for hover and drag; a structure's thin strokes are nothing to grab.
     const circle = parts.circles[index];
-    circle.setAttribute("fill", level.disc ? T.netNodeFill : "none");
-    circle.setAttribute("stroke", level.disc ? T.netNodeStroke : "none");
+    circle.setAttribute("fill", level.disc ? (hit ? T.netMatchFill : T.netNodeFill) : "none");
+    circle.setAttribute("stroke", level.disc ? (hit ? T.netMatchStroke : T.netNodeStroke) : "none");
     parts.initials[index].setAttribute("display", level.initials ? "inline" : "none");
 
     const caption = parts.captions[index];
+    caption.setAttribute("fill", hit ? T.netMatchStroke : T.netNodeCaption);
     caption.setAttribute("display", level.name === "none" ? "none" : "inline");
     if (level.name === "none") return;
     const inside = level.name === "inside";
@@ -479,7 +624,7 @@ function levelOfDetail(parts: DetailParts): {
       .catch(() => undefined);
   };
 
-  return { apply, drawn: () => injected.size };
+  return { apply, drawn: () => injected.size, forget };
 }
 
 /** What an export names things by. */
@@ -496,9 +641,11 @@ export type ExportAs = "names" | "keys";
  * Protocol arrives as a class name with no settings. So what crosses back is
  * pointers, and Python keeps the data.
  *
- * Ligands come out comma-separated, which is what a plan command takes. Edges
- * come out one pair per line, because a pair is two things and a comma is
- * already spoken for.
+ * Both come out one per line. A newline-delimited list is what a shell loop,
+ * a `read`-per-line script and a paste into a text column all take without
+ * further splitting, and it survives names that contain a comma. Within an
+ * edge the two ends are still comma-separated, because there the comma is
+ * joining a pair rather than delimiting the list.
  */
 export function selectionText(
   nodes: readonly NetNode[],
@@ -513,7 +660,7 @@ export function selectionText(
     return nodes
       .filter((node) => selected.has(node["gufe-key"]))
       .map(name)
-      .join(", ");
+      .join("\n");
   }
 
   // An edge is included when both its ends are selected: "the edges among these
@@ -532,7 +679,7 @@ function copyOut(text: string, fallbackHost: HTMLElement): void {
 
 /** When the clipboard is unavailable, show the text so it can be copied by hand. */
 function showText(text: string, host: HTMLElement): void {
-  const box = el("textarea", "width:100%;height:80px;font-size:${FONT.small};box-sizing:border-box;") as HTMLTextAreaElement;
+  const box = el("textarea", `width:100%;height:80px;font-size:${FONT.small};box-sizing:border-box;`) as HTMLTextAreaElement;
   box.value = text;
   box.readOnly = true;
   host.appendChild(box);
@@ -561,6 +708,8 @@ interface MenuParts {
   selected: Set<string>;
   filter: { minScore: number };
   query: { text: string };
+  /** Colour the ligands containing a substructure. Nothing is hidden by it. */
+  match(smarts: string): Promise<MatchOutcome>;
 }
 
 /**
@@ -578,12 +727,19 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   // network on screen, and restoring it onto a different one would restore
   // nonsense.
   const querySetting = textSetting("ligand-network.query");
+  const smartsSetting = textSetting("ligand-network.smarts");
   const scoreSetting = num("ligand-network.minScore", 0, 0, 1);
   const exportAsSetting = choice<ExportAs>("ligand-network.exportAs", "names", ["names", "keys"]);
+  // Stretches to the panel it is placed in rather than fixing its own width, so
+  // that anything else the panel holds - today the debug export block, which is
+  // wider than 236px - lines up with the controls instead of hanging off the
+  // edge of the background. The floor is the width this menu was designed at;
+  // the ceiling stops one long unbroken SMILES in the ligand list from dragging
+  // the whole panel across the view.
   const panel = el(
     "div",
-    "display:flex;flex-direction:column;gap:8px;width:236px;padding:10px;min-height:0;" +
-      `background:${T.panelBg};border-right:1px solid ${T.splitBorder};`,
+    "display:flex;flex-direction:column;gap:8px;min-width:236px;max-width:340px;box-sizing:border-box;" +
+      `padding:10px;min-height:0;background:${T.panelBg};border-right:1px solid ${T.splitBorder};`,
   );
 
   const search = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
@@ -593,6 +749,75 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   parts.query.text = search.value;
   search.setAttribute("aria-label", "Search ligands by name, SMILES or gufe key");
   panel.appendChild(search);
+
+  // --- colour by substructure ---
+  //
+  // Below the search and not part of it, because it does the opposite thing:
+  // the search narrows the list, and this hides nothing at all. Asked for that
+  // way on purpose - which ligands do *not* contain the scaffold is the half of
+  // the answer a filter throws away.
+  const smarts = el("input", `${SELECT_CSS}width:100%;box-sizing:border-box;`) as HTMLInputElement;
+  smarts.type = "text";
+  smarts.placeholder = "Colour by SMARTS";
+  smarts.value = smartsSetting.get();
+  smarts.spellcheck = false;
+  smarts.setAttribute("aria-label", "Colour the ligands matching this SMARTS pattern");
+  panel.appendChild(smarts);
+
+  /**
+   * What the pattern did, in words.
+   *
+   * A pattern that matches nothing and a pattern RDKit refused look identical
+   * on the canvas - nothing is coloured either way - and they need different
+   * things done about them. Matching is also not instant on a large network, so
+   * this is where the wait is visible instead of the view looking inert.
+   */
+  const smartsNote = el(
+    "div",
+    // One line held open whether or not there is anything to say, so this reads
+    // as a line that changes rather than as the ligand list twitching up and
+    // down under it every time a pattern is typed, matched or refused. Every
+    // message fits one line at this panel width; a longer one would want the
+    // wording shortened rather than the space here grown.
+    `font-size:${FONT.tiny};line-height:1.5;min-height:1.5em;color:${T.textMuted2};`,
+  );
+  panel.appendChild(smartsNote);
+
+  const describe = (outcome: MatchOutcome): string => {
+    switch (outcome.status) {
+      case "ok": {
+        const unread = outcome.unreadable ? `, ${outcome.unreadable} could not be read` : "";
+        return `${outcome.matched.size} of ${parts.nodes.length} ligands match${unread}`;
+      }
+      case "invalid":
+        return "RDKit does not accept that as a SMARTS pattern.";
+      case "unsupported":
+        return "This RDKit build cannot match SMARTS.";
+      default:
+        return "";
+    }
+  };
+
+  const runSmarts = (pattern: string): void => {
+    smartsNote.textContent = pattern.trim() ? "Matching..." : "";
+    parts.match(pattern).then(
+      (outcome) => {
+        // A superseded run is one someone has already typed past, and its count
+        // would be the answer to a pattern that is no longer in the box.
+        if (outcome.status !== "superseded") smartsNote.textContent = describe(outcome);
+      },
+      () => {
+        smartsNote.textContent = "Matching failed.";
+      },
+    );
+  };
+
+  let smartsTimer = 0;
+  smarts.oninput = () => {
+    smartsSetting.set(smarts.value);
+    window.clearTimeout(smartsTimer);
+    smartsTimer = window.setTimeout(() => runSmarts(smarts.value), MATCH.debounceMs);
+  };
 
   const scoreRow = el("div", `display:flex;align-items:center;gap:8px;font-size:${FONT.small};color:${T.textMuted};`);
   const scoreValue = el("span", `min-width:28px;color:${T.textPrimary};`, "0.00");
@@ -615,6 +840,13 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const list = el("div", "flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;");
   panel.appendChild(list);
 
+  // Under the list rather than over it: it explains what the rows do, and it is
+  // the one thing here nobody can discover by looking. A plain click replaces
+  // the selection, so without knowing this a reader can never have two ligands
+  // selected - and Edges, which needs both ends of one, could never copy
+  // anything at all.
+  panel.appendChild(el("div", `font-size:${FONT.tiny};line-height:1.5;color:${T.textMuted2};`, MULTI_SELECT_HINT));
+
   // --- export: the line against becoming a GUI ---
   //
   // Labelled as copying rather than editing, on purpose. A button that said
@@ -636,10 +868,23 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   asRow.appendChild(asPicker);
   exportBox.appendChild(asRow);
 
+  /**
+   * What the export buttons have to say for themselves.
+   *
+   * Its own line, because the alternative was what this used to do: return on an
+   * empty selection and leave the button looking broken. Copying is invisible by
+   * nature - the result is on a clipboard, somewhere else - so a button here has
+   * nothing to show for itself either way unless it says so.
+   */
+  const exportNote = el("div", `font-size:${FONT.tiny};line-height:1.5;color:${T.textMuted2};`);
+  const note = (text: string): void => {
+    exportNote.textContent = text;
+  };
+
   const exportRow = el("div", "display:flex;gap:4px;");
   const exports: [string, "ligands" | "edges", string][] = [
-    ["Ligands", "ligands", "Copy the selected ligand names, comma separated"],
-    ["Edges", "edges", "Copy the selected edges, one pair per line"],
+    ["Ligands", "ligands", "Copy the selected ligand names, one per line"],
+    ["Edges", "edges", "Copy the edges between the selected ligands, one pair per line"],
   ];
   for (const [text, what, title] of exports) {
     const button = el("button", `${BTN_CSS}flex:1;`, text);
@@ -647,13 +892,32 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
     button.onclick = (event) => {
       const as = asPicker.value as ExportAs;
       const content = selectionText(parts.nodes, parts.edges, parts.selected, what, as);
-      if (!content) return;
-      if (event.shiftKey) download(content, `selected-${what}.txt`);
-      else copyOut(content, exportBox);
+      if (!content) {
+        // Naming which of the two reasons it is, because they need different
+        // things done about them: one is "pick something", the other is "the
+        // ligands you picked have nothing between them".
+        note(
+          parts.selected.size === 0
+            ? "Nothing selected. Click a ligand above."
+            : what === "edges"
+              ? `No mappings between the ${parts.selected.size} selected ligands. ${MULTI_SELECT_HINT}`
+              : "Nothing to copy.",
+        );
+        return;
+      }
+      const lines = content.split("\n").length;
+      if (event.shiftKey) {
+        download(content, `selected-${what}.txt`);
+        note(`Saved ${lines} ${what === "edges" ? "edges" : "ligands"} to a file.`);
+      } else {
+        copyOut(content, exportBox);
+        note(what === "edges" ? `Copied ${lines} edges.` : `Copied ${parts.selected.size} ligands.`);
+      }
     };
     exportRow.appendChild(button);
   }
   exportBox.appendChild(exportRow);
+  exportBox.appendChild(exportNote);
   exportBox.appendChild(
     el("div", `font-size:${FONT.tiny};color:${T.textMuted2};`, "Shift-click to save as a file instead."),
   );
@@ -678,6 +942,10 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   };
 
   const render = (): void => {
+    // Whatever the export last said was about a selection that has now changed,
+    // and a count of what was copied from the previous one is worse than
+    // silence. A successful copy does not come through here, so it stays up.
+    note("");
     list.replaceChildren();
     const shown = parts.nodes.map((node, index) => ({ node, index })).filter(({ node }) => matches(node));
     count.textContent = `${shown.length} of ${parts.nodes.length} ligands`;
@@ -687,7 +955,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
       const row = el(
         "button",
         "display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;text-align:left;" +
-          "font-family:inherit;font-size:${FONT.small};cursor:pointer;width:100%;min-width:0;" +
+          `font-family:inherit;font-size:${FONT.small};cursor:pointer;width:100%;min-width:0;` +
           `border:1px solid ${parts.selected.has(key) ? T.cardBorderActive : T.cardBorder};` +
           `background:${parts.selected.has(key) ? T.cardBgActive : T.cardBg};color:${T.textPrimary};`,
       );
@@ -732,6 +1000,10 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   };
 
   render();
+  // A remembered pattern is applied when the menu is built, which is the first
+  // time it is opened - the same point at which the remembered search text
+  // starts filtering. Nothing here runs for a network nobody opened the menu on.
+  if (smarts.value.trim()) runSmarts(smarts.value);
   return panel;
 }
 
@@ -788,6 +1060,49 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const query = { text: "" };
     let applyEmphasis = () => {};
 
+    /**
+     * RDKit, fetched once and only if something asks.
+     *
+     * Behind an accessor rather than started here, so that a network with no
+     * ligands - which returns before it would ever draw one - never fetches
+     * seven megabytes of WebAssembly to do nothing with.
+     */
+    let rdkitPromise: Promise<RDKitModule | null> | null = null;
+    const rdkit = (): Promise<RDKitModule | null> =>
+      (rdkitPromise ??= loadRDKit().catch((e: unknown) => {
+        console.warn("[gufe-viz] RDKit failed to load:", errText(e));
+        return null;
+      }));
+
+    /**
+     * SMARTS matching, over this network's ligands, indexed as `nodes` is.
+     *
+     * Held here rather than in the scene because a redraw builds a new scene: a
+     * pattern someone typed has to survive changing the layout, and the sweep it
+     * costs must not be paid again for the same pattern.
+     *
+     * Declared above the menu, and not merely before its first use, because a
+     * menu that was left open builds during this render and applies whatever
+     * pattern it remembers as it does - so everything it can reach has to exist
+     * by the time it is constructed, not by the time the view has finished.
+     */
+    const matcher = createMatcher(
+      rdkit,
+      nodes.map((node) => node.sdf ?? ""),
+    );
+    let matched: ReadonlyMap<number, number[]> = new Map();
+    let showMatches = () => {};
+
+    const runMatch = async (pattern: string): Promise<MatchOutcome> => {
+      const outcome = await matcher.run(pattern);
+      // A superseded run says nothing about what should be on screen; the run
+      // that superseded it is still going and will.
+      if (outcome.status === "superseded") return outcome;
+      matched = outcome.status === "ok" ? outcome.matched : new Map();
+      showMatches();
+      return outcome;
+    };
+
     const menu = chromeMenu(
       bar,
       () =>
@@ -799,6 +1114,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
           query,
           refresh: () => applyEmphasis(),
           focus: (index) => focusNode(index),
+          match: (pattern) => runMatch(pattern),
         }),
       {
         label: "Search, filter and select ligands",
@@ -850,14 +1166,23 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     // Depictions are RDKit's job alone, so start the fetch now rather than
     // after the layout - the graph draws with initials and they fill in.
-    const rdkitReady = loadRDKit().catch((e: unknown) => {
-      console.warn("[gufe-viz] RDKit failed to load:", errText(e));
-      return null;
-    });
+    const rdkitReady = rdkit();
 
     const tip = hoverTooltip(canvas);
     let focusNode: (index: number) => void = () => {};
-    let selectedEdge = edges.length ? 0 : -1;
+
+    // Taken once, before the first draw. The positions are the layout from here
+    // on, so every redraw uses them; the transform is applied to the first paint
+    // only, because after that the reader owns the camera and a resize must not
+    // undo where they have panned to.
+    const restored = asNetworkViewState(seededViewState(VIEW_STATE_KEY), nodes.length);
+    let pendingTransform = restored && { scale: restored.scale, tx: restored.tx, ty: restored.ty };
+
+    let selectedEdge = restored && restored.selected < edges.length ? restored.selected : edges.length ? 0 : -1;
+    /** The canvas transform, as of the last time anything moved it. */
+    let transformNow = (): { scale: number; tx: number; ty: number } => ({ scale: 1, tx: 0, ty: 0 });
+    /** Whether there is a camera worth keeping across a redraw yet. */
+    let painted = false;
     let stop: (() => void) | null = null;
     let layout: Layout = layoutSetting.get();
     let forceUnavailable = false;
@@ -872,6 +1197,11 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
 
     const draw = (next: Layout = layout): void => {
+      // A redraw that is not a change of layout - the menu opening, the window
+      // resizing - must not throw away where the reader has panned to. Only a
+      // new layout is a new picture, and only a new picture is worth reframing.
+      // Before the first paint there is no camera to keep, so that one frames.
+      const keepCamera = painted && next === layout ? transformNow() : null;
       layout = next;
       stop?.();
       stop = null;
@@ -880,6 +1210,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       const width = canvas.clientWidth || 800;
       const height = canvas.clientHeight || 600;
       seedPositions(nodes, width, height, layout, edges);
+      if (restored) placeNodesAt(nodes, restored.nodes);
 
       const paint = () => {
         if (!alive) return;
@@ -888,6 +1219,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         resetView = scene.reset;
         stop = scene.cleanup;
         focusNode = (index) => scene.focusOn(index);
+        transformNow = scene.transform;
 
         /**
          * Which nodes and edges stay lit.
@@ -923,14 +1255,31 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
           scene.setEmphasis(filtering ? litNodes : null, filtering ? litEdges : null);
         };
 
+        showMatches = () => scene.setMatches(matched);
+
         refreshHalos();
         applyEmphasis();
+        // A redraw builds nodes with no colouring on them, so whatever pattern
+        // is in force is applied again here rather than only when it is typed.
+        showMatches();
         // Frame the graph, which also draws the level of detail the resulting
-        // zoom calls for. Everything else arrives as the user zooms in.
-        scene.fit();
+        // zoom calls for. Everything else arrives as the user zooms in. A
+        // restored camera goes through the same path, so it draws its own level
+        // of detail rather than the framed one's.
+        const camera = pendingTransform ?? keepCamera;
+        if (camera) {
+          scene.setTransform(camera.scale, camera.tx, camera.ty);
+          pendingTransform = null;
+        } else {
+          scene.fit();
+        }
+        painted = true;
       };
 
-      if (layout !== "Force-directed" || forceUnavailable) {
+      // A restored network is placed, not laid out: the positions it came with
+      // are the answer the simulation would spend a second failing to reproduce
+      // against a canvas of a different size.
+      if (layout !== "Force-directed" || forceUnavailable || restored) {
         paint();
         return;
       }
@@ -959,9 +1308,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       onResize: () => draw(),
       cleanup: () => {
         alive = false;
+        matcher.cancel();
         tip.remove();
         stop?.();
       },
+      viewState: (): NetworkViewState => ({
+        nodes: nodes.map((node) => [round2(node.x), round2(node.y)]),
+        ...transformNow(),
+        selected: selectedEdge,
+      }),
     };
   }
 
@@ -1048,11 +1403,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   ): {
     setSelected(index: number): void;
     setEmphasis(nodeKeys: ReadonlySet<string> | null, edgeIndices: ReadonlySet<number> | null): void;
+    setMatches(matched: ReadonlyMap<number, number[]>): void;
     setDetail(scale: number, tx: number, ty: number): void;
     focusOn(index: number): void;
     depictionsDrawn(): number;
     fit(): void;
     reset(): void;
+    /** Where the canvas is now, and how to put it back there. */
+    transform(): { scale: number; tx: number; ty: number };
+    setTransform(scale: number, tx: number, ty: number): void;
     cleanup(): void;
   } {
     // Named, because "the svg in this view" stopped being unambiguous the moment
@@ -1216,9 +1575,18 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
     place();
 
+    /**
+     * What the current SMARTS pattern matched, as node index to matched atoms.
+     *
+     * Held by the scene rather than read from the view, because everything that
+     * paints a node reads it and a redraw builds all of this again.
+     */
+    let marks: ReadonlyMap<number, number[]> = new Map();
+
     const detail = levelOfDetail({
       nodes,
       circles,
+      matched: () => marks,
       captions,
       initials,
       depictionGroups,
@@ -1233,6 +1601,22 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     return {
       setSelected(index: number) {
         halos.forEach((halo, i) => halo.setAttribute("opacity", i === index ? "0.95" : "0"));
+      },
+
+      /**
+       * Colour the ligands a SMARTS pattern matched.
+       *
+       * Colour rather than filter, and deliberately a different channel from
+       * `setEmphasis`: dimming answers "which ones did I ask for", colouring
+       * answers "which ones contain this" - and the whole point of the second
+       * question is seeing the ones that do not. So the two compose, and
+       * neither hides anything.
+       */
+      setMatches(matched) {
+        marks = matched;
+        detail.forget();
+        const { scale, tx, ty } = view.transform();
+        detail.apply(scale, tx, ty);
       },
 
       /**
@@ -1264,6 +1648,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       depictionsDrawn: () => detail.drawn(),
       fit: view.fit,
       reset: view.reset,
+      transform: view.transform,
+      setTransform: view.setTransform,
       cleanup: view.cleanup,
     };
   }
@@ -1277,7 +1663,14 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     groups: SVGGElement[],
     place: () => void,
     onTransform: (scale: number, tx: number, ty: number) => void,
-  ): { cleanup(): void; fit(): void; reset(): void; centreOn(x: number, y: number): void } {
+  ): {
+    cleanup(): void;
+    fit(): void;
+    reset(): void;
+    centreOn(x: number, y: number): void;
+    transform(): { scale: number; tx: number; ty: number };
+    setTransform(scale: number, tx: number, ty: number): void;
+  } {
     let scale = 1;
     let tx = 0;
     let ty = 0;
@@ -1422,6 +1815,18 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         scale = Math.max(scale, FOCUS_SCALE);
         tx = width / 2 - x * scale;
         ty = height / 2 - y * scale;
+        apply();
+      },
+
+      transform: () => ({ scale, tx, ty }),
+
+      // Deliberately unclamped, unlike the wheel. It is not a gesture: it is a
+      // camera being put back exactly where it was, and a limit applied here
+      // would quietly move it.
+      setTransform(nextScale: number, nextTx: number, nextTy: number) {
+        scale = nextScale;
+        tx = nextTx;
+        ty = nextTy;
         apply();
       },
       cleanup() {

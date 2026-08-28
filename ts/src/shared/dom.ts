@@ -356,6 +356,16 @@ export function viewerHost(): { wrap: HTMLDivElement; container: HTMLDivElement 
  */
 export const CHROME_OPEN_BY_DEFAULT = false;
 
+/**
+ * What a menu's remembered open state is keyed by, after the view's own name.
+ *
+ * Named so the convention can be checked rather than assumed. Whether a menu
+ * was left open is not a preference about the view - it is where one reader had
+ * got to - so anything copying a view somewhere else wants to leave it behind,
+ * and needs a way to know which key that is.
+ */
+export const MENU_OPEN_SUFFIX = ".menuOpen";
+
 export interface ChromeMenu {
   /** Put this where the menu's contents belong in the view's own layout. */
   panel: HTMLDivElement;
@@ -369,6 +379,11 @@ export interface ChromeMenuOptions {
   /**
    * Remember whether it was open. Someone who opened the ligand list to work
    * through a network should not have to open it again on the next payload.
+   *
+   * The key must end in `MENU_OPEN_SUFFIX`. That is what lets somewhere else
+   * tell this apart from a real preference: this one is about the chrome the
+   * reader was working through, and it is personal to the sitting rather than
+   * to the view.
    */
   remember?: Setting<boolean>;
   /** Fired after the panel's visibility changes. Views re-lay-out here. */

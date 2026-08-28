@@ -17,6 +17,7 @@
  */
 
 import { mount } from "../index.js";
+import { withDebugFlag } from "../shared/debug.js";
 import { errText } from "../shared/dom.js";
 import { MAPPING_COLORS } from "../shared/atom-colors.js";
 import { T } from "../shared/theme.js";
@@ -58,7 +59,7 @@ export async function buildParity(host: HTMLElement): Promise<void> {
   header.innerHTML =
     `<h1 style="margin:0 0 4px;font-size:18px;color:${T.titleColor};">mapping parity</h1>` +
     "<div>Ours on the left, gufe's own drawing on the right, same mapping. " +
-    `<a href="./gallery.html" style="color:${T.titleColor};">back to the gallery -&gt;</a></div>` +
+    `<a href="${withDebugFlag("./gallery.html")}" style="color:${T.titleColor};">back to the gallery -&gt;</a></div>` +
     "<div style=\"margin-top:8px;\">What has to match, and what to look at:</div>" +
     "<ul style=\"margin:4px 0 0;padding-left:20px;\">" +
     `<li><b style="color:${MAPPING_COLORS.elementChange};">${MAPPING_COLORS.elementChange}</b> ` +

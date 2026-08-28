@@ -33,8 +33,13 @@
  * the page.
  */
 
-/** Namespaced so a page hosting this alongside anything else stays legible. */
-const PREFIX = "gufe-viz:";
+/**
+ * Namespaced so a page hosting this alongside anything else stays legible.
+ *
+ * Exported because `settingsDump()` hands out prefixed keys, and a caller
+ * writing them into some other browser has to be able to recognise its own.
+ */
+export const PREFIX = "gufe-viz:";
 
 /** Used when `localStorage` cannot be reached, so settings still work per page. */
 const memory = new Map<string, string>();
@@ -197,6 +202,32 @@ export function settings(): Record<string, unknown> {
     } catch {
       out[full.slice(PREFIX.length)] = raw;
     }
+  }
+  return out;
+}
+
+/**
+ * Every setting as the store actually holds it: prefixed keys, unparsed values.
+ *
+ * `settings()` above is for reading, this is for copying. A host reproducing a
+ * view somewhere else writes these back verbatim, and verbatim is the point: a
+ * value that survived a parse-and-restringify round trip is a value this module
+ * has had an opinion about, and the whole reason `setting()` takes a validator
+ * is that those opinions are version-specific.
+ */
+export function settingsDump(): Record<string, string> {
+  const out: Record<string, string> = {};
+  const backing = store();
+  const keys = backing
+    ? Array.from({ length: backing.length }, (_, i) => backing.key(i)).filter(
+        (k): k is string => typeof k === "string",
+      )
+    : Array.from(memory.keys());
+
+  for (const full of keys) {
+    if (!full.startsWith(PREFIX)) continue;
+    const raw = backing ? backing.getItem(full) : (memory.get(full) ?? null);
+    if (raw !== null) out[full] = raw;
   }
   return out;
 }

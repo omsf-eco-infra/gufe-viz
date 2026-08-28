@@ -114,7 +114,7 @@ export class GufeChemicalSystem extends GufeElement<ChemicalSystemViz> {
         "button",
         "display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:8px 10px;text-align:left;" +
           `border:1px solid ${T.cardBorder};border-radius:8px;background:${T.cardBg};cursor:pointer;` +
-          "font-family:inherit;font-size:${FONT.body};width:100%;",
+          `font-family:inherit;font-size:${FONT.body};width:100%;`,
       );
       button.appendChild(el("span", `font-weight:700;color:${T.textPrimary};`, label));
       button.appendChild(el("span", `font-size:${FONT.small};color:${T.textMuted};`, componentLabel(component)));

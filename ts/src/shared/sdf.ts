@@ -124,8 +124,32 @@ export function parseCounts(sdf: string): { atoms: number; bonds: number } | nul
  * anyone's taste. Under `conformer` a molblock keeps the pose it arrived with,
  * which for a `SmallMoleculeComponent` is a real 3D conformer flattened onto
  * the page rather than a drawn structure.
+ *
+ * `highlight` paints a subset of the atoms, which is how a SMARTS match shows
+ * itself inside a structure. Its indices address the molecule *this* function
+ * parses - hydrogens removed - so whatever produced them has to have parsed it
+ * the same way, or every index above the first hydrogen marks the wrong atom.
+ * A build too old for `get_svg_with_highlights` simply draws without them.
  */
-export function depictSVG(RDKit: RDKitModule, source: string, size: number, layout: Layout2D): string | null {
+export interface DepictHighlight {
+  atoms: readonly number[];
+  /**
+   * The 0-to-1 RGB triple RDKit's drawing options take, which is what
+   * `rgbTriple` in `depict-style.ts` produces. Converted by the caller so this
+   * file stays about SDF and RDKit and knows nothing about anyone's palette.
+   */
+  color: readonly [number, number, number];
+  /** The disc radius behind each atom, in RDKit's own units. */
+  radius: number;
+}
+
+export function depictSVG(
+  RDKit: RDKitModule,
+  source: string,
+  size: number,
+  layout: Layout2D,
+  highlight?: DepictHighlight,
+): string | null {
   let rdmol = null;
   try {
     rdmol = RDKit.get_mol(source, JSON.stringify({ removeHs: true }));
@@ -136,6 +160,22 @@ export function depictSVG(RDKit: RDKitModule, source: string, size: number, layo
       } catch {
         /* SMILES have no coords to replace */
       }
+    }
+    if (highlight?.atoms.length && rdmol.get_svg_with_highlights) {
+      const colors: Record<number, readonly [number, number, number]> = {};
+      const radii: Record<number, number> = {};
+      for (const atom of highlight.atoms) {
+        colors[atom] = highlight.color;
+        radii[atom] = highlight.radius;
+      }
+      const details = {
+        width: size,
+        height: size,
+        atoms: [...highlight.atoms],
+        highlightAtomColors: colors,
+        highlightAtomRadii: radii,
+      };
+      return rdmol.get_svg_with_highlights(JSON.stringify(details)) || null;
     }
     return rdmol.get_svg(size, size) || null;
   } catch (e) {

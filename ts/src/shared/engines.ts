@@ -72,6 +72,14 @@ export interface ThreeDmolModule {
 export interface RDKitMol {
   set_new_coords(useCoordGen: boolean): void;
   /**
+   * Every match of a query molecule, as a JSON string: an array of
+   * `{"atoms": [...], "bonds": [...]}` indexed against *this* molecule, which
+   * is why the caller has to have parsed it the same way as whatever it is
+   * about to draw. Optional like the two below, so a host pre-seeding an older
+   * MinimalLib build loses SMARTS matching instead of throwing.
+   */
+  get_substruct_matches?(query: RDKitMol): string;
+  /**
    * The molecule back out as a MOL block, which is how a generated 2D layout is
    * read: MinimalLib will write coordinates into a molecule but never lets a
    * caller write them back, so the round trip goes through text. Optional for
@@ -93,6 +101,11 @@ export interface RDKitMol {
 
 export interface RDKitModule {
   get_mol(source: string, details?: string): RDKitMol | null;
+  /**
+   * A query molecule from SMARTS. Returns null when the pattern does not parse,
+   * which is the whole of the error handling a typed-in pattern needs.
+   */
+  get_qmol?(smarts: string): RDKitMol | null;
 }
 
 interface SeededEngines {
@@ -113,14 +126,28 @@ declare global {
 
 // --- where the engines come from when they are not pre-seeded --------------
 //
-// Kept as plain string constants rather than literals at the import site so the
-// bundler leaves the URLs alone, so inlining them has one obvious place to look
-// when it vendors these instead.
+// Pinned exactly, never to a range and never to whatever a CDN calls latest. A
+// page built today and opened in a year has to draw the same picture, and an
+// engine that changes under a fixed payload turns a rendering bug into one
+// nobody can reproduce. RDKit is the sharpest case: the pinned `.js` is also
+// what pins the `.wasm`, which Emscripten fetches from the script's own
+// directory, and it is where feature detection like `get_qmol` gets its answer.
+//
+// Moving a pin is a deliberate edit here, with the page re-checked afterwards.
+
+export const ENGINE_VERSIONS = {
+  threeDmol: "2.5.5",
+  rdkit: "2025.3.4-1.0.0",
+  d3: "7.9.0",
+} as const;
+
+// Built here rather than at the import site, so the bundler leaves them alone
+// and anything vendoring these instead has one obvious place to look.
 
 export const ENGINE_URLS = {
-  threeDmol: "https://3dmol.org/build/3Dmol-min.js",
-  rdkit: "https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js",
-  d3: "https://cdn.jsdelivr.net/npm/d3@7/+esm",
+  threeDmol: `https://unpkg.com/3dmol@${ENGINE_VERSIONS.threeDmol}/build/3Dmol-min.js`,
+  rdkit: `https://unpkg.com/@rdkit/rdkit@${ENGINE_VERSIONS.rdkit}/dist/RDKit_minimal.js`,
+  d3: `https://cdn.jsdelivr.net/npm/d3@${ENGINE_VERSIONS.d3}/+esm`,
 } as const;
 
 function preseeded<T>(name: keyof SeededEngines): Promise<T> | null {

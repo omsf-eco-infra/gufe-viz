@@ -27,6 +27,44 @@ import { T } from "./theme.js";
 export interface ViewHandle {
   onResize?(): void;
   cleanup?(): void;
+  /**
+   * What this view would need to be put back the way it is right now.
+   *
+   * Everything a `Setting` covers is already remembered, so this is for the rest:
+   * where the camera is, what is selected, where a layout settled. All of it is
+   * about *the payload on screen* rather than about how the reader likes to
+   * look at things, which is exactly why it is not a setting.
+   *
+   * The value must be JSON, because the only hosts that ask for it are the ones
+   * sending it somewhere else. `seededViewState` is the way back in.
+   */
+  viewState?(): unknown;
+}
+
+/**
+ * The global a host puts view state in for the next render to pick up.
+ *
+ * A global rather than an attribute or a property: the state has to be readable
+ * while the view is building itself, which is before any caller has a handle on
+ * anything to set it on. `debug.ts` uses one for the same reason.
+ */
+export const VIEW_STATE_GLOBAL = "GUFE_VIZ_VIEW_STATE";
+
+/**
+ * Take the state a host left for `key`, if any. One-shot.
+ *
+ * Removed as it is read, so that a second view of the same kind on the page
+ * builds itself normally instead of opening on the first one's camera, and so
+ * that a re-render after a resize does not keep undoing what the reader has
+ * done since.
+ */
+export function seededViewState(key: string): unknown {
+  const seeds = (globalThis as Record<string, unknown>)[VIEW_STATE_GLOBAL];
+  if (!seeds || typeof seeds !== "object") return null;
+  const store = seeds as Record<string, unknown>;
+  const found = store[key];
+  delete store[key];
+  return found ?? null;
 }
 
 /** Debounce for the resize observer: a graph view re-lays out its whole
@@ -187,6 +225,14 @@ export abstract class GufeElement<P> extends HTMLElement {
   /** Force a resize pass - for hosts that know they resized us. */
   resize(): void {
     this.#handle?.onResize?.();
+  }
+
+  /**
+   * What the mounted view would need to be restored as it is now, or null when
+   * it has nothing to say. See `ViewHandle.viewState`.
+   */
+  viewState(): unknown {
+    return this.#handle?.viewState?.() ?? null;
   }
 }
 
