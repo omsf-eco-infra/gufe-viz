@@ -89,7 +89,20 @@ import {
 } from "../shared/depict-style.js";
 import { MAPPING_RAMP_3D } from "../shared/atom-colors.js";
 import { MOL } from "../shared/molecule-colors.js";
-import { FONT, MONO, NOTE, OVERLAY_CONTROLS, PANE_LABEL_OVERLAY, SECTION_LABEL, SPACE, SURFACE, TEXT, WEIGHT } from "../shared/style.js";
+import {
+  CHIP,
+  FONT,
+  MONO,
+  NOTE,
+  OVERLAY_CONTROLS,
+  PANE_LABEL_OVERLAY,
+  RADIUS,
+  SECTION_LABEL,
+  SPACE,
+  SURFACE,
+  TEXT,
+  WEIGHT,
+} from "../shared/style.js";
 import { buildRegistry, entriesFor, entryLabel, lookupOfType, type RegistryIndex } from "../schema/registry.js";
 import type { LigandAtomMappingViz, SmallMoleculeComponentViz } from "../schema/types.js";
 
@@ -105,6 +118,25 @@ const MODES = [
 type Mode = (typeof MODES)[number]["id"];
 
 const DEPICT_SIZE = 420;
+
+/**
+ * What Info's correspondence rows are striped with, and how narrow a column of
+ * them may get.
+ *
+ * The colours are the depiction style's, which is where the chips above the
+ * table take theirs from too: a row, the chip that counts it and the atom in the
+ * 2D depiction are one colour or the picture and its reading disagree. A mapped
+ * atom has no colour anywhere, so it has none here.
+ */
+const RELATION_COLOR: Record<RelationKind, string | null> = {
+  mapped: null,
+  element: DEPICT_STYLE.modifiedColor,
+  uniqueA: DEPICT_STYLE.destroyedColor,
+  uniqueB: DEPICT_STYLE.createdColor,
+};
+
+/** Narrowest a correspondence column may be, in pixels: about `123 Cl -> 123 Cl`. */
+const RELATION_COLUMN = 132;
 
 /**
  * Sizes, all of them the prototype's.
@@ -192,6 +224,63 @@ function pairMap(payload: LigandAtomMappingViz): Map<number, number> {
     }
   }
   return pairs;
+}
+
+/** Which of the four things a row of Info's correspondence table can say. */
+export type RelationKind = "mapped" | "element" | "uniqueA" | "uniqueB";
+
+/**
+ * One row of the correspondence: one atom of one molecule, and what it becomes.
+ *
+ * Either index is null when the atom on that side does not exist, which is how
+ * an atom the mapping relates to nothing is a row rather than a footnote. Both
+ * element symbols travel with it because the row is read on its own: `5 O -> 9
+ * N` says why it is an element change without the reader holding two molecules
+ * in their head.
+ */
+export interface Relation {
+  kind: RelationKind;
+  a: number | null;
+  b: number | null;
+  symbolA: string;
+  symbolB: string;
+}
+
+/**
+ * The correspondence as one row per atom, in the order the atoms are indexed.
+ *
+ * Every atom of both molecules appears exactly once: a mapped one on the row of
+ * its partner, an unmapped one on a row of its own, with B's leftovers after A's
+ * atoms because there is no partner index to interleave them by.
+ *
+ * This is the same three-way split `uniqueAtoms` makes, made again from the same
+ * two inputs rather than read back out of `Uniques`, because a row also needs
+ * the partner index and both symbols. The two must agree, and `views.test.ts`
+ * asserts they do: the counts in the chips are `uniqueAtoms`, the rows they
+ * filter are these.
+ */
+export function relations(
+  pairs: ReadonlyMap<number, number>,
+  symbolsA: readonly string[],
+  symbolsB: readonly string[],
+): Relation[] {
+  const rows: Relation[] = [];
+  for (let a = 0; a < symbolsA.length; a++) {
+    const symbolA = symbolsA[a] ?? "";
+    const b = pairs.get(a);
+    if (b === undefined) {
+      rows.push({ kind: "uniqueA", a, b: null, symbolA, symbolB: "" });
+      continue;
+    }
+    const symbolB = symbolsB[b] ?? "";
+    rows.push({ kind: symbolA === symbolB ? "mapped" : "element", a, b, symbolA, symbolB });
+  }
+  const taken = new Set(pairs.values());
+  for (let b = 0; b < symbolsB.length; b++) {
+    if (taken.has(b)) continue;
+    rows.push({ kind: "uniqueB", a: null, b, symbolA: "", symbolB: symbolsB[b] ?? "" });
+  }
+  return rows;
 }
 
 /**
@@ -518,10 +607,13 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
           {},
           { stick: { radius: STYLE.stick, color: MOL.core }, sphere: { scale: STYLE.sphere, color: MOL.core } },
         );
-        // 3Dmol counts atoms from one, and the payload counts from zero.
+        // 3Dmol's V2000 reader numbers `serial` from zero within a model, so an
+        // atom's serial is the payload's own index. Adding one to it marked the
+        // next atom along, all the way up the molecule, and 3D-Map then
+        // disagreed with 2D about every atom it coloured.
         const mark = (index: number, colour: string): void => {
           viewer.addStyle(
-            { serial: index + 1 },
+            { serial: index },
             {
               stick: { radius: STYLE.markStick, color: threeDmolColor(colour) },
               sphere: { scale: STYLE.markSphere, color: threeDmolColor(colour) },
@@ -743,7 +835,13 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     };
 
     const renderInfo = (): void => {
-      const body = el("div", "flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px;");
+      // `min-width:0` because the correspondence below is a grid of monospaced
+      // cells that cannot shrink: without it this pane takes their width as its
+      // own minimum and pushes the chips off the side of a narrow detail pane.
+      const body = el(
+        "div",
+        "flex:1;min-width:0;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:14px;",
+      );
       stage.appendChild(body);
 
       // With no header strip, Info is where the payload identifies itself.
@@ -758,27 +856,110 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       heading.appendChild(el("div", `font-size:${FONT.body};color:${TEXT.faint};`, "LigandAtomMapping"));
       body.appendChild(heading);
 
-      const counts = el("div", `display:flex;flex-wrap:wrap;gap:${SPACE.lg} 16px;font-size:${FONT.small};`);
-      counts.appendChild(statChip("mapped atoms", String(pairs.size)));
+      // The chips are the whole of the colour legend, and in a view with no
+      // molecule in it a colour that only names itself is decoration. So every
+      // chip that carries one also selects the atoms it counts: clicking it
+      // narrows the correspondence below to those rows, clicking it again widens
+      // it back out. The counts come from `uniqueAtoms` and the rows from
+      // `relations`, which is why those two must agree about every atom.
+      const rows = relations(pairs, molA.symbols, molB.symbols);
+      const counts = el("div", CHIP.row);
+      const chips: { button: HTMLButtonElement; kinds: readonly RelationKind[] }[] = [];
+      let filter: readonly RelationKind[] | null = null;
+
       // The chips take their colours from the depiction style rather than from
       // the constants, so the legend cannot say one thing while 2D draws another.
-      counts.appendChild(
-        statChip("element changes", String(uniquesA.elements.length), DEPICT_STYLE.modifiedColor),
-      );
-      counts.appendChild(statChip(`unique to ${nameA}`, String(uniquesA.atoms.length), DEPICT_STYLE.destroyedColor));
-      counts.appendChild(statChip(`unique to ${nameB}`, String(uniquesB.atoms.length), DEPICT_STYLE.createdColor));
-      counts.appendChild(statChip(`atoms in ${nameA}`, String(molA.symbols.length)));
-      counts.appendChild(statChip(`atoms in ${nameB}`, String(molB.symbols.length)));
-      counts.appendChild(statChip("score", payload.score == null ? EM_DASH : payload.score.toFixed(3)));
+      const filterChip = (label: string, value: number, kinds: readonly RelationKind[], color?: string): void => {
+        const button = el("button", `${CHIP.plain}${CHIP.button}`);
+        button.type = "button";
+        button.appendChild(statChip(label, String(value), color));
+        button.onclick = () => {
+          filter = filter === kinds ? null : kinds;
+          refresh();
+        };
+        chips.push({ button, kinds });
+        counts.appendChild(button);
+      };
+      const plainChip = (label: string, value: string): void => {
+        const holder = el("span", CHIP.plain);
+        holder.appendChild(statChip(label, value));
+        counts.appendChild(holder);
+      };
+
+      filterChip("mapped atoms", pairs.size, ["mapped", "element"]);
+      filterChip("element changes", uniquesA.elements.length, ["element"], DEPICT_STYLE.modifiedColor);
+      filterChip(`unique to ${nameA}`, uniquesA.atoms.length, ["uniqueA"], DEPICT_STYLE.destroyedColor);
+      filterChip(`unique to ${nameB}`, uniquesB.atoms.length, ["uniqueB"], DEPICT_STYLE.createdColor);
+      plainChip(`atoms in ${nameA}`, String(molA.symbols.length));
+      plainChip(`atoms in ${nameB}`, String(molB.symbols.length));
+      plainChip("score", payload.score == null ? EM_DASH : payload.score.toFixed(3));
       body.appendChild(counts);
 
-      const listLabel = el("div", SECTION_LABEL, "Correspondence");
-      body.appendChild(listLabel);
-      const list = el("div", MONO);
-      list.textContent = pairs.size
-        ? Array.from(pairs, ([a, b]) => `${a} -> ${b}`).join("   ")
-        : "This mapping relates no atoms at all.";
-      body.appendChild(list);
+      body.appendChild(el("div", SECTION_LABEL, "Correspondence"));
+      // What the two columns of every row are, said once above them rather than
+      // as a header the grid would have to repeat in every column.
+      const caption = el("div", NOTE);
+      body.appendChild(caption);
+
+      // A row per atom, laid out in as many columns as the pane is wide. The
+      // indices are padded to the widest of them and drawn monospaced, so the
+      // arrows line up down a column and a hundred atoms read as a table rather
+      // than as one long sentence, which is what a run of `3 -> 5` separated by
+      // spaces had become.
+      const table = el(
+        "div",
+        `display:grid;grid-template-columns:repeat(auto-fill,minmax(${RELATION_COLUMN}px,1fr));` +
+          `gap:${SPACE.xs} ${SPACE.md};font-family:${FONT.mono};font-size:${FONT.small};color:${TEXT.primary};`,
+      );
+      body.appendChild(table);
+
+      const digits = String(Math.max(molA.symbols.length, molB.symbols.length, 1) - 1).length;
+      const side = (index: number | null, symbol: string): string =>
+        `${(index == null ? EM_DASH : String(index)).padStart(digits)} ${symbol.padEnd(2)}`;
+      const describe = (row: Relation): string => {
+        if (row.kind === "uniqueA") return `${nameA} atom ${row.a} ${row.symbolA} maps to nothing`;
+        if (row.kind === "uniqueB") return `${nameB} atom ${row.b} ${row.symbolB} maps to nothing`;
+        const change = row.kind === "element" ? ", an element change" : "";
+        return `${nameA} atom ${row.a} ${row.symbolA} maps to ${nameB} atom ${row.b} ${row.symbolB}${change}`;
+      };
+      // The stripe down the left of a row is the colour of the chip that counts
+      // it, so a row and the legend above it are one claim rather than two.
+      const cell = (row: Relation): HTMLElement => {
+        const node = el(
+          "div",
+          `white-space:pre;padding:${SPACE.xs} ${SPACE.md};border-radius:${RADIUS.sm};` +
+            `background:${SURFACE.card};border-left:3px solid ${RELATION_COLOR[row.kind] ?? "transparent"};`,
+          `${side(row.a, row.symbolA)} -> ${side(row.b, row.symbolB)}`,
+        );
+        node.title = describe(row);
+        // Which kind of row this is, in the DOM rather than only in a colour:
+        // visible in devtools and assertable in a test, and the one thing a
+        // stripe cannot say to a reader who cannot see it.
+        node.dataset.gufeRelation = row.kind;
+        return node;
+      };
+
+      const refresh = (): void => {
+        const active = filter;
+        const shown = active ? rows.filter((row) => active.includes(row.kind)) : rows;
+        table.replaceChildren(...shown.map(cell));
+        if (!shown.length) {
+          table.appendChild(
+            el("div", `${NOTE}grid-column:1/-1;`, filter ? "No atoms of that kind." : "This mapping has no atoms."),
+          );
+        }
+        caption.textContent =
+          (pairs.size ? "" : "This mapping relates no atoms at all. ") +
+          `${nameA} -> ${nameB}, by atom index and element` +
+          (filter ? "; click the chip again for all of them" : "");
+        for (const chip of chips) {
+          const on = chip.kinds === filter;
+          chip.button.style.cssText = `${CHIP.plain}${on ? CHIP.active : CHIP.button}`;
+          chip.button.setAttribute("aria-pressed", String(on));
+          chip.button.title = on ? "Show every atom" : "Show only these atoms";
+        }
+      };
+      refresh();
 
       const annotations = Object.entries(payload.annotations ?? {}).filter(([key]) => key !== "score");
       if (annotations.length) {

@@ -240,5 +240,23 @@ export const SECTION_LABEL =
   `font-size:${FONT.small};font-weight:${WEIGHT.bold};letter-spacing:.08em;` +
   `text-transform:uppercase;color:${T.textMuted2};`;
 
+/**
+ * A chip in a row of them, and the row itself.
+ *
+ * `button` is for a chip that selects what it counts, which is what the atom
+ * mapping's Info legend is: the count is the label, and clicking it narrows the
+ * table under it to those atoms. `plain` keeps a chip that does not select
+ * sitting on the same line as one that does.
+ */
+export const CHIP = {
+  row: `display:flex;flex-wrap:wrap;align-items:center;gap:${SPACE.xs} ${SPACE.sm};font-size:${FONT.small};`,
+  plain:
+    `display:inline-flex;align-items:center;padding:${SPACE.xs} ${SPACE.md};` +
+    `border:1px solid transparent;border-radius:${RADIUS.pill};` +
+    `font-family:inherit;font-size:${FONT.small};color:${T.textMuted};`,
+  button: `cursor:pointer;background:none;border-color:${T.btnBorder};`,
+  active: `cursor:pointer;background:${T.cardBgActive};border-color:${T.btnBorder};color:${T.textPrimary};`,
+} as const;
+
 /** A note under something, explaining or qualifying it. */
 export const NOTE = `font-size:${FONT.small};line-height:1.6;color:${T.textMuted2};`;

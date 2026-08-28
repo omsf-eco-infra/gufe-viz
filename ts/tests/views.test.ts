@@ -935,9 +935,10 @@ describe("<gufe-atom-mapping>", () => {
       for (const { selection, style } of boxes[index].styles) {
         const serial = (selection as { serial?: number }).serial;
         if (serial === undefined) continue;
-        // 3Dmol counts atoms from one, and the payload counts from zero.
+        // 3Dmol's V2000 reader numbers `serial` from zero within a model, so a
+        // serial is the payload's own atom index.
         const colour = (style as { sphere: { color: string } }).sphere.color;
-        painted.set(serial - 1, colour);
+        painted.set(serial, colour);
         seen.add(colour);
       }
       expect(painted).toEqual(wanted);
@@ -1036,6 +1037,100 @@ describe("<gufe-atom-mapping>", () => {
     // screen reader gets is sentence case.
     expect(text).toContain("Correspondence");
     expect(text).toContain("gufe key");
+  });
+
+  it("gives the correspondence a row per atom rather than one run-on line", async () => {
+    const node = mapping();
+    await flush();
+    await setMode(node, "Info");
+
+    const payload = readExample("ligand_atom_mapping.json") as unknown as {
+      componentA: string;
+      componentB: string;
+      componentA_to_componentB: { index_A: number; index_B: number }[];
+      registry: { "gufe-key": string; sdf: string }[];
+    };
+    const sdfFor = (key: string) => payload.registry.find((entry) => entry["gufe-key"] === key)!.sdf;
+    const molA = parseSDF(sdfFor(payload.componentA));
+    const molB = parseSDF(sdfFor(payload.componentB));
+    const pairs = new Map(payload.componentA_to_componentB.map((p) => [p.index_A, p.index_B]));
+
+    // Every atom of both molecules, once: A's in index order, then whatever of
+    // B nothing maps onto. An atom that appears twice or not at all is a
+    // correspondence that cannot be read against the depiction beside it.
+    const rows = Array.from(node.querySelectorAll<HTMLElement>("[data-gufe-relation]"));
+    const unmappedB = molB.symbols.length - new Set(pairs.values()).size;
+    expect(rows.length).toBe(molA.symbols.length + unmappedB);
+
+    const first = pairs.entries().next().value as [number, number];
+    const text = rows.map((row) => row.textContent?.replace(/\s+/g, " ").trim());
+    expect(text).toContain(`${first[0]} ${molA.symbols[first[0]]} -> ${first[1]} ${molB.symbols[first[1]]}`);
+  });
+
+  it("classifies each row the way uniqueAtoms classifies the atom", async () => {
+    // The chips count with `uniqueAtoms` and the rows are `relations`. Two
+    // readings of one mapping, so they must not be able to disagree about a
+    // single atom.
+    const node = mapping();
+    await flush();
+    await setMode(node, "Info");
+
+    const kinds = Array.from(node.querySelectorAll<HTMLElement>("[data-gufe-relation]"), (r) => r.dataset.gufeRelation);
+    const payload = readExample("ligand_atom_mapping.json") as unknown as {
+      componentA: string;
+      componentB: string;
+      componentA_to_componentB: { index_A: number; index_B: number }[];
+      registry: { "gufe-key": string; sdf: string }[];
+    };
+    const sdfFor = (key: string) => payload.registry.find((entry) => entry["gufe-key"] === key)!.sdf;
+    const molA = parseSDF(sdfFor(payload.componentA));
+    const molB = parseSDF(sdfFor(payload.componentB));
+    const pairs = new Map(payload.componentA_to_componentB.map((p) => [p.index_A, p.index_B]));
+    const flipped = new Map(Array.from(pairs, ([a, b]) => [b, a]));
+    const uniquesA = uniqueAtoms(pairs, molA.symbols, molB.symbols);
+    const uniquesB = uniqueAtoms(flipped, molB.symbols, molA.symbols);
+
+    const count = (kind: string) => kinds.filter((k) => k === kind).length;
+    expect(count("element")).toBe(uniquesA.elements.length);
+    expect(count("uniqueA")).toBe(uniquesA.atoms.length);
+    expect(count("uniqueB")).toBe(uniquesB.atoms.length);
+    expect(count("mapped") + count("element")).toBe(pairs.size);
+  });
+
+  it("narrows the correspondence to the atoms a legend chip counts", async () => {
+    // A colour in a view with no molecule in it says nothing on its own. The
+    // chip that carries it selects what it counts, which is what makes it worth
+    // having here.
+    const node = mapping();
+    await flush();
+    await setMode(node, "Info");
+
+    const shown = () => Array.from(node.querySelectorAll<HTMLElement>("[data-gufe-relation]"));
+    const all = shown().length;
+    const chipFor = (label: string) =>
+      Array.from(node.querySelectorAll("button")).find((b) => (b.textContent ?? "").startsWith(label))!;
+    const chip = chipFor("unique to");
+    expect(chip.getAttribute("aria-pressed")).toBe("false");
+
+    chip.click();
+    await flush();
+    expect(chip.getAttribute("aria-pressed")).toBe("true");
+    expect(shown().length).toBeGreaterThan(0);
+    expect(shown().length).toBeLessThan(all);
+    expect(shown().every((row) => row.dataset.gufeRelation === "uniqueA")).toBe(true);
+
+    // Clicking it again is how the reader gets everything back.
+    chip.click();
+    await flush();
+    expect(shown().length).toBe(all);
+    expect(chip.getAttribute("aria-pressed")).toBe("false");
+
+    // A chip counting nothing still selects: an empty table saying so beats a
+    // click that looks broken.
+    chipFor("element changes").click();
+    await flush();
+    expect(shown().length).toBe(0);
+    expect(node.textContent).toContain("No atoms of that kind.");
   });
 
   it("releases the previous mode's viewers when the mode changes", async () => {
