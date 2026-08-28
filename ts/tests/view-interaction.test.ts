@@ -24,9 +24,17 @@ function wheel(deltaY: number, init: Partial<WheelEventInit> = {}): WheelEvent {
   return new WheelEvent("wheel", { deltaY, bubbles: true, cancelable: true, ...init });
 }
 
-/** jsdom has no `PointerEvent`; the guard only reads the event's type. */
-function pointer(type: string): MouseEvent {
-  return new MouseEvent(type, { bubbles: true });
+/** jsdom has no `PointerEvent`; the guard and the camera only read the type
+ * and, for a pan, where the pointer is. */
+function pointer(type: string, at: { clientX?: number; clientY?: number } = {}): MouseEvent {
+  return new MouseEvent(type, { bubbles: true, ...at });
+}
+
+/** Press, move and release across a canvas - the gesture that pans it. */
+function dragAcross(root: SVGSVGElement, from: number, to: number): void {
+  root.dispatchEvent(pointer("pointerdown", { clientX: from, clientY: from }));
+  root.dispatchEvent(pointer("pointermove", { clientX: to, clientY: to }));
+  root.dispatchEvent(pointer("pointerup", { clientX: to, clientY: to }));
 }
 
 /** The element the engine renders into, and what the guard listens on. A wheel
@@ -56,12 +64,13 @@ const VIEWS: [string, string][] = [
 /**
  * The views that also carry a reset, which is not all of them.
  *
- * The mapping view is the exception, by request: its switcher is already six
- * buttons wide and a reset beside them was one too many. Wheeling back out is
- * the way back there, and the zoom is bounded either way, so there is nowhere
- * unrecoverable to get to.
+ * The mapping and small molecule views are the exceptions, both by request:
+ * each switcher is already a row of modes wide and a reset beside them was one
+ * button too many. Wheeling back out is the way back there, and the zoom is
+ * bounded either way, so there is nowhere unrecoverable to get to.
  */
-const WITH_RESET: [string, string][] = VIEWS.filter(([tag]) => tag !== "gufe-atom-mapping");
+const WITHOUT_RESET = new Set(["gufe-atom-mapping", "gufe-small-molecule"]);
+const WITH_RESET: [string, string][] = VIEWS.filter(([tag]) => !WITHOUT_RESET.has(tag));
 
 describe.each(VIEWS)("%s", (tag, fixture) => {
   let engines: SeededEnginesResult;
@@ -206,5 +215,129 @@ describe("<gufe-ligand-network>", () => {
 
     resetButton(node)!.click();
     expect(scene.getAttribute("transform")).toBe(opening);
+  });
+});
+
+/**
+ * The alchemical network moves on the same camera as the ligand one.
+ *
+ * It arrived without any way around the canvas at all, which on a network of a
+ * few hundred systems means a picture that is framed and then fixed. These are
+ * the properties that say it is wired to `sceneCamera` rather than drawing its
+ * own one-off transform: a wheel that is left to the page until the pointer is
+ * on the graph, a drag that moves it, and a reset that undoes both.
+ */
+describe("<gufe-alchemical-network>", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  const graph = async () => {
+    const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
+    await flush();
+    return {
+      node,
+      root: node.querySelector<SVGSVGElement>("svg.gufe-graph")!,
+      scene: node.querySelector("svg.gufe-graph > g") as SVGGElement,
+    };
+  };
+
+  it("does not pan or zoom when the page is merely scrolled past it", async () => {
+    const { root, scene } = await graph();
+    const before = scene.getAttribute("transform");
+
+    root.dispatchEvent(wheel(120));
+    expect(scene.getAttribute("transform")).toBe(before);
+  });
+
+  it("zooms the graph once the pointer has engaged it", async () => {
+    const { root, scene } = await graph();
+    const before = scene.getAttribute("transform");
+
+    root.dispatchEvent(pointer("pointerdown"));
+    root.dispatchEvent(wheel(-120));
+    expect(scene.getAttribute("transform")).not.toBe(before);
+    expect(scene.getAttribute("transform")).toMatch(/scale\(/);
+  });
+
+  it("pans the graph when it is dragged", async () => {
+    const { root, scene } = await graph();
+    const before = scene.getAttribute("transform");
+
+    dragAcross(root, 100, 160);
+    expect(scene.getAttribute("transform")).not.toBe(before);
+  });
+
+  it("resets pan and zoom back to the view it opened on", async () => {
+    const { node, root, scene } = await graph();
+    const opening = scene.getAttribute("transform");
+
+    root.dispatchEvent(pointer("pointerdown"));
+    root.dispatchEvent(wheel(-240));
+    dragAcross(root, 40, 220);
+    expect(scene.getAttribute("transform")).not.toBe(opening);
+
+    resetButton(node)!.click();
+    expect(scene.getAttribute("transform")).toBe(opening);
+  });
+
+  /**
+   * A draw waits on the force layout, so two of them overlap whenever the pane
+   * is resized twice in quick succession - which dragging the divider does.
+   * Both used to finish, and both used to append a graph: the network was drawn
+   * two and three times over, stacked down the canvas with the top copy hiding
+   * the rest, and the copies below it were the ones that looked like a network
+   * overflowing its box.
+   */
+  it("draws one graph however many redraws overlap", async () => {
+    const { node } = await graph();
+    const handle = node.querySelector<HTMLElement>("[role=separator]")!;
+    handle.setPointerCapture = () => {};
+    handle.releasePointerCapture = () => {};
+    const row = handle.parentElement!;
+    row.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 1000, height: 600, right: 1000, bottom: 600, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+
+    const drag = (to: number) => {
+      handle.dispatchEvent(pointer("pointerdown", { clientX: 500 }));
+      handle.dispatchEvent(pointer("pointermove", { clientX: to }));
+      handle.dispatchEvent(pointer("pointerup", { clientX: to }));
+    };
+    // Two redraws in flight at once, neither awaited.
+    drag(400);
+    drag(600);
+    await flush();
+
+    expect(node.querySelectorAll("svg.gufe-graph")).toHaveLength(1);
+  });
+
+  /**
+   * A pan starts on whatever the pointer went down on, and on this graph that
+   * is usually a box or an edge. The click at the end of it is the browser's,
+   * not a selection.
+   */
+  it("does not open what the pointer merely panned across", async () => {
+    const { node, root } = await graph();
+    // It opens on the first system, so the pane is showing one.
+    expect(node.querySelector("gufe-chemical-system")).toBeTruthy();
+
+    const line = node.querySelector<SVGLineElement>("svg.gufe-graph line")!;
+    line.dispatchEvent(pointer("pointerdown", { clientX: 100, clientY: 100 }));
+    root.dispatchEvent(pointer("pointermove", { clientX: 180, clientY: 140 }));
+    root.dispatchEvent(pointer("pointerup", { clientX: 180, clientY: 140 }));
+    line.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    expect(node.querySelector("gufe-transformation")).toBeNull();
+
+    // The same click, without the pan before it, does open the edge.
+    line.dispatchEvent(pointer("pointerdown", { clientX: 180, clientY: 140 }));
+    line.dispatchEvent(pointer("pointerup", { clientX: 180, clientY: 140 }));
+    line.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    expect(node.querySelector("gufe-transformation")).toBeTruthy();
   });
 });

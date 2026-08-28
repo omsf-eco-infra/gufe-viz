@@ -91,6 +91,14 @@ export {
   type Interaction,
   type ZoomBounds,
 } from "./shared/interact.js";
+export {
+  extentOf,
+  sceneCamera,
+  type Camera,
+  type CameraOptions,
+  type CameraTransform,
+  type Extent,
+} from "./shared/camera.js";
 export { DEBUG_ATTRIBUTE, DEBUG_GLOBAL, debugEnabled, logPayload, payloadJson } from "./shared/debug.js";
 export {
   choice,

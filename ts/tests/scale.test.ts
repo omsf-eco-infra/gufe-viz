@@ -67,7 +67,7 @@ describe("a large ligand network", () => {
     node.payload = payload;
     await flush();
 
-    expect(node.querySelectorAll("circle").length).toBe(934);
+    expect(node.querySelectorAll("circle.gufe-node-disc").length).toBe(934);
   });
 
   it("opens with every ligand inside the viewport", async () => {

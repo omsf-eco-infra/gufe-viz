@@ -6,7 +6,12 @@
  * so nothing here decodes a structure format: no atomic-number tables, no
  * conformer blobs, no GraphML. Resolving a key gives back a whole
  * `SmallMoleculeComponentViz` - which is what lets the detail pane draw the two
- * molecules of the selected mapping without a second shape to unpack.
+ * molecules of the selected mapping without a second shape to unpack, and a
+ * clicked ligand by handing that same object straight to the ligand view.
+ *
+ * Both halves of the graph are clickable and the pane holds one at a time: an
+ * edge opens `<gufe-atom-mapping>`, a node opens `<gufe-small-molecule>`. Which
+ * is open is the `Selection` below, and it is saved with the view.
  *
  * d3 is used for one thing: the force layout. Zoom, pan, drag, the colour ramp
  * and the SVG itself are plain DOM, so a network still draws when d3 cannot be
@@ -30,7 +35,8 @@ import {
 import { defineElement, GufeElement, seededViewState, type ViewHandle } from "../shared/element.js";
 import { choice, flag, num, text as textSetting, type Setting } from "../shared/settings.js";
 import { svg } from "../shared/svg.js";
-import { guardWheel, resetControl } from "../shared/interact.js";
+import { resetControl } from "../shared/interact.js";
+import { extentOf, sceneCamera, type Camera } from "../shared/camera.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { DEPICT_STYLE, rgbTriple } from "../shared/depict-style.js";
 import { depictSVG } from "../shared/sdf.js";
@@ -115,7 +121,7 @@ type Layout = (typeof LAYOUTS)[number];
 //
 // What a `Setting` does not cover, because none of it is a preference: the
 // layout the force simulation settled on, where the canvas is panned to, and
-// which edge is open. All three are about the network on screen rather than
+// what is open in the detail pane. All three are about the network on screen rather than
 // about how someone likes to read networks, which is the line `settings.ts`
 // draws and the reason these travel separately.
 //
@@ -123,6 +129,19 @@ type Layout = (typeof LAYOUTS)[number];
 // force layout converges against the canvas it was given, so the same network
 // laid out again in a window of a different size is a different picture - and
 // any node the reader dragged is a decision no layout would reproduce at all.
+
+/**
+ * What the detail pane is showing.
+ *
+ * Two things can be open in it and only ever one at a time: the mapping an edge
+ * carries, or a ligand on its own. Which one is a discriminated pair rather than
+ * two indices, because "an edge is open and so is a ligand" is not a state this
+ * view has, and a shape that can express it is a shape someone has to check.
+ */
+export type Selection = { kind: SelectionKind; index: number } | null;
+
+/** Whether an index into this view's selection means an edge or a ligand. */
+export type SelectionKind = "edge" | "ligand";
 
 /** What `<gufe-ligand-network>` saves, and what it will take back. */
 export interface NetworkViewState {
@@ -132,8 +151,10 @@ export interface NetworkViewState {
   scale: number;
   tx: number;
   ty: number;
-  /** The open edge, or -1 for none. */
+  /** The open edge or ligand, or -1 for none. */
   selected: number;
+  /** Which of the two `selected` counts. Absent in a state saved before ligands could be opened, and read as an edge. */
+  selectedKind?: SelectionKind;
 }
 
 /** The key this view's state travels under. See `seededViewState`. */
@@ -151,6 +172,21 @@ const VIEW_STATE_KEY = "ligand-network";
  * reads as though the feature is not for them.
  */
 const MULTI_SELECT_HINT = "Cmd/Ctrl-click to select several.";
+
+/** What the detail pane says when nothing is open, and it names both halves. */
+const SELECT_HINT = "Click a ligand or an edge to see it.";
+
+/**
+ * A node as the payload the standalone ligand view takes.
+ *
+ * A `NetNode` is a whole `SmallMoleculeComponentViz` with a position stapled to
+ * it, and the position is this view's business rather than the ligand's - so it
+ * comes off before the payload is handed on.
+ */
+function ligandPayloadFor(node: NetNode): SmallMoleculeComponentViz {
+  const { x, y, fx, fy, ...ligand } = node;
+  return ligand;
+}
 
 /** Two decimals is under a thousandth of a node radius, and a third of the size. */
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -172,7 +208,10 @@ function asNetworkViewState(value: unknown, nodeCount: number): NetworkViewState
   if (!Array.isArray(state.nodes) || state.nodes.length !== nodeCount) return null;
   if (!state.nodes.every((at) => Array.isArray(at) && at.length === 2 && at.every(finite))) return null;
   const selected = finite(state.selected) ? Math.trunc(state.selected) : -1;
-  return { nodes: state.nodes, scale: state.scale, tx: state.tx, ty: state.ty, selected };
+  // An older state names no kind, and everything an older state could have had
+  // open was an edge.
+  const selectedKind: SelectionKind = state.selectedKind === "ligand" ? "ligand" : "edge";
+  return { nodes: state.nodes, scale: state.scale, tx: state.tx, ty: state.ty, selected, selectedKind };
 }
 
 /**
@@ -251,8 +290,11 @@ const MATCH = { debounceMs: 250, atomRadius: 0.4 };
 /** The match colour as RDKit wants it, converted once. */
 const MATCH_RGB = rgbTriple(T.netMatchAtom);
 
-/** The selection halo, sized from the edge it sits under. */
+/** The selection halo, sized from the edge or the node it sits under. */
 const HALO = { padding: 4, opacity: 0.95 };
+
+/** How far a pointer may wander during a node drag and still count as a click, in pixels. */
+const CLICK_SLOP = 3;
 
 /**
  * One zoom level: everything the network draws differently at that distance.
@@ -1117,7 +1159,12 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
           filter,
           query,
           refresh: () => applyEmphasis(),
-          focus: (index) => focusNode(index),
+          // Jumping to a ligand and opening it are one action: the list is
+          // how you find one you cannot see, and finding it is not the point.
+          focus: (index) => {
+            focusNode(index);
+            select({ kind: "ligand", index });
+          },
           match: (pattern) => runMatch(pattern),
         }),
       {
@@ -1199,7 +1246,21 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const restored = asNetworkViewState(seededViewState(VIEW_STATE_KEY), nodes.length);
     let pendingTransform = restored && { scale: restored.scale, tx: restored.tx, ty: restored.ty };
 
-    let selectedEdge = restored && restored.selected < edges.length ? restored.selected : edges.length ? 0 : -1;
+    /**
+     * What the detail pane is showing, and what the halos mark.
+     *
+     * It opens on the first mapping, because a network's edges are what it is
+     * about and a pane that starts empty makes the reader guess what to click.
+     * A restored one is taken only if it names something this network has: the
+     * state may have been saved against a different payload.
+     */
+    let selection: Selection = edges.length ? { kind: "edge", index: 0 } : null;
+    if (restored && restored.selected >= 0) {
+      const kind: SelectionKind = restored.selectedKind ?? "edge";
+      if (restored.selected < (kind === "ligand" ? nodes.length : edges.length)) {
+        selection = { kind, index: restored.selected };
+      }
+    }
     /** The canvas transform, as of the last time anything moved it. */
     let transformNow = (): { scale: number; tx: number; ty: number } => ({ scale: 1, tx: 0, ty: 0 });
     /** Whether there is a camera worth keeping across a redraw yet. */
@@ -1210,10 +1271,31 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     let alive = true;
     let refreshHalos = () => {};
     let resetView = () => {};
+    /**
+     * Which redraw is the current one.
+     *
+     * A force layout is relaxed off the main thread's next turn, so a second
+     * redraw - a resize, the menu opening - can start while the first is still
+     * waiting to paint. Both would then append a scene, and the canvas would end
+     * up holding a stack of them: the reader sees the oldest, while the halos
+     * and the selection are wired to the newest, which is off the bottom of a
+     * pane that does not scroll. A paint whose era has passed is dropped.
+     */
+    let era = 0;
 
-    const select = (index: number) => {
-      selectedEdge = index;
-      detail.show(edges[index] ?? null);
+    /** Put something in the detail pane, and mark it on the canvas. */
+    const showSelection = (): void => {
+      if (!selection) {
+        detail.message(edges.length ? SELECT_HINT : "Click a ligand to see it.");
+        return;
+      }
+      if (selection.kind === "edge") detail.showMapping(edges[selection.index]);
+      else detail.showLigand(nodes[selection.index]);
+    };
+
+    const select = (next: Selection) => {
+      selection = next;
+      showSelection();
       refreshHalos();
     };
 
@@ -1223,10 +1305,13 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       // new layout is a new picture, and only a new picture is worth reframing.
       // Before the first paint there is no camera to keep, so that one frames.
       const keepCamera = painted && next === layout ? transformNow() : null;
+      const mine = ++era;
       layout = next;
       stop?.();
       stop = null;
-      canvas.querySelector("svg")?.remove();
+      // Every one of them, not the first: a paint that has already been dropped
+      // may still have left one behind before the guard existed to stop it.
+      canvas.querySelectorAll("svg").forEach((stale) => stale.remove());
 
       const width = canvas.clientWidth || 800;
       const height = canvas.clientHeight || 600;
@@ -1234,9 +1319,9 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       if (restored) placeNodesAt(nodes, restored.nodes);
 
       const paint = () => {
-        if (!alive) return;
+        if (!alive || mine !== era) return;
         const scene = this.#paint(canvas, nodes, edges, width, height, select, rdkitReady, tip);
-        refreshHalos = () => scene.setSelected(selectedEdge);
+        refreshHalos = () => scene.setSelected(selection);
         resetView = scene.reset;
         stop = scene.cleanup;
         focusNode = (index) => scene.focusOn(index);
@@ -1309,7 +1394,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       // than animated: a DOM write per node per frame is what melts a browser
       // on a network with a few hundred ligands.
       relax(nodes, edges, width, height).then((relaxed) => {
-        if (!alive) return;
+        if (!alive || mine !== era) return;
         if (relaxed) {
           paint();
           return;
@@ -1324,7 +1409,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     redraw = () => draw();
     draw();
-    detail.show(edges[selectedEdge] ?? null);
+    showSelection();
 
     return {
       onResize: () => draw(),
@@ -1337,7 +1422,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       viewState: (): NetworkViewState => ({
         nodes: nodes.map((node) => [round2(node.x), round2(node.y)]),
         ...transformNow(),
-        selected: selectedEdge,
+        selected: selection ? selection.index : -1,
+        selectedKind: selection ? selection.kind : "edge",
       }),
     };
   }
@@ -1377,38 +1463,43 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
   }
 
   /**
-   * The right-hand pane: the selected mapping, drawn by the mapping view.
+   * The right-hand pane: whatever is open, drawn by the view that owns it.
    *
-   * Deliberately nothing but that element. It carries its own header, names both
-   * ligands on its own box labels, and keeps the counts and annotations behind
-   * its Info mode - so a pane title, a heading repeating the two names, and an
-   * annotation list underneath were all saying a second time what the picture
-   * below them already said.
+   * An edge is a mapping, so it is `<gufe-atom-mapping>`; a node is one ligand,
+   * so it is `<gufe-small-molecule>` - the same two elements a payload of either
+   * kind renders through on its own. Neither picture is drawn twice, so the
+   * in-context one and the standalone one cannot drift apart, and clicking
+   * either half of the graph puts the reader in front of a view they have
+   * already met.
+   *
+   * Deliberately nothing but that element, either way. Each carries its own
+   * header and its own labels, so a pane title, a heading repeating the names
+   * and a list of properties underneath were all saying a second time what the
+   * picture below them already said.
    */
   #detailPane(
     host: HTMLDivElement,
     registry: RegistryIndex,
-  ): { show(edge: NetEdge | null): void; message(text: string): void } {
+  ): { showMapping(edge: NetEdge): void; showLigand(node: NetNode): void; message(text: string): void } {
     const body = el("div", "flex:1;min-height:0;display:flex;flex-direction:column;");
     host.appendChild(body);
 
     const message = (text: string) => body.replaceChildren(centredMessage(text));
 
-    const show = (edge: NetEdge | null) => {
-      if (!edge) {
-        message("Click an edge to see its mapping.");
-        return;
-      }
-      // The same element the standalone mapping payload renders through, fed
-      // the payload `mappingPayloadFor` cuts loose. There is no second drawing
-      // path, so the in-context picture and the standalone one cannot drift.
-      const embedded = document.createElement("gufe-atom-mapping") as HTMLElement & { payload: unknown };
+    /** One element, filling the pane, replacing whatever was open before it. */
+    const open = (tag: string, payload: unknown): void => {
+      const embedded = document.createElement(tag) as HTMLElement & { payload: unknown };
       embedded.style.cssText = "flex:1;min-width:0;min-height:0;display:flex;";
-      embedded.payload = mappingPayloadFor(edge, registry);
+      embedded.payload = payload;
       body.replaceChildren(embedded);
     };
 
-    return { show, message };
+    return {
+      // Fed the payload `mappingPayloadFor` cuts loose from the network.
+      showMapping: (edge) => open("gufe-atom-mapping", mappingPayloadFor(edge, registry)),
+      showLigand: (node) => open("gufe-small-molecule", ligandPayloadFor(node)),
+      message,
+    };
   }
 
   /** Build the SVG for the current node positions. Returns the handles the
@@ -1419,11 +1510,11 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     edges: NetEdge[],
     width: number,
     height: number,
-    onSelect: (index: number) => void,
+    onSelect: (selection: Selection) => void,
     rdkitReady: Promise<RDKitModule | null>,
     tip: ReturnType<typeof hoverTooltip>,
   ): {
-    setSelected(index: number): void;
+    setSelected(selection: Selection): void;
     setEmphasis(nodeKeys: ReadonlySet<string> | null, edgeIndices: ReadonlySet<number> | null): void;
     setMatches(matched: ReadonlyMap<number, number[]>): void;
     setDetail(scale: number, tx: number, ty: number): void;
@@ -1482,7 +1573,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       const hit = svg("line", { stroke: "transparent", "stroke-width": HIT_WIDTH, style: "cursor:pointer;" });
       hit.addEventListener("click", (event) => {
         event.stopPropagation();
-        onSelect(edge.index);
+        onSelect({ kind: "edge", index: edge.index });
       });
       hit.addEventListener("mousemove", (event: MouseEvent) => {
         tip.show(
@@ -1518,6 +1609,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     const depictionGroups: SVGGElement[] = [];
     const circles: SVGCircleElement[] = [];
+    const nodeHalos: SVGCircleElement[] = [];
     const initials: SVGTextElement[] = [];
     const captions: SVGTextElement[] = [];
     const groups = nodes.map((node) => {
@@ -1528,13 +1620,31 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
             (node.smiles
               ? `<div style="margin-top:3px;font-family:ui-monospace,Menlo,monospace;overflow-wrap:anywhere;">${esc(node.smiles)}</div>`
               : "") +
-            `<div style="margin-top:3px;font-size:${FONT.tiny};color:${T.textMuted2};overflow-wrap:anywhere;">${esc(node["gufe-key"])}</div>`,
+            `<div style="margin-top:3px;font-size:${FONT.tiny};color:${T.textMuted2};overflow-wrap:anywhere;">${esc(node["gufe-key"])}</div>` +
+            `<div style="margin-top:4px;font-size:${FONT.tiny};color:${T.textMuted2};">Click to see the ligand</div>`,
           event.offsetX,
           event.offsetY,
         );
       });
       group.addEventListener("mouseleave", () => tip.hide());
+
+      // The ring behind everything else, rather than the disc restyled: at the
+      // zoom where a node draws its structure it has no disc left to restyle,
+      // and a selected ligand has to be findable at every zoom.
+      const nodeHalo = svg("circle", {
+        class: "gufe-node-halo",
+        r: NODE_RADIUS + HALO.padding,
+        fill: "none",
+        stroke: T.netHaloColor,
+        "stroke-width": HALO.padding * 2,
+        opacity: 0,
+        "pointer-events": "none",
+      }) as SVGCircleElement;
+      group.appendChild(nodeHalo);
+      nodeHalos.push(nodeHalo);
+
       const circle = svg("circle", {
+        class: "gufe-node-disc",
         r: NODE_RADIUS,
         fill: T.netNodeFill,
         stroke: T.netNodeStroke,
@@ -1618,11 +1728,16 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       viewport: () => ({ width, height }),
     });
 
-    const view = this.#interact(root, scene, nodes, groups, place, detail.apply);
+    const view = this.#interact(root, scene, nodes, groups, place, detail.apply, (index) =>
+      onSelect({ kind: "ligand", index }),
+    );
 
     return {
-      setSelected(index: number) {
-        halos.forEach((halo, i) => halo.setAttribute("opacity", i === index ? "0.95" : "0"));
+      setSelected(selection: Selection) {
+        const edge = selection?.kind === "edge" ? selection.index : -1;
+        const ligand = selection?.kind === "ligand" ? selection.index : -1;
+        halos.forEach((halo, i) => halo.setAttribute("opacity", i === edge ? String(HALO.opacity) : "0"));
+        nodeHalos.forEach((halo, i) => halo.setAttribute("opacity", i === ligand ? String(HALO.opacity) : "0"));
       },
 
       /**
@@ -1676,8 +1791,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
   }
 
-  /** Wheel zoom, background pan, node drag - ~40 lines instead of d3-zoom and
-   * d3-drag, and they keep working when d3 is unreachable. */
+  /**
+   * Node drag and node click, over the shared camera.
+   *
+   * The camera - wheel zoom, background pan, framing - is `sceneCamera`, which
+   * the alchemical network uses too. What stays here is what is about a ligand
+   * rather than about a canvas: dragging one to a new position, and telling a
+   * drag from a click. The click is here rather than with the rest of a node
+   * because only this knows whether the pointer was dragging.
+   */
   #interact(
     root: SVGSVGElement,
     scene: SVGGElement,
@@ -1685,136 +1807,39 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     groups: SVGGElement[],
     place: () => void,
     onTransform: (scale: number, tx: number, ty: number) => void,
-  ): {
-    cleanup(): void;
-    fit(): void;
-    reset(): void;
-    centreOn(x: number, y: number): void;
-    transform(): { scale: number; tx: number; ty: number };
-    setTransform(scale: number, tx: number, ty: number): void;
-  } {
-    let scale = 1;
-    let tx = 0;
-    let ty = 0;
-    const apply = () => {
-      scene.setAttribute("transform", `translate(${tx},${ty}) scale(${scale})`);
-      onTransform(scale, tx, ty);
-    };
-
-    /** The drawing area, however much of a layout box the host will admit to.
-     *
-     * The attributes are the fallback rather than the first answer, so that a
-     * canvas resized after paint still frames against what is on screen. jsdom
-     * has no layout at all, which is why there is a last resort after them. */
-    const viewport = (): { width: number; height: number } => {
-      const box = root.getBoundingClientRect();
-      return {
-        width: box.width || Number(root.getAttribute("width")) || root.clientWidth || 800,
-        height: box.height || Number(root.getAttribute("height")) || root.clientHeight || 600,
-      };
-    };
-
-    /**
-     * Put the whole graph in the viewport, centred.
-     *
-     * A force layout sizes itself by link distance and repulsion, not by the
-     * canvas: two hundred ligands settle across some five thousand units, and at
-     * the identity transform every one of them is off the edge of a nine hundred
-     * unit view - the network reads as an empty box. Framing is therefore part
-     * of drawing it, not a control the reader has to find.
-     *
-     * It never zooms in past 1. Three ligands blown up to fill the canvas would
-     * be three pixellated depictions, and the level of detail keys off this same
-     * scale, so magnifying a small network would also change what it shows.
-     */
-    const fit = (): void => {
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
-      for (const node of nodes) {
-        minX = Math.min(minX, node.x);
-        minY = Math.min(minY, node.y);
-        maxX = Math.max(maxX, node.x);
-        maxY = Math.max(maxY, node.y);
-      }
-
-      scale = 1;
-      tx = 0;
-      ty = 0;
-      if (!Number.isFinite(minX)) {
-        apply(); // No nodes. An empty graph is centred on nothing.
-        return;
-      }
-
+    onClickNode: (index: number) => void,
+  ): Camera {
+    const view = sceneCamera(root, scene, {
       // A node is a disc with a caption under it, so its position is not its
       // extent.
-      const pad = NODE_RADIUS + FIT_MARGIN;
-      const { width, height } = viewport();
-      scale = Math.min(1, width / (maxX - minX + pad * 2), height / (maxY - minY + pad * 2));
-      tx = width / 2 - ((minX + maxX) / 2) * scale;
-      ty = height / 2 - ((minY + maxY) / 2) * scale;
-      apply();
-    };
-
-    // The zoom maths stays here rather than moving to `boundedZoom`: it works in
-    // SVG transform space, carries its own clamp, and zooms about the pointer,
-    // which is not what a 3Dmol camera does. What is shared is the guard - the
-    // reason a wheel reaches this at all.
-    const zoomAt = (event: WheelEvent) => {
-      const box = root.getBoundingClientRect();
-      const px = event.clientX - box.left;
-      const py = event.clientY - box.top;
-      const factor = Math.min(5 / scale, Math.max(0.15 / scale, Math.exp(-event.deltaY * 0.002)));
-      // Zoom about the pointer: the graph point under it must not move.
-      tx = px - (px - tx) * factor;
-      ty = py - (py - ty) * factor;
-      scale *= factor;
-      apply();
-      // Clamped flat, so the graph is against a limit and the guard spends this
-      // wheel on the page instead.
-      return factor !== 1;
-    };
-    const guard = guardWheel(root as unknown as HTMLElement, {
-      onZoom: zoomAt,
+      bounds: () => extentOf(nodes, NODE_RADIUS),
+      margin: FIT_MARGIN,
+      onTransform,
       hint: "Click the graph or hold Ctrl to zoom",
     });
 
-    // Deliberately no `setPointerCapture` here, unlike the node drag below. A
-    // capture on the root retargets the subsequent `click` to the root as well,
-    // which would swallow every edge selection - the one interaction that
-    // matters most. Panning therefore ends when the pointer leaves the canvas,
-    // which is a much smaller price.
-    let panning: { x: number; y: number } | null = null;
-    const onDown = (event: PointerEvent) => {
-      panning = { x: event.clientX - tx, y: event.clientY - ty };
-    };
-    const onMove = (event: PointerEvent) => {
-      if (!panning) return;
-      tx = event.clientX - panning.x;
-      ty = event.clientY - panning.y;
-      apply();
-    };
-    const onUp = () => {
-      panning = null;
-    };
-    root.addEventListener("pointerdown", onDown);
-    root.addEventListener("pointermove", onMove);
-    root.addEventListener("pointerup", onUp);
-    root.addEventListener("pointercancel", onUp);
-    root.addEventListener("pointerleave", onUp);
-
     groups.forEach((group, i) => {
       let dragging: { x: number; y: number } | null = null;
+      // A node is both a thing to drag and a thing to click, and the pointer
+      // does not say which was meant. Anything that moved further than a hand
+      // wobble was a drag, and the click that follows it is not a selection -
+      // otherwise every reposition would also change what the pane is showing.
+      let moved = false;
       group.addEventListener("pointerdown", (event: PointerEvent) => {
         event.stopPropagation();
+        const { scale } = view.transform();
         dragging = { x: event.clientX - nodes[i].x * scale, y: event.clientY - nodes[i].y * scale };
+        moved = false;
         group.setPointerCapture(event.pointerId);
       });
       group.addEventListener("pointermove", (event: PointerEvent) => {
         if (!dragging) return;
-        nodes[i].x = nodes[i].fx = (event.clientX - dragging.x) / scale;
-        nodes[i].y = nodes[i].fy = (event.clientY - dragging.y) / scale;
+        const { scale } = view.transform();
+        const x = (event.clientX - dragging.x) / scale;
+        const y = (event.clientY - dragging.y) / scale;
+        if (Math.hypot(x - nodes[i].x, y - nodes[i].y) * scale > CLICK_SLOP) moved = true;
+        nodes[i].x = nodes[i].fx = x;
+        nodes[i].y = nodes[i].fy = y;
         place();
       });
       const release = () => {
@@ -1822,43 +1847,16 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       };
       group.addEventListener("pointerup", release);
       group.addEventListener("pointercancel", release);
+      group.addEventListener("click", (event: MouseEvent) => {
+        event.stopPropagation();
+        if (!moved) onClickNode(i);
+      });
     });
 
     return {
-      fit,
-
-      // Back to the view it opened on, which is the framed one. An identity
-      // transform would be "reset" only in the sense that a blank canvas is.
-      reset: fit,
-
-      /** Bring a graph point to the middle, zooming in enough to read it. */
-      centreOn(x: number, y: number) {
-        const { width, height } = viewport();
-        scale = Math.max(scale, FOCUS_SCALE);
-        tx = width / 2 - x * scale;
-        ty = height / 2 - y * scale;
-        apply();
-      },
-
-      transform: () => ({ scale, tx, ty }),
-
-      // Deliberately unclamped, unlike the wheel. It is not a gesture: it is a
-      // camera being put back exactly where it was, and a limit applied here
-      // would quietly move it.
-      setTransform(nextScale: number, nextTx: number, nextTy: number) {
-        scale = nextScale;
-        tx = nextTx;
-        ty = nextTy;
-        apply();
-      },
-      cleanup() {
-        guard.cleanup();
-        root.removeEventListener("pointerdown", onDown);
-        root.removeEventListener("pointermove", onMove);
-        root.removeEventListener("pointerup", onUp);
-        root.removeEventListener("pointercancel", onUp);
-        root.removeEventListener("pointerleave", onUp);
-      },
+      ...view,
+      /** Bring a ligand to the middle, zoomed in enough to read its structure. */
+      centreOn: (x: number, y: number) => view.centreOn(x, y, FOCUS_SCALE),
     };
   }
 }

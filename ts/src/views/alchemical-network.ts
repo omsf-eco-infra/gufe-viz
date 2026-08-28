@@ -25,7 +25,9 @@
  *
  * Like the ligand network, d3 is asked for a force layout and nothing else: the
  * SVG, the selection and the fallback circular layout are plain DOM, so the
- * graph still draws when d3 cannot be fetched.
+ * graph still draws when d3 cannot be fetched. Getting around the canvas -
+ * framing, wheel zoom, drag to pan, and the reset that undoes both - is
+ * `sceneCamera`, which is the same one the ligand network moves on.
  */
 
 import {
@@ -37,7 +39,9 @@ import {
   statChip,
 } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
+import { extentOf, sceneCamera } from "../shared/camera.js";
 import { loadD3 } from "../shared/engines.js";
+import { resetControl } from "../shared/interact.js";
 import { num } from "../shared/settings.js";
 import { svg, titled } from "../shared/svg.js";
 import { FONT, PANE_LABEL, TOOLBAR } from "../shared/style.js";
@@ -120,6 +124,14 @@ const CANVAS_SHARE = { initial: 0.56, min: 0.25, max: 0.78 };
 /** Breathing room between the outermost box and the edge of the canvas. */
 const FIT_MARGIN = 24;
 
+/**
+ * How far a node's own box reaches from its position, which is its centre.
+ *
+ * What the camera frames is boxes rather than points: an outermost system has
+ * to be inside the canvas along with its label, not centred on the edge of it.
+ */
+const NODE_EXTENT = { x: NODE.width / 2, y: NODE.height / 2 };
+
 /** A node's label: its name, or a short form of its gufe key. */
 const nodeLabel = entryLabel;
 
@@ -184,37 +196,6 @@ function compositionGroups(
     colorOf: (index) => colors.get(signatures[index]) ?? plain,
     legend: distinct.map((signature) => [signature, colors.get(signature)!]),
   };
-}
-
-/**
- * The transform that brings the whole graph inside the canvas.
- *
- * The force layout answers in its own coordinates and is happy to put a
- * twenty-system network well outside an eight-hundred-pixel box, at which point
- * the canvas is blank and nothing on the page says why. So the scene is scaled
- * to fit whatever came back.
- *
- * Never scaled *up*: a three-system network magnified to fill the pane is three
- * enormous boxes, and the size of a node is a decision `NODE` already made.
- */
-function fitTransform(nodes: readonly GraphNode[], width: number, height: number): string {
-  const xs = nodes.map((node) => node.x);
-  const ys = nodes.map((node) => node.y);
-  // Measured from the boxes rather than from their centres, so an outermost
-  // node is inside the canvas along with its own width.
-  const minX = Math.min(...xs) - NODE.width / 2;
-  const maxX = Math.max(...xs) + NODE.width / 2;
-  const minY = Math.min(...ys) - NODE.height / 2;
-  const maxY = Math.max(...ys) + NODE.height / 2;
-
-  const scale = Math.min(
-    1,
-    (width - 2 * FIT_MARGIN) / Math.max(1, maxX - minX),
-    (height - 2 * FIT_MARGIN) / Math.max(1, maxY - minY),
-  );
-  const tx = (width - (maxX - minX) * scale) / 2 - minX * scale;
-  const ty = (height - (maxY - minY) * scale) / 2 - minY * scale;
-  return `translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${scale.toFixed(4)})`;
 }
 
 /** Seed every node on a circle - deterministic, so reloads look the same. */
@@ -331,7 +312,6 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     const right = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.appBg};`);
     const canvas = el("div", `flex:1;min-height:0;position:relative;overflow:hidden;background:${T.netCanvasBg};`);
     left.appendChild(canvas);
-    if (groups.legend.length) left.appendChild(this.#legend(groups.legend));
 
     split.appendChild(left);
     split.appendChild(
@@ -379,6 +359,21 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     let forceUnavailable = false;
     let selected: { kind: "node" | "edge"; index: number } | null = null;
     let refreshSelection = () => {};
+    /** The camera of the scene currently on the canvas; a redraw replaces both. */
+    let resetView = () => {};
+    let stopScene = () => {};
+    /**
+     * Which draw is the current one.
+     *
+     * A draw waits on the force layout, so two of them - the first paint and a
+     * resize, or two resizes - are in flight at once, and without this both
+     * finish and both append a graph. Which is what happened: a network drawn
+     * three times was three graphs stacked down the canvas, the top one
+     * covering the rest.
+     */
+    let era = 0;
+
+    left.appendChild(this.#canvasBar(groups.legend, () => resetView()));
 
     const select = (kind: "node" | "edge", index: number): void => {
       selected = { kind, index };
@@ -387,14 +382,23 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     };
 
     const draw = (): void => {
-      canvas.querySelector("svg")?.remove();
+      const mine = ++era;
       const width = canvas.clientWidth || 800;
       const height = canvas.clientHeight || 600;
       seedPositions(nodes, width, height);
 
       const paint = () => {
-        if (!alive) return;
+        if (!alive || mine !== era) return;
+        // The outgoing scene owns wheel and pointer listeners on an SVG that is
+        // about to be thrown away. Every one of them, not the first: an earlier
+        // draw may have appended one before this guard existed to stop it.
+        // Torn down here rather than when the draw started, so the graph on
+        // screen stays there while the layout for the next one is worked out.
+        stopScene();
+        canvas.querySelectorAll("svg").forEach((stale) => stale.remove());
         const scene = this.#paint(canvas, nodes, edges, width, height, groups.colorOf, select);
+        stopScene = scene.cleanup;
+        resetView = scene.reset;
         refreshSelection = () => scene.setSelected(selected);
         refreshSelection();
       };
@@ -404,7 +408,7 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
         return;
       }
       relax(nodes, edges, width, height).then((relaxed) => {
-        if (!alive) return;
+        if (!alive || mine !== era) return;
         if (!relaxed) {
           forceUnavailable = true;
           floatingWarning(canvas, "d3 could not be loaded - showing the circular layout instead");
@@ -424,14 +428,24 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
       onResize: () => draw(),
       cleanup: () => {
         alive = false;
+        stopScene();
         detail.cleanup();
       },
     };
   }
 
-  /** What each node colour means, under the canvas. */
-  #legend(entries: readonly [string, NodeColors][]): HTMLDivElement {
+  /**
+   * The strip under the canvas: how to get back, and what the colours mean.
+   *
+   * The reset is always there and the legend is not. Zoom and pan have no
+   * bottom, so a network the reader has flung off the edge needs one control
+   * that is always in the same place; a network of one composition has nothing
+   * to explain and a legend saying so is noise.
+   */
+  #canvasBar(entries: readonly [string, NodeColors][], onReset: () => void): HTMLDivElement {
     const bar = el("div", TOOLBAR.bottom);
+    bar.appendChild(resetControl(onReset, "Reset pan and zoom"));
+    if (!entries.length) return bar;
     bar.appendChild(el("span", `font-size:${FONT.small};color:${T.textMuted};`, "systems made of"));
     for (const [signature, colors] of entries) {
       const item = el("div", "display:flex;align-items:center;gap:6px;min-width:0;");
@@ -510,20 +524,38 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     height: number,
     colorOf: (index: number) => NodeColors,
     onSelect: (kind: "node" | "edge", index: number) => void,
-  ): { setSelected(selection: { kind: "node" | "edge"; index: number } | null): void } {
+  ): {
+    setSelected(selection: { kind: "node" | "edge"; index: number } | null): void;
+    reset(): void;
+    cleanup(): void;
+  } {
     // Named, so the graph itself can be found among whatever the detail pane
     // has drawn beside it - the ligand-network view names its own the same way.
-    const root = svg("svg", { class: "gufe-graph", width, height, style: "display:block;" });
+    // `touch-action` off, or a drag to pan scrolls the page instead.
+    const root = svg("svg", { class: "gufe-graph", width, height, style: "display:block;touch-action:none;" });
     canvas.appendChild(root);
 
-    // Everything hangs off one group, which carries the fit: the layout's own
-    // coordinates are left alone, so what is drawn and where it is drawn stay
-    // separate questions.
-    const scene = svg("g", { transform: fitTransform(nodes, width, height) });
+    // Everything hangs off one group, which is what the camera moves: the
+    // layout's own coordinates are left alone, so what is drawn and where it is
+    // drawn stay separate questions.
+    const scene = svg("g");
     root.appendChild(scene);
     const lineLayer = svg("g");
     const nodeLayer = svg("g");
     scene.append(lineLayer, nodeLayer);
+
+    const camera = sceneCamera(root, scene, {
+      bounds: () => extentOf(nodes, NODE_EXTENT.x, NODE_EXTENT.y),
+      margin: FIT_MARGIN,
+      hint: "Click the graph or hold Ctrl to zoom",
+    });
+
+    // A pan begins wherever the pointer went down, which on a graph this dense
+    // is usually on top of a box or an edge. Without this, letting go of a pan
+    // would also change what the detail pane is showing.
+    const click = (kind: "node" | "edge", index: number): void => {
+      if (!camera.wasPan()) onSelect(kind, index);
+    };
 
     const lines: SVGLineElement[] = [];
     edges.forEach((edge, index) => {
@@ -538,7 +570,7 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
         style: "cursor:pointer;",
       });
       titled(line, edge.name || "transformation");
-      line.addEventListener("click", () => onSelect("edge", index));
+      line.addEventListener("click", () => click("edge", index));
       lineLayer.appendChild(line);
       lines.push(line);
 
@@ -553,7 +585,7 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
         "stroke-width": 16,
         style: "cursor:pointer;",
       });
-      hit.addEventListener("click", () => onSelect("edge", index));
+      hit.addEventListener("click", () => click("edge", index));
       lineLayer.appendChild(hit);
     });
 
@@ -604,9 +636,14 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
       group.appendChild(sub);
 
       titled(group, nodeLabel(node));
-      group.addEventListener("click", () => onSelect("node", index));
+      group.addEventListener("click", () => click("node", index));
       nodeLayer.appendChild(group);
     });
+
+    // Framed rather than left at the identity transform: the force layout puts
+    // a twenty-system network well outside an eight-hundred-pixel box, and an
+    // unframed one is a blank canvas with nothing on the page saying why.
+    camera.fit();
 
     return {
       setSelected(selection) {
@@ -621,6 +658,8 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
           line.setAttribute("stroke-width", active ? "4" : "2");
         });
       },
+      reset: camera.reset,
+      cleanup: camera.cleanup,
     };
   }
 }

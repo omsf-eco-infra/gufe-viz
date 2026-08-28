@@ -74,6 +74,7 @@ describe("a ligand network's view state", () => {
       tx: -140.5,
       ty: 96.25,
       selected: 1,
+      selectedKind: "edge",
     };
     expect(wanted.nodes).not.toEqual(opened.nodes);
 
@@ -152,5 +153,22 @@ describe("a ligand network's view state", () => {
     edgeHits(node)[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await flush();
     expect(node.viewState().selected).toBe(1);
+    expect(node.viewState().selectedKind).toBe("edge");
+  });
+
+  it("saves an open ligand as a ligand, so it does not come back as an edge", async () => {
+    // The index alone is ambiguous - ligand 2 and edge 2 are both `selected: 2`
+    // - so the kind travels with it or the restore opens the wrong thing.
+    const node = await mountNetwork();
+    node.querySelectorAll<SVGGElement>("g.gufe-node")[2].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    expect(node.viewState()).toMatchObject({ selected: 2, selectedKind: "ligand" });
+
+    const saved = node.viewState();
+    document.body.replaceChildren();
+    seed(saved);
+    const restored = await mountNetwork();
+    expect(restored.querySelector("gufe-small-molecule")).not.toBeNull();
+    expect(restored.viewState()).toMatchObject({ selected: 2, selectedKind: "ligand" });
   });
 });

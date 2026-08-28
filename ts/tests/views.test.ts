@@ -82,6 +82,69 @@ describe("<gufe-small-molecule>", () => {
     expect(node.textContent).toContain("No molecule provided");
     expect(engines.viewers).toHaveLength(0);
   });
+
+  const modeButton = (node: HTMLElement, label: string): HTMLButtonElement =>
+    [...node.querySelectorAll("button")].find((b) => b.textContent === label)!;
+
+  it("offers one way of looking at a time, in the order the switcher lists them", async () => {
+    const node = mount("gufe-small-molecule", readExample("small_molecule.json"));
+    await flush();
+    const labels = [...node.querySelectorAll("button")].map((b) => b.textContent);
+    expect(labels).toEqual(["2D", "Stick", "Ball+Stick", "Sphere", "Spin", "Info"]);
+    // The reset went with the split: the zoom is bounded and wheeling back out
+    // is the way back.
+    expect(labels).not.toContain("Reset");
+  });
+
+  it("shows one pane at a time, and every pane is laid out whichever is showing", async () => {
+    // The panes are stacked and hidden rather than built on demand: 3Dmol sizes
+    // its canvas from the element it renders into, and one built inside a pane
+    // with no layout would be built at nothing.
+    const node = mount("gufe-small-molecule", readExample("small_molecule.json"));
+    await flush();
+    const viewer3D = node.querySelector<HTMLElement>("[data-gufe-viewer]")!.parentElement!;
+    const depiction = node.querySelector<HTMLElement>("svg")!.closest("div")!;
+    const shown = (element: HTMLElement) => element.style.visibility !== "hidden";
+
+    expect(engines.viewers).toHaveLength(1);
+    expect(shown(viewer3D)).toBe(false);
+    expect(shown(depiction)).toBe(true);
+
+    modeButton(node, "Ball+Stick").click();
+    expect(shown(viewer3D)).toBe(true);
+    expect(shown(depiction)).toBe(false);
+    expect(engines.viewers[0].styles.at(-1)!.style).toMatchObject({ sphere: { scale: 0.28 } });
+  });
+
+  it("keeps the name and the numbers behind Info, not in a bar under the picture", async () => {
+    const payload = readExample("small_molecule.json");
+    const node = mount("gufe-small-molecule", payload);
+    await flush();
+    modeButton(node, "Info").click();
+
+    const info = [...node.querySelectorAll<HTMLElement>("div")].find(
+      (d) => d.textContent?.includes("SMILES") && d.textContent?.includes("Charge"),
+    );
+    expect(info).toBeTruthy();
+    expect(info!.textContent).toContain((payload as { smiles: string }).smiles);
+  });
+
+  it("does not turn a molecule nobody is looking at", async () => {
+    // Spin is a control of the 3D picture, so it is dead while another pane is
+    // in force - and a hidden canvas turning is a frame a second wasted.
+    const node = mount("gufe-small-molecule", readExample("small_molecule.json"));
+    await flush();
+    const spin = modeButton(node, "Spin");
+    expect(spin.disabled).toBe(true);
+
+    modeButton(node, "Stick").click();
+    expect(spin.disabled).toBe(false);
+    spin.click();
+    expect(engines.viewers[0].calls).toContain('spin("y")');
+
+    modeButton(node, "2D").click();
+    expect(engines.viewers[0].calls.at(-1)).toBe("spin(false)");
+  });
 });
 
 describe("<gufe-protein>", () => {
@@ -146,7 +209,7 @@ describe("<gufe-ligand-network>", () => {
     const node = mount("gufe-ligand-network", payload);
     await flush();
 
-    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length);
+    expect(node.querySelectorAll("svg circle.gufe-node-disc")).toHaveLength(payload.nodes.length);
     // One visible line, one halo and one hit target per edge.
     expect(node.querySelectorAll("svg line")).toHaveLength(payload.edges.length * 3);
     expect(node.textContent).toContain(`${payload.nodes.length}`);
@@ -276,6 +339,88 @@ describe("<gufe-ligand-network>", () => {
     expect(embedded.payload["gufe-key"]).toBe(last["gufe-key"]);
   });
 
+  it("keeps one scene on the canvas, however many redraws overlap", async () => {
+    // A force layout is relaxed asynchronously, so two redraws can be in flight
+    // at once. Both used to paint, and the canvas does not scroll: the reader
+    // was left looking at the first scene while every selection went to the
+    // last one, off the bottom of the pane.
+    const node = mount("gufe-ligand-network", network());
+    await flush();
+    const menu = node.querySelector<HTMLButtonElement>('button[aria-label="Search, filter and select ligands"]')!;
+    menu.click();
+    menu.click();
+    await flush();
+
+    expect(node.querySelectorAll("svg.gufe-graph")).toHaveLength(1);
+    node.querySelectorAll<SVGGElement>("g.gufe-node")[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    // The halo that lit is one the reader can see.
+    const lit = [...node.querySelectorAll("circle.gufe-node-halo")].filter((c) => c.getAttribute("opacity") !== "0");
+    expect(lit).toHaveLength(1);
+    expect(node.querySelector("svg.gufe-graph")!.contains(lit[0])).toBe(true);
+  });
+
+  it("shows a clicked ligand on its own, drawn by the small molecule view", async () => {
+    // The counterpart of clicking an edge: an edge is a mapping and opens the
+    // mapping view, a node is one ligand and opens the ligand view. Both are
+    // the element that payload renders through on its own.
+    const payload = network();
+    const node = mount("gufe-ligand-network", payload);
+    await flush();
+
+    const groups = node.querySelectorAll<SVGGElement>("g.gufe-node");
+    groups[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+
+    const embedded = node.querySelector("gufe-small-molecule") as HTMLElement & {
+      payload: { "gufe-key": string; x?: number };
+    };
+    expect(embedded).toBeTruthy();
+    expect(embedded.payload["gufe-key"]).toBe(payload.nodes[1]);
+    // The layout position is this view's business, not the ligand's.
+    expect(embedded.payload.x).toBeUndefined();
+    // One thing is open at a time, so the mapping the pane opened on is gone.
+    expect(node.querySelector("gufe-atom-mapping")).toBeNull();
+  });
+
+  it("marks the open ligand on the canvas, and only that one", async () => {
+    const node = mount("gufe-ligand-network", network());
+    await flush();
+    const halos = () => [...node.querySelectorAll("circle.gufe-node-halo")].map((c) => c.getAttribute("opacity"));
+
+    expect(halos().every((o) => o === "0")).toBe(true);
+    node.querySelectorAll<SVGGElement>("g.gufe-node")[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    expect(halos().filter((o) => o !== "0")).toHaveLength(1);
+    expect(halos()[1]).not.toBe("0");
+  });
+
+  it("does not open a ligand that was only dragged out of the way", async () => {
+    // A node is both a thing to drag and a thing to click, and moving one is
+    // not a request to look at it.
+    const payload = network();
+    const node = mount("gufe-ligand-network", payload);
+    await flush();
+    const group = node.querySelectorAll<SVGGElement>("g.gufe-node")[1];
+    (group as unknown as { setPointerCapture(id: number): void }).setPointerCapture = () => {};
+    // jsdom has no PointerEvent; the handlers read only what a MouseEvent has,
+    // plus the pointer id the capture is taken with.
+    const pointer = (type: string, clientX: number, clientY: number): MouseEvent => {
+      const event = new MouseEvent(type, { bubbles: true, clientX, clientY });
+      Object.defineProperty(event, "pointerId", { value: 1 });
+      return event;
+    };
+
+    group.dispatchEvent(pointer("pointerdown", 100, 100));
+    group.dispatchEvent(pointer("pointermove", 260, 240));
+    group.dispatchEvent(pointer("pointerup", 260, 240));
+    group.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+
+    expect(node.querySelector("gufe-small-molecule")).toBeNull();
+    expect(node.querySelector("gufe-atom-mapping")).toBeTruthy();
+  });
+
   it("drops an edge that names a ligand the network does not contain, and says so", async () => {
     const payload = network();
     payload.edges = [
@@ -295,7 +440,7 @@ describe("<gufe-ligand-network>", () => {
 
     expect(node.textContent).toContain("does not contain");
     expect(node.querySelectorAll("svg line")).toHaveLength(0);
-    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length);
+    expect(node.querySelectorAll("svg circle.gufe-node-disc")).toHaveLength(payload.nodes.length);
   });
 
   it("drops a node whose gufe key is not in the registry, and says so", async () => {
@@ -307,7 +452,7 @@ describe("<gufe-ligand-network>", () => {
     await flush();
 
     expect(node.textContent).toContain("not in its registry");
-    expect(node.querySelectorAll("svg circle")).toHaveLength(payload.nodes.length - 1);
+    expect(node.querySelectorAll("svg circle.gufe-node-disc")).toHaveLength(payload.nodes.length - 1);
   });
 
   it("hands an edge on as a payload that validates on its own", () => {
@@ -343,7 +488,7 @@ describe("<gufe-ligand-network>", () => {
     expect(node.textContent).toContain("d3 could not be loaded");
     expect((node.querySelector("select") as HTMLSelectElement).value).toBe("Circular");
     // The point of the fallback: there is still a graph on the page.
-    expect(node.querySelectorAll("svg circle").length).toBeGreaterThan(0);
+    expect(node.querySelectorAll("svg circle.gufe-node-disc").length).toBeGreaterThan(0);
   });
 
   it("says so, rather than crashing, when the network is empty", async () => {
