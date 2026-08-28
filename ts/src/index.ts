@@ -24,7 +24,7 @@ export { buildRegistry, entriesFor, entryLabel, lookup, lookupOfType, type Regis
 export { GufeSmallMolecule } from "./views/small-molecule.js";
 export { GufeProtein, type PdbPayload } from "./views/protein.js";
 export { GufeProtocol } from "./views/protocol.js";
-export { GufeLigandNetwork, selectionText, type ExportAs } from "./views/ligand-network.js";
+export { GufeLigandNetwork } from "./views/ligand-network.js";
 export { GufeAlchemicalNetwork } from "./views/alchemical-network.js";
 export {
   GufeAtomMapping,
@@ -37,13 +37,15 @@ export {
 } from "./views/atom-mapping.js";
 export { applyRT, kabsch, type Transform, type Vec3 } from "./shared/kabsch.js";
 export { GufeChemicalSystem, systemPayloadFor } from "./views/chemical-system.js";
-export { GufeSolvent, parseConcentration } from "./views/solvent.js";
+export { GufeSolvent } from "./views/solvent.js";
 export { GufeTransformation, diffStatus, transformationPayloadFor, type DiffStatus } from "./views/transformation.js";
 export { GufeUnknownComponent } from "./views/unknown-component.js";
 export { GufeElement, defineElement, type ViewHandle } from "./shared/element.js";
 export {
   CHROME_OPEN_BY_DEFAULT,
+  HIDE_NAME_ATTRIBUTE,
   chromeMenu,
+  nameWanted,
   onWidth,
   splitter,
   type ChromeMenu,
@@ -99,6 +101,16 @@ export {
   type CameraTransform,
   type Extent,
 } from "./shared/camera.js";
+export {
+  exportBlock,
+  MULTI_SELECT_HINT,
+  selectionText,
+  type ExportAs,
+  type ExportBlockOptions,
+  type ExportWord,
+  type SelectableEdge,
+  type SelectableNode,
+} from "./shared/selection.js";
 export { DEBUG_ATTRIBUTE, DEBUG_GLOBAL, debugEnabled, logPayload, payloadJson } from "./shared/debug.js";
 export {
   choice,

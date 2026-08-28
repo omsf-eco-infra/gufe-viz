@@ -68,7 +68,7 @@
  * the transformation view both do.
  */
 
-import { buttonGroup, centredMessage, EM_DASH, el, errText, statChip } from "../shared/dom.js";
+import { buttonGroup, centredMessage, EM_DASH, el, errText, nameWanted, statChip } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { choice } from "../shared/settings.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type RDKitModule, type ThreeDmolViewer } from "../shared/engines.js";
@@ -338,6 +338,10 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     const uniquesA = uniqueAtoms(pairs, molA.symbols, molB.symbols);
     const uniquesB = uniqueAtoms(flipped, molB.symbols, molA.symbols);
 
+    // Whether each box names its molecule. On by default; off where something
+    // above has already named them - see `HIDE_NAME_ATTRIBUTE`.
+    const named = nameWanted(host);
+
     // --- the stage, and the floating switcher over it ---
     const wrapper = el("div", "position:relative;flex:1;min-height:0;display:flex;flex-direction:column;");
     host.appendChild(wrapper);
@@ -400,8 +404,9 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       container.dataset.gufeViewer = "";
       wrap.appendChild(container);
       // Over the picture rather than above it: see `PANE_LABEL_OVERLAY`. After
-      // the container so it draws on top of the canvas 3Dmol puts there.
-      wrap.appendChild(el("div", PANE_LABEL_OVERLAY, labelText));
+      // the container so it draws on top of the canvas 3Dmol puts there, and
+      // only where nothing above has already named these two molecules.
+      if (named) wrap.appendChild(el("div", PANE_LABEL_OVERLAY, labelText));
       stage.appendChild(wrap);
       const box: Box = { container, viewer: null, interaction: null };
       boxes.push(box);
@@ -693,7 +698,7 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
         wrap.appendChild(box);
         // On the depiction, not above it, and outside the box the depiction
         // replaces the contents of when RDKit comes back.
-        wrap.appendChild(el("div", PANE_LABEL_OVERLAY, side.mol.name));
+        if (named) wrap.appendChild(el("div", PANE_LABEL_OVERLAY, side.mol.name));
         stage.appendChild(wrap);
         return { box, side };
       });

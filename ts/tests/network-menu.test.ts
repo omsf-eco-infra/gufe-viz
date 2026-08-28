@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import "../src/index.js";
 import { clearFakeEngines, flush, readExample, seedFakeEngines, wait, type SeededEnginesResult } from "./helpers.js";
-import { selectionText } from "../src/views/ligand-network.js";
+import { selectionText } from "../src/shared/selection.js";
 import { T } from "../src/shared/theme.js";
 import { flag, text as textSetting } from "../src/shared/settings.js";
 
@@ -274,7 +274,9 @@ describe("selection export", () => {
 
     expect(written).toHaveLength(1);
     expect(written[0].split("\n").length).toBeGreaterThan(0);
-    expect(node.textContent).toMatch(/Copied \d+ edges/);
+    // An edge of a ligand network is a mapping, which is what the header calls
+    // them and now what the export says too.
+    expect(node.textContent).toMatch(/Copied \d+ mappings/);
   });
 
   it("tells a reader how to select several, without being asked", async () => {
@@ -299,12 +301,12 @@ describe("selectionText", () => {
   it("lists selected ligands by name, one per line", () => {
     // A newline-delimited list is what a shell loop or a paste into a text column
     // takes without further splitting, and it survives a name with a comma in it.
-    const text = selectionText(nodes, edges, new Set(["k1", "k3"]), "ligands", "names");
+    const text = selectionText(nodes, edges, new Set(["k1", "k3"]), "nodes", "names");
     expect(text).toBe("lig_a\nlig_c");
   });
 
   it("can name them by gufe key instead, for when names collide or are empty", () => {
-    const text = selectionText(nodes, edges, new Set(["k1"]), "ligands", "keys");
+    const text = selectionText(nodes, edges, new Set(["k1"]), "nodes", "keys");
     expect(text).toBe("k1");
   });
 
@@ -321,7 +323,7 @@ describe("selectionText", () => {
   });
 
   it("is empty for an empty selection", () => {
-    expect(selectionText(nodes, edges, new Set(), "ligands", "names")).toBe("");
+    expect(selectionText(nodes, edges, new Set(), "nodes", "names")).toBe("");
     expect(selectionText(nodes, edges, new Set(), "edges", "names")).toBe("");
   });
 });

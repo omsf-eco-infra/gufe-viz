@@ -162,6 +162,10 @@ export function makeFakeViewer(): FakeViewer {
  * nodes on the deterministic circle the view seeds them on. What it does prove
  * is that the view configures the simulation it says it does, and - because the
  * force path is what runs by default - that the view draws at all.
+ *
+ * It does stamp the nodes the way d3-force stamps them, because a payload cut
+ * loose from a laid-out graph has to survive that and used to carry the
+ * simulation's own bookkeeping into a view that validates it.
  */
 function makeFakeD3(result: SeededEnginesResult): unknown {
   const force = (): unknown => {
@@ -173,8 +177,17 @@ function makeFakeD3(result: SeededEnginesResult): unknown {
   };
 
   return {
-    forceSimulation: () => {
+    forceSimulation: (nodes?: Record<string, unknown>[]) => {
       result.simulations++;
+      // d3-force decorates every node it is handed: an index, and a velocity
+      // per axis. Anything cut loose from a laid-out graph has to survive that,
+      // so the fake stamps them too. Positions are left alone, as d3 leaves the
+      // ones a view seeded itself.
+      (nodes ?? []).forEach((node, index) => {
+        node.index = index;
+        node.vx ??= 0;
+        node.vy ??= 0;
+      });
       const simulation: Record<string, () => unknown> = {
         force: () => simulation,
         stop: () => simulation,

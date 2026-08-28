@@ -12,9 +12,9 @@ import { parsePdbStats } from "../src/shared/pdb.js";
 import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry, lookupOfType } from "../src/schema/registry.js";
 import { T } from "../src/shared/theme.js";
+import { HIDE_NAME_ATTRIBUTE } from "../src/shared/dom.js";
 import { mappingPayloadFor, openfeShift, pairColour, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { DEPICT_STYLE, markGroups, threeDmolColor } from "../src/shared/depict-style.js";
-import { parseConcentration } from "../src/views/solvent.js";
 import { diffStatus, transformationPayloadFor } from "../src/views/transformation.js";
 import { systemPayloadFor } from "../src/views/chemical-system.js";
 import { ZOOM_LEVELS, levelAt } from "../src/views/ligand-network.js";
@@ -85,6 +85,30 @@ describe("<gufe-small-molecule>", () => {
 
   const modeButton = (node: HTMLElement, label: string): HTMLButtonElement =>
     [...node.querySelectorAll("button")].find((b) => b.textContent === label)!;
+
+  const nameLabel = (node: HTMLElement, name: string): HTMLElement | undefined =>
+    [...node.querySelectorAll<HTMLElement>("div")].find(
+      (d) => d.textContent === name && d.style.position === "absolute",
+    );
+
+  it("names the molecule over the picture, and stops when something above has named it", async () => {
+    const payload = readExample("small_molecule.json");
+    const shown = mount("gufe-small-molecule", payload);
+    await flush();
+    expect(nameLabel(shown, payload.name as string)).toBeTruthy();
+
+    // The attribute is read off any ancestor, so a pane that names its own
+    // contents silences every view inside it rather than the one it knows about.
+    document.body.replaceChildren();
+    const wrapper = document.createElement("div");
+    wrapper.setAttribute(HIDE_NAME_ATTRIBUTE, "");
+    document.body.appendChild(wrapper);
+    const hidden = document.createElement("gufe-small-molecule") as HTMLElement & { payload: unknown };
+    wrapper.appendChild(hidden);
+    hidden.payload = payload;
+    await flush();
+    expect(nameLabel(hidden, payload.name as string)).toBeUndefined();
+  });
 
   it("offers one way of looking at a time, in the order the switcher lists them", async () => {
     const node = mount("gufe-small-molecule", readExample("small_molecule.json"));
@@ -360,6 +384,23 @@ describe("<gufe-ligand-network>", () => {
     expect(node.querySelector("svg.gufe-graph")!.contains(lit[0])).toBe(true);
   });
 
+  it("hands on a clicked ligand and mapping with none of the layout's bookkeeping", async () => {
+    // Same rule as the alchemical network's: the force layout writes onto the
+    // objects the payload is cut from, and the schema allows none of it.
+    const node = mount("gufe-ligand-network", network());
+    await flush();
+    node.querySelectorAll<SVGGElement>("g.gufe-node")[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    const ligand = node.querySelector("gufe-small-molecule") as HTMLElement & { payload: Record<string, unknown> };
+    expect(validatePayload(ligand.payload).valid, formatIssues(validatePayload(ligand.payload).issues)).toBe(true);
+
+    const hits = [...node.querySelectorAll("line")].filter((l) => l.getAttribute("stroke") === "transparent");
+    hits[0].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+    const mapping = node.querySelector("gufe-atom-mapping") as HTMLElement & { payload: Record<string, unknown> };
+    expect(validatePayload(mapping.payload).valid, formatIssues(validatePayload(mapping.payload).issues)).toBe(true);
+  });
+
   it("shows a clicked ligand on its own, drawn by the small molecule view", async () => {
     // The counterpart of clicking an edge: an edge is a mapping and opens the
     // mapping view, a node is one ligand and opens the ligand view. Both are
@@ -537,35 +578,20 @@ describe("<gufe-solvent>", () => {
     document.body.replaceChildren();
   });
 
-  it("prints the five settings a SolventComponent actually carries", () => {
+  it("prints every field a SolventComponent carries", () => {
     const payload = readExample("solvent.json");
     const node = mount("gufe-solvent", payload);
     const text = node.textContent ?? "";
 
-    for (const field of ["smiles", "positive_ion", "negative_ion", "ion_concentration"] as const) {
+    for (const field of ["name", "smiles", "positive_ion", "negative_ion", "ion_concentration", "gufe-key"] as const) {
       expect(text).toContain(String(payload[field]));
     }
     expect(text).toContain(payload.neutralize ? "yes" : "no");
   });
 
-  it("draws the same schematic twice, so a resize does not look like new data", () => {
-    const payload = readExample("solvent.json");
-    const first = mount("gufe-solvent", payload).querySelector("svg")!.innerHTML;
-    document.body.replaceChildren();
-    const second = mount("gufe-solvent", payload).querySelector("svg")!.innerHTML;
-    expect(second).toBe(first);
-  });
-
-  it("says the picture is not quantitative", () => {
+  it("draws no picture: there is nothing structural to draw", () => {
     const node = mount("gufe-solvent", readExample("solvent.json"));
-    expect(node.textContent).toContain("Schematic only");
-  });
-
-  it("reads the leading number of a display concentration", () => {
-    expect(parseConcentration("0.15 molar")).toBe(0.15);
-    expect(parseConcentration("1.5e-2 molar")).toBe(0.015);
-    expect(parseConcentration("none at all")).toBeNull();
-    expect(parseConcentration(undefined)).toBeNull();
+    expect(node.querySelector("svg")).toBeNull();
   });
 });
 
@@ -625,6 +651,23 @@ describe("<gufe-chemical-system>", () => {
     const nested = node.querySelector("gufe-view");
     expect(nested).toBeTruthy();
     expect(nested!.querySelector("gufe-small-molecule, gufe-solvent, gufe-protein")).toBeTruthy();
+  });
+
+  it("names each component once: in the selector, not again over the drawing", async () => {
+    // The strip above the drawing already gives the label and the name, so the
+    // molecule view below must not write the name over its own picture too.
+    const node = mount("gufe-chemical-system", readExample("chemical_system.json"));
+    await flush();
+    const nested = node.querySelector("gufe-view")!;
+    expect(nested.getAttribute(HIDE_NAME_ATTRIBUTE)).toBe("");
+
+    const molecule = nested.querySelector("gufe-small-molecule")!;
+    const name = (molecule as HTMLElement & { payload: { name: string } }).payload.name;
+    expect(node.textContent).toContain(name);
+    const overlaid = [...molecule.querySelectorAll<HTMLElement>("div")].filter(
+      (d) => d.textContent === name && d.style.position === "absolute",
+    );
+    expect(overlaid).toHaveLength(0);
   });
 
   it("switches component without rebuilding the nested view", async () => {
@@ -797,6 +840,32 @@ describe("<gufe-atom-mapping>", () => {
     const payload = readExample("ligand_atom_mapping.json") as unknown as { registry: { name: string }[] };
     const names = payload.registry.map((entry) => entry.name).filter(Boolean);
     for (const name of names) expect(node.textContent).toContain(name);
+  });
+
+  /** The names a view writes over its own pictures: floating, and not in the way. */
+  const overlaidNames = (root: ParentNode): HTMLElement[] =>
+    [...root.querySelectorAll<HTMLElement>("div")].filter(
+      (d) => d.style.position === "absolute" && d.style.pointerEvents === "none",
+    );
+
+  it("names both molecules over their boxes, unless something above has named them", async () => {
+    const node = mapping();
+    await flush();
+    // One per molecule, each naming the molecule under it. The fixture's two are
+    // unnamed, so what they carry is the label the view falls back to.
+    const shown = overlaidNames(node).map((d) => d.textContent);
+    expect(shown).toHaveLength(2);
+    expect(shown.every((text) => text && node.textContent?.includes(text))).toBe(true);
+
+    document.body.replaceChildren();
+    const wrapper = document.createElement("div");
+    wrapper.setAttribute(HIDE_NAME_ATTRIBUTE, "");
+    document.body.appendChild(wrapper);
+    const hidden = document.createElement("gufe-atom-mapping") as HTMLElement & { payload: unknown };
+    wrapper.appendChild(hidden);
+    hidden.payload = readExample("ligand_atom_mapping.json");
+    await flush();
+    expect(overlaidNames(hidden)).toHaveLength(0);
   });
 
   it("offers 2D first, then the 3D modes, with Info last", async () => {
@@ -1155,6 +1224,45 @@ describe("<gufe-alchemical-network>", () => {
     // Cut loose with a registry of its own, so it resolves its own endpoints.
     expect(text).not.toContain("registry does not hold them");
     expect(embedded!.querySelector("gufe-atom-mapping")).toBeTruthy();
+  });
+
+  it("hands on a clicked system with none of the layout's bookkeeping", async () => {
+    // The force layout writes onto the very objects the payload's registry
+    // holds - a position, an index, a velocity per axis - and the schema allows
+    // none of them. The detail pane validates what it is given, so a node cut
+    // loose with the simulation's leftovers on it drew an error instead of a
+    // chemical system.
+    const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
+    await flush();
+    // A system is drawn as a rounded box with its name in it; the last one is
+    // as good as any, and not the one the pane opens on.
+    const system = [...node.querySelectorAll<SVGRectElement>("rect")].at(-1)!;
+    system.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+
+    const pane = node.querySelector("gufe-view") as HTMLElement & { payload: Record<string, unknown> };
+    expect(pane).toBeTruthy();
+    for (const stapled of ["x", "y", "index", "vx", "vy"]) {
+      expect(pane.payload[stapled], `the layout's ${stapled} was handed on`).toBeUndefined();
+    }
+    const { valid, issues } = validatePayload(pane.payload);
+    expect(valid, formatIssues(issues)).toBe(true);
+    expect(node.textContent).not.toContain("does not match the gufe-viz schema");
+  });
+
+  it("hands on a clicked transformation with none of it either, states included", async () => {
+    // The registry a transformation is cut loose with holds its two states -
+    // which are the very objects the layout decorated. Cleaning the edge is not
+    // enough on its own.
+    const node = mount("gufe-alchemical-network", readExample("alchemical_network.json"));
+    await flush();
+    (node.querySelector("line") as SVGLineElement).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flush();
+
+    const pane = node.querySelector("gufe-view") as HTMLElement & { payload: Record<string, unknown> };
+    const { valid, issues } = validatePayload(pane.payload);
+    expect(valid, formatIssues(issues)).toBe(true);
+    expect(node.textContent).not.toContain("does not match the gufe-viz schema");
   });
 
   it("cuts a node and an edge loose as payloads that validate on their own", async () => {

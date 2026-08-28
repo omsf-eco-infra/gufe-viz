@@ -25,7 +25,7 @@
  * there; this way the conformer is ready whichever mode the view opens on.
  */
 
-import { buttonGroup, toggleButton, centredMessage, EM_DASH, el, errText, viewerHost } from "../shared/dom.js";
+import { buttonGroup, toggleButton, centredMessage, EM_DASH, el, errText, nameWanted, viewerHost } from "../shared/dom.js";
 import { defineElement, GufeElement, type ViewHandle } from "../shared/element.js";
 import { choice, flag } from "../shared/settings.js";
 import { load3Dmol, loadRDKit, ThreeDmol, type ThreeDmolViewer } from "../shared/engines.js";
@@ -126,9 +126,11 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
     // The molecule's name, over the picture rather than in a strip above it: a
     // bar spent a row of height on one short line, and which mode is in force is
     // already said by the switcher below. Hidden behind Info, which names the
-    // molecule in its own first row.
+    // molecule in its own first row, and left off entirely where something above
+    // has already named it - see `HIDE_NAME_ATTRIBUTE`.
+    const named = nameWanted(host);
     const paneLabel = el("div", PANE_LABEL_OVERLAY, name || "Unnamed molecule");
-    stage.appendChild(paneLabel);
+    if (named) stage.appendChild(paneLabel);
 
     // --- the switcher ---
 
@@ -157,7 +159,7 @@ export class GufeSmallMolecule extends GufeElement<SmallMoleculeComponentViz> {
       depictBox.style.visibility = mode === "2d" ? "visible" : "hidden";
       host3D.wrap.style.visibility = is3D(mode) ? "visible" : "hidden";
       infoPane.style.visibility = mode === "info" ? "visible" : "hidden";
-      paneLabel.style.display = mode === "info" ? "none" : "block";
+      paneLabel.style.display = mode === "info" || !named ? "none" : "block";
       spinBtn.disabled = !is3D(mode);
       spinBtn.style.opacity = is3D(mode) ? "1" : "0.5";
       if (is3D(mode) && viewer) {

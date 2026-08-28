@@ -34,9 +34,11 @@ import {
 } from "../shared/dom.js";
 import { defineElement, GufeElement, seededViewState, type ViewHandle } from "../shared/element.js";
 import { choice, flag, num, text as textSetting, type Setting } from "../shared/settings.js";
+import { exportBlock, MULTI_SELECT_HINT } from "../shared/selection.js";
 import { svg } from "../shared/svg.js";
 import { resetControl } from "../shared/interact.js";
 import { extentOf, sceneCamera, type Camera } from "../shared/camera.js";
+import { withoutLayout } from "../shared/layout.js";
 import { loadD3, loadRDKit, type RDKitModule } from "../shared/engines.js";
 import { DEPICT_STYLE, rgbTriple } from "../shared/depict-style.js";
 import { depictSVG } from "../shared/sdf.js";
@@ -160,32 +162,26 @@ export interface NetworkViewState {
 /** The key this view's state travels under. See `seededViewState`. */
 const VIEW_STATE_KEY = "ligand-network";
 
-/**
- * How to select more than one ligand.
- *
- * Written once and shown in two places - under the list, and again when Edges
- * comes back empty - because those are the two moments it is needed: before
- * anyone has tried, and after the one thing that goes wrong has gone wrong.
- *
- * Named for the platform's own word rather than a key: someone on a Mac reaches
- * for Cmd and someone on Linux for Ctrl, and a hint that names the wrong one
- * reads as though the feature is not for them.
- */
-const MULTI_SELECT_HINT = "Cmd/Ctrl-click to select several.";
-
 /** What the detail pane says when nothing is open, and it names both halves. */
 const SELECT_HINT = "Click a ligand or an edge to see it.";
+
+/** An edge as the mapping it is, without the two endpoints and the index this view added. */
+function mappingOf(edge: NetEdge): LigandAtomMappingViz {
+  const { index: _index, from: _from, to: _to, ...mapping } = edge;
+  return mapping;
+}
 
 /**
  * A node as the payload the standalone ligand view takes.
  *
- * A `NetNode` is a whole `SmallMoleculeComponentViz` with a position stapled to
- * it, and the position is this view's business rather than the ligand's - so it
- * comes off before the payload is handed on.
+ * A `NetNode` is a whole `SmallMoleculeComponentViz` with a layout stapled to
+ * it, and the layout is this view's business rather than the ligand's - so it
+ * comes off before the payload is handed on. Which fields those are is
+ * `withoutLayout`'s to know: the force simulation writes more of them than this
+ * file does.
  */
 function ligandPayloadFor(node: NetNode): SmallMoleculeComponentViz {
-  const { x, y, fx, fy, ...ligand } = node;
-  return ligand;
+  return withoutLayout(node);
 }
 
 /** Two decimals is under a thousandth of a node radius, and a third of the size. */
@@ -673,77 +669,6 @@ function levelOfDetail(parts: DetailParts): {
   return { apply, drawn: () => injected.size, forget };
 }
 
-/** What an export names things by. */
-export type ExportAs = "names" | "keys";
-
-/**
- * The selection, as text to paste somewhere else.
- *
- * This is the whole of the answer to "how do I get this back into OpenFE": you
- * select in the browser, copy a list out, paste it into a file, and the CLI
- * re-plans from the originals. Nothing here writes a gufe object, and the
- * payload is not sufficient to reconstruct one - a gufe key hashes the full
- * float64 conformer while the SDF we carry holds four decimal places, and a
- * Protocol arrives as a class name with no settings. So what crosses back is
- * pointers, and Python keeps the data.
- *
- * Both come out one per line. A newline-delimited list is what a shell loop,
- * a `read`-per-line script and a paste into a text column all take without
- * further splitting, and it survives names that contain a comma. Within an
- * edge the two ends are still comma-separated, because there the comma is
- * joining a pair rather than delimiting the list.
- */
-export function selectionText(
-  nodes: readonly NetNode[],
-  edges: readonly NetEdge[],
-  selected: ReadonlySet<string>,
-  what: "ligands" | "edges",
-  as: ExportAs,
-): string {
-  const name = (node: NetNode): string => (as === "keys" ? node["gufe-key"] : label(node));
-
-  if (what === "ligands") {
-    return nodes
-      .filter((node) => selected.has(node["gufe-key"]))
-      .map(name)
-      .join("\n");
-  }
-
-  // An edge is included when both its ends are selected: "the edges among these
-  // ligands" is the question, and one endpoint would answer a different one.
-  return edges
-    .filter((edge) => selected.has(edge.from["gufe-key"]) && selected.has(edge.to["gufe-key"]))
-    .map((edge) => `${name(edge.from)}, ${name(edge.to)}`)
-    .join("\n");
-}
-
-/** Put `text` on the clipboard, falling back to a selectable box. */
-function copyOut(text: string, fallbackHost: HTMLElement): void {
-  navigator.clipboard?.writeText(text).catch(() => showText(text, fallbackHost));
-  if (!navigator.clipboard) showText(text, fallbackHost);
-}
-
-/** When the clipboard is unavailable, show the text so it can be copied by hand. */
-function showText(text: string, host: HTMLElement): void {
-  const box = el("textarea", `width:100%;height:80px;font-size:${FONT.small};box-sizing:border-box;`) as HTMLTextAreaElement;
-  box.value = text;
-  box.readOnly = true;
-  host.appendChild(box);
-  box.select();
-}
-
-/** Offer `text` as a file, for a selection too big for a clipboard. */
-function download(text: string, filename: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
-  const link = el("a", "display:none;") as HTMLAnchorElement;
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
 interface MenuParts {
   nodes: NetNode[];
   edges: NetEdge[];
@@ -775,7 +700,6 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   const querySetting = textSetting("ligand-network.query");
   const smartsSetting = textSetting("ligand-network.smarts");
   const scoreSetting = num("ligand-network.minScore", 0, 0, 1);
-  const exportAsSetting = choice<ExportAs>("ligand-network.exportAs", "names", ["names", "keys"]);
   // Stretches to the panel it is placed in rather than fixing its own width, so
   // that anything else the panel holds - today the debug export block, which is
   // wider than 236px - lines up with the controls instead of hanging off the
@@ -784,7 +708,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   // the whole panel across the view.
   const panel = el(
     "div",
-    "display:flex;flex-direction:column;gap:8px;min-width:236px;max-width:340px;box-sizing:border-box;" +
+    "display:flex;flex-direction:column;gap:8px;flex:1;min-width:236px;max-width:340px;box-sizing:border-box;" +
       `padding:10px;min-height:0;background:${T.panelBg};border-right:1px solid ${T.splitBorder};`,
   );
 
@@ -893,81 +817,20 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
   // anything at all.
   panel.appendChild(el("div", `font-size:${FONT.tiny};line-height:1.5;color:${T.textMuted2};`, MULTI_SELECT_HINT));
 
-  // --- export: the line against becoming a GUI ---
-  //
-  // Labelled as copying rather than editing, on purpose. A button that said
-  // "Add edge" would set an expectation this cannot meet, and frustrating
-  // someone who thinks they should be able to edit is the failure mode.
-  const exportBox = el("div", "display:flex;flex-direction:column;gap:6px;");
-  const asRow = el("div", `display:flex;align-items:center;gap:6px;font-size:${FONT.small};color:${T.textMuted};`);
-  asRow.appendChild(el("span", "", "copy as"));
-  const asPicker = dropdown(
-    [
-      { id: "names", label: "names" },
-      { id: "keys", label: "gufe keys" },
-    ],
-    exportAsSetting.get(),
-    () => undefined,
-    exportAsSetting,
-  );
-  asPicker.style.flex = "1";
-  asRow.appendChild(asPicker);
-  exportBox.appendChild(asRow);
-
-  /**
-   * What the export buttons have to say for themselves.
-   *
-   * Its own line, because the alternative was what this used to do: return on an
-   * empty selection and leave the button looking broken. Copying is invisible by
-   * nature - the result is on a clipboard, somewhere else - so a button here has
-   * nothing to show for itself either way unless it says so.
-   */
-  const exportNote = el("div", `font-size:${FONT.tiny};line-height:1.5;color:${T.textMuted2};`);
-  const note = (text: string): void => {
-    exportNote.textContent = text;
-  };
-
-  const exportRow = el("div", "display:flex;gap:4px;");
-  const exports: [string, "ligands" | "edges", string][] = [
-    ["Ligands", "ligands", "Copy the selected ligand names, one per line"],
-    ["Edges", "edges", "Copy the edges between the selected ligands, one pair per line"],
-  ];
-  for (const [text, what, title] of exports) {
-    const button = el("button", `${BTN_CSS}flex:1;`, text);
-    button.title = title;
-    button.onclick = (event) => {
-      const as = asPicker.value as ExportAs;
-      const content = selectionText(parts.nodes, parts.edges, parts.selected, what, as);
-      if (!content) {
-        // Naming which of the two reasons it is, because they need different
-        // things done about them: one is "pick something", the other is "the
-        // ligands you picked have nothing between them".
-        note(
-          parts.selected.size === 0
-            ? "Nothing selected. Click a ligand above."
-            : what === "edges"
-              ? `No mappings between the ${parts.selected.size} selected ligands. ${MULTI_SELECT_HINT}`
-              : "Nothing to copy.",
-        );
-        return;
-      }
-      const lines = content.split("\n").length;
-      if (event.shiftKey) {
-        download(content, `selected-${what}.txt`);
-        note(`Saved ${lines} ${what === "edges" ? "edges" : "ligands"} to a file.`);
-      } else {
-        copyOut(content, exportBox);
-        note(what === "edges" ? `Copied ${lines} edges.` : `Copied ${parts.selected.size} ligands.`);
-      }
-    };
-    exportRow.appendChild(button);
-  }
-  exportBox.appendChild(exportRow);
-  exportBox.appendChild(exportNote);
-  exportBox.appendChild(
-    el("div", `font-size:${FONT.tiny};color:${T.textMuted2};`, "Shift-click to save as a file instead."),
-  );
-  panel.appendChild(exportBox);
+  // Which of the two the edge button copies is named "mappings" rather than
+  // "edges": on this canvas an edge is a mapping, and the panel says so
+  // everywhere else.
+  const exporter = exportBlock({
+    nodes: parts.nodes,
+    edges: parts.edges,
+    selected: parts.selected,
+    words: {
+      nodes: { button: "Ligands", plural: "ligands" },
+      edges: { button: "Edges", plural: "mappings" },
+    },
+    setting: "ligand-network.exportAs",
+  });
+  panel.appendChild(exporter.box);
 
   const clear = el("button", `${BTN_CSS}width:100%;`, "Clear selection");
   clear.onclick = () => {
@@ -991,7 +854,7 @@ function buildMenu(parts: MenuParts): HTMLDivElement {
     // Whatever the export last said was about a selection that has now changed,
     // and a count of what was copied from the previous one is worse than
     // silence. A successful copy does not come through here, so it stays up.
-    note("");
+    exporter.clearNote();
     list.replaceChildren();
     const shown = parts.nodes.map((node, index) => ({ node, index })).filter(({ node }) => matches(node));
     count.textContent = `${shown.length} of ${parts.nodes.length} ligands`;
@@ -1173,6 +1036,10 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         remember: flag("ligand-network.menuOpen", false),
       },
     );
+    // A flex column, so the panel inside it is stretched to the height of the
+    // row rather than to the height of its own contents: a list of nine hundred
+    // ligands has to scroll inside the menu, not run off the bottom of the view.
+    menu.panel.style.cssText += "display:flex;flex-direction:column;min-height:0;";
     split.appendChild(menu.panel);
 
     // Set once there is a graph to draw; a no-op until then, because a network
@@ -1495,8 +1362,11 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     };
 
     return {
-      // Fed the payload `mappingPayloadFor` cuts loose from the network.
-      showMapping: (edge) => open("gufe-atom-mapping", mappingPayloadFor(edge, registry)),
+      // Fed the payload `mappingPayloadFor` cuts loose from the network, with
+      // this view's own bookkeeping off it first: an edge carries its index and
+      // both endpoints resolved, and a payload handed on is a payload someone
+      // may validate.
+      showMapping: (edge) => open("gufe-atom-mapping", mappingPayloadFor(mappingOf(edge), registry)),
       showLigand: (node) => open("gufe-small-molecule", ligandPayloadFor(node)),
       message,
     };

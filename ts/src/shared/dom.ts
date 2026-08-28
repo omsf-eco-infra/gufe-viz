@@ -331,6 +331,30 @@ export function viewerHost(): { wrap: HTMLDivElement; container: HTMLDivElement 
   return { wrap, container };
 }
 
+// --- names a view draws on its own picture ---------------------------------
+
+/**
+ * The attribute that tells a view not to name what it is drawing.
+ *
+ * A molecule view writes the molecule's name over its picture, which is what
+ * you want when the view is the whole of what is on screen. Mounted inside
+ * something that has already named it - a chemical system, where the selector
+ * above the drawing says both the label and the name - it is the same word
+ * twice, and the second one is over the picture.
+ *
+ * Set on any ancestor rather than passed as a payload field: the payloads are
+ * the schema's and have no room for how a view should look, and a pane that
+ * names its own contents means every view *inside* it, however deeply the
+ * dispatcher nests them. It works on the element itself too, so a page that
+ * mounts `<gufe-small-molecule data-gufe-hide-name>` gets the same.
+ */
+export const HIDE_NAME_ATTRIBUTE = "data-gufe-hide-name";
+
+/** Whether a view should draw the name of what it is showing. */
+export function nameWanted(host: Element): boolean {
+  return !host.closest(`[${HIDE_NAME_ATTRIBUTE}]`);
+}
+
 // --- panes that answer to their own width ----------------------------------
 
 /**
