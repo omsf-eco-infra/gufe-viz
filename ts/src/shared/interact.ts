@@ -108,6 +108,45 @@ export function guardWheel(host: HTMLElement, options: WheelGuardOptions): Inter
   };
 }
 
+// --- the touch guard -------------------------------------------------------
+
+/**
+ * Keep a two-finger gesture on `host` from becoming the browser's own.
+ *
+ * The counterpart of `guardWheel` for touch, and the reason a pinch on a graph
+ * zooms the graph rather than the whole page. `touch-action:none` is enough on
+ * Chrome and Firefox; Safari zooms the page on a pinch regardless of it, which
+ * is exactly the complaint - the canvas will not zoom and the site does
+ * instead. WebKit's `gesture*` events are where that is refused, and they exist
+ * nowhere else, so they are registered by name rather than typed.
+ *
+ * `touchmove` is refused only with more than one finger down. One finger is a
+ * pan the view handles through pointer events, and a page that cannot be
+ * scrolled by dragging a canvas it happens to contain is worse than a graph
+ * that moves under the finger.
+ *
+ * The 3D views need none of this: 3Dmol registers its own touch handlers and
+ * refuses these defaults itself, which is why they were the ones that already
+ * worked on a phone.
+ */
+export function claimGestures(host: Element): Interaction {
+  const refuse = (event: Event) => event.preventDefault();
+  const onTouch = (event: Event) => {
+    if ((event as TouchEvent).touches?.length > 1) event.preventDefault();
+  };
+  const gestures = ["gesturestart", "gesturechange", "gestureend"];
+
+  for (const name of gestures) host.addEventListener(name, refuse, { passive: false });
+  host.addEventListener("touchmove", onTouch, { passive: false });
+
+  return {
+    cleanup() {
+      for (const name of gestures) host.removeEventListener(name, refuse);
+      host.removeEventListener("touchmove", onTouch);
+    },
+  };
+}
+
 const HINT_MS = 1600;
 
 function showHint(host: HTMLElement, text: string): void {

@@ -72,3 +72,33 @@ describe("kabsch", () => {
     expect(kabsch([], [])).toBeNull();
   });
 });
+
+describe("kabsch on points that do not pin a rotation down", () => {
+  // Every 3D mode of the mapping view moves a molecule by this transform, so a
+  // rotation that is one arbitrary choice out of a circle of equally good ones
+  // has to announce itself. See `Transform.determined`.
+
+  it("is determined by points with width in a second direction", () => {
+    expect(kabsch(CUBE, move(CUBE, 1.1, [0, 0, 0]))!.determined).toBe(true);
+  });
+
+  it("is undetermined for fewer than three points", () => {
+    const two: Vec3[] = [[0, 0, 0], [1, 0, 0]];
+    expect(kabsch(two, two)!.determined).toBe(false);
+  });
+
+  it("is undetermined for points on a line, however many of them", () => {
+    // A line has a whole axis of rotation about itself that changes nothing,
+    // so the transform is a free choice and a molecule moved by it is turned
+    // by an amount nothing chose.
+    const line: Vec3[] = [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]];
+    expect(kabsch(line, move(line, 0.7, [2, 1, 0]))!.determined).toBe(false);
+  });
+
+  it("is determined by three points that are not on a line", () => {
+    const triangle: Vec3[] = [[0, 0, 0], [1, 0, 0], [0, 1, 0]];
+    const rt = kabsch(triangle, move(triangle, 0.9, [3, 0, 0]))!;
+    expect(rt.determined).toBe(true);
+    move(triangle, 0.9, [3, 0, 0]).map((p) => applyRT(p, rt.R, rt.t)).forEach((p, i) => close(p, triangle[i]));
+  });
+});

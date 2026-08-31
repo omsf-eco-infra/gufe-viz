@@ -38,6 +38,7 @@ import {
   el,
   floatingWarning,
   headerStrip,
+  orientMenuPanel,
   SELECT_CSS,
   splitter,
   statChip,
@@ -716,8 +717,12 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
     menu.panel.style.cssText += "display:flex;flex-direction:column;min-height:0;";
     split.appendChild(menu.panel);
 
-    const left = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
-    const right = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.appBg};`);
+    // `min-height` as well as `min-width`, because the split divides the height
+    // instead when the view is taller than it is wide: without it a pane's
+    // contents are its floor along whichever axis it is being divided on, and
+    // the graph pushes the detail pane off the bottom.
+    const left = el("div", `min-width:0;min-height:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
+    const right = el("div", `min-width:0;min-height:0;display:flex;flex-direction:column;background:${T.appBg};`);
     const canvas = el("div", `flex:1;min-height:0;position:relative;overflow:hidden;background:${T.netCanvasBg};`);
     left.appendChild(canvas);
 
@@ -733,6 +738,7 @@ export class GufeAlchemicalNetwork extends GufeElement<AlchemicalNetworkViz> {
         // that has to be drawn again. Only at the end of the drag: on the far
         // side of this is a force simulation.
         onResize: () => redraw(),
+        onOrient: (stacked) => orientMenuPanel(menu.panel, stacked),
       }),
     );
     split.appendChild(right);

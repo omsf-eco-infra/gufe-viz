@@ -9,6 +9,16 @@
  * which is what makes the lines parallel when the mapping is good and splayed
  * when it is not - the thing you are looking at the view to find out.
  *
+ * Every 3D mode of the mapping view now leans on it, not just Pairs: two
+ * molecules drawn together are being compared, and a comparison of two things
+ * turned differently is unreadable whichever way they are laid out. See
+ * `inFrameOf` in `views/atom-mapping.ts`.
+ *
+ * That second use is why `Transform` carries `determined`. Measuring a bad
+ * superposition is harmless; *moving* a molecule by one is not, and a mapping
+ * of two atoms, or of atoms all on one line, gives a rotation that is a free
+ * choice rather than an answer.
+ *
  * The SVD is done by Jacobi eigendecomposition of H'H and HH', because three by
  * three is small enough that pulling in a linear algebra library to do it would
  * cost more than it saves. Matrices are row-major flat arrays of nine.
@@ -20,7 +30,30 @@ export type Vec3 = [number, number, number];
 export interface Transform {
   R: number[];
   t: Vec3;
+  /**
+   * Whether the points pin the rotation down.
+   *
+   * False for fewer than three points, and for three or more that lie on a
+   * line. Both leave a whole axis of rotation free, so `R` is one arbitrary
+   * choice out of a circle of equally good ones. Anything that is going to
+   * *move* a molecule by this rather than merely measure it should leave the
+   * molecule where it is when this is false, or it will turn it by an amount
+   * nothing chose.
+   */
+  determined: boolean;
 }
+
+/**
+ * How small the second singular value may get before the rotation is a guess.
+ *
+ * Measured against the first, and on the eigenvalues of `HtH`, which are the
+ * squares of the singular values - so a millionth here is a thousandth of a
+ * singular value. Collinear points put the second at zero up to rounding;
+ * anything with real width in a second direction sits orders of magnitude
+ * above this, so the test separates the degenerate case rather than judging
+ * how good a mapping is.
+ */
+const RANK_EPSILON = 1e-6;
 
 function mat3Mul(a: number[], b: number[]): number[] {
   const r = new Array<number>(9);
@@ -86,7 +119,8 @@ function jacobiSym3(M: number[]): { values: number[]; vectors: number[] } {
  *
  * Fewer than three points cannot determine a rotation, so those get a pure
  * translation of the centroids - which is right rather than a fallback: two
- * points have no orientation to recover.
+ * points have no orientation to recover. `determined` on the result is how a
+ * caller tells that case, and collinear points, from an answer.
  */
 export function kabsch(P: readonly Vec3[], Q: readonly Vec3[]): Transform | null {
   const n = Math.min(P.length, Q.length);
@@ -100,7 +134,7 @@ export function kabsch(P: readonly Vec3[], Q: readonly Vec3[]): Transform | null
   cP[0]/=n; cP[1]/=n; cP[2]/=n;
   cQ[0]/=n; cQ[1]/=n; cQ[2]/=n;
   if (n < 3) {
-    return { R: [1,0,0, 0,1,0, 0,0,1], t: [cP[0]-cQ[0], cP[1]-cQ[1], cP[2]-cQ[2]] };
+    return { R: [1,0,0, 0,1,0, 0,0,1], t: [cP[0]-cQ[0], cP[1]-cQ[1], cP[2]-cQ[2]], determined: false };
   }
   const H = [0,0,0, 0,0,0, 0,0,0];
   for (let k = 0; k < n; k++) {
@@ -157,7 +191,10 @@ export function kabsch(P: readonly Vec3[], Q: readonly Vec3[]): Transform | null
   const rcQx = R[0]*cQ[0] + R[1]*cQ[1] + R[2]*cQ[2];
   const rcQy = R[3]*cQ[0] + R[4]*cQ[1] + R[5]*cQ[2];
   const rcQz = R[6]*cQ[0] + R[7]*cQ[1] + R[8]*cQ[2];
-  return { R, t: [cP[0]-rcQx, cP[1]-rcQy, cP[2]-rcQz] };
+  // Sorted descending by `sortEig`, so this is the second singular value
+  // against the first, squared. Points on a line leave nothing in the second.
+  const determined = eV.values[1] > RANK_EPSILON * eV.values[0];
+  return { R, t: [cP[0]-rcQx, cP[1]-rcQy, cP[2]-rcQz], determined };
 }
 
 /** `coord` rotated by `R` and translated by `t`. */

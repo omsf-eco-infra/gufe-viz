@@ -341,3 +341,121 @@ describe("<gufe-alchemical-network>", () => {
     expect(node.querySelector("gufe-transformation")).toBeTruthy();
   });
 });
+
+/**
+ * Two fingers on a network canvas.
+ *
+ * The 3D views got a pinch for nothing, because 3Dmol reads the touches inside
+ * its own canvas; an SVG has nobody to do that for it, so a pinch on a graph
+ * did nothing and the browser zoomed the page instead - which is what a phone
+ * reader actually hits. What is asserted here is both halves of the fix: the
+ * gesture moves the graph, and the page is not allowed to have it.
+ */
+describe("pinching a network canvas", () => {
+  beforeEach(() => {
+    seedFakeEngines();
+  });
+  afterEach(() => {
+    clearFakeEngines();
+    document.body.replaceChildren();
+  });
+
+  /** jsdom has no `PointerEvent`, and a pinch needs two identified fingers. */
+  const finger = (type: string, id: number, clientX: number, clientY: number): MouseEvent => {
+    const event = new MouseEvent(type, { bubbles: true, cancelable: true, clientX, clientY });
+    Object.defineProperty(event, "pointerId", { value: id });
+    Object.defineProperty(event, "pointerType", { value: "touch" });
+    return event;
+  };
+
+  /** A touch event carrying however many fingers, which is all the guard reads. */
+  const touch = (type: string, fingers: number): Event => {
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "touches", { value: Array.from({ length: fingers }, () => ({})) });
+    return event;
+  };
+
+  const scaleOf = (scene: SVGGElement): number => Number(/scale\(([-\d.]+)\)/.exec(scene.getAttribute("transform")!)![1]);
+
+  const network = async (tag: string, fixture: string) => {
+    const node = mount(tag, readExample(fixture));
+    await flush();
+    return {
+      node,
+      root: node.querySelector<SVGSVGElement>("svg.gufe-graph")!,
+      scene: node.querySelector("svg.gufe-graph > g") as SVGGElement,
+    };
+  };
+
+  /**
+   * Fingers apart from a hundred pixels to two hundred: twice the zoom.
+   *
+   * Dispatched at whatever the first finger landed on, because that is where a
+   * browser sends the rest of a touch - it captures to the element the gesture
+   * started on, which is how a node drag gets its moves at all.
+   */
+  const spread = (target: Element, root: SVGSVGElement): void => {
+    target.dispatchEvent(finger("pointerdown", 1, 100, 100));
+    root.dispatchEvent(finger("pointerdown", 2, 200, 100));
+    target.dispatchEvent(finger("pointermove", 1, 50, 100));
+    target.dispatchEvent(finger("pointermove", 2, 250, 100));
+  };
+
+  it("zooms the graph about the fingers", async () => {
+    const { root, scene } = await network("gufe-alchemical-network", "alchemical_network.json");
+    const opening = scaleOf(scene);
+
+    spread(root, root);
+    expect(scaleOf(scene)).toBeCloseTo(opening * 2, 5);
+  });
+
+  it("goes on zooming when a finger is lifted, without the view jumping", async () => {
+    const { root, scene } = await network("gufe-alchemical-network", "alchemical_network.json");
+    spread(root, root);
+    const zoomed = scene.getAttribute("transform");
+    const zoomedScale = scaleOf(scene);
+
+    // The finger that is left takes over the pan, seated where it is rather
+    // than where it went down - so lifting the other one moves nothing.
+    root.dispatchEvent(finger("pointerup", 2, 250, 100));
+    expect(scene.getAttribute("transform")).toBe(zoomed);
+    root.dispatchEvent(finger("pointermove", 1, 90, 140));
+    expect(scene.getAttribute("transform")).not.toBe(zoomed);
+    // Panned, not zoomed again: one finger moves the view without resizing it.
+    expect(scaleOf(scene)).toBeCloseTo(zoomedScale, 5);
+  });
+
+  /**
+   * The gesture usually starts on a ligand, because a graph is mostly ligands.
+   * A node swallows its own `pointerdown` to start a drag, so a camera that
+   * counted fingers from where they landed would only ever see one of them.
+   */
+  it("zooms even when a finger went down on a ligand, and does not drag it", async () => {
+    const { node, root, scene } = await network("gufe-ligand-network", "ligand_network.json");
+    const group = node.querySelector<SVGGElement>("svg.gufe-graph .gufe-node")!;
+    // jsdom captures no pointers; the drag this is proving gives way sets one.
+    group.setPointerCapture = () => {};
+    group.releasePointerCapture = () => {};
+    const disc = group.querySelector<SVGCircleElement>(".gufe-node-disc")!;
+    const where = () => `${disc.getAttribute("cx")},${disc.getAttribute("cy")}`;
+    const opening = scaleOf(scene);
+    const placed = where();
+
+    spread(group, root);
+    expect(scaleOf(scene)).toBeCloseTo(opening * 2, 5);
+    // The ligand stayed where the layout put it: a node that followed one of
+    // the two fingers through a zoom is not what either hand meant.
+    expect(where()).toBe(placed);
+  });
+
+  it("refuses the browser's own pinch, which would zoom the page instead", async () => {
+    const { root } = await network("gufe-alchemical-network", "alchemical_network.json");
+
+    // WebKit's, which is the one that ignores `touch-action`.
+    expect(root.dispatchEvent(touch("gesturestart", 0))).toBe(false);
+    expect(root.dispatchEvent(touch("touchmove", 2))).toBe(false);
+    // One finger is a pan the page may keep: a canvas that cannot be scrolled
+    // past is worse than a graph that moves under the finger.
+    expect(root.dispatchEvent(touch("touchmove", 1))).toBe(true);
+  });
+});

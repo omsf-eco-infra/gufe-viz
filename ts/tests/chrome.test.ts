@@ -156,18 +156,24 @@ describe("splitter", () => {
   };
 
   /** jsdom lays nothing out and captures no pointers, so both are supplied. */
-  const draggable = (handle: HTMLElement, host: HTMLElement, width: number): void => {
+  const draggable = (handle: HTMLElement, host: HTMLElement, width: number, height = 100): void => {
     handle.setPointerCapture = () => {};
     handle.releasePointerCapture = () => {};
     host.getBoundingClientRect = () =>
-      ({ left: 0, top: 0, width, height: 100, right: width, bottom: 100, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+      ({ left: 0, top: 0, width, height, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+  };
+
+  /** The shape of a host, before there is a splitter in it to measure it. */
+  const shaped = (host: HTMLElement, width: number, height: number): void => {
+    host.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width, height, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
   };
 
   /** The percentage a pane was given, however the host chose to serialize it. */
   const share = (pane: HTMLElement): number => Number(/([\d.]+)%/.exec(pane.style.flex)![1]);
 
-  const pointer = (type: string, clientX: number): MouseEvent => {
-    const event = new MouseEvent(type, { bubbles: true, clientX });
+  const pointer = (type: string, clientX: number, clientY = 0): MouseEvent => {
+    const event = new MouseEvent(type, { bubbles: true, clientX, clientY });
     Object.defineProperty(event, "pointerId", { value: 1 });
     return event;
   };
@@ -233,5 +239,52 @@ describe("splitter", () => {
 
     handle.dispatchEvent(pointer("pointermove", 100));
     expect(share(before)).toBeCloseTo(50, 5);
+  });
+
+  /**
+   * A phone held upright is twice as tall as it is wide, and two panes side by
+   * side in it are two columns too narrow to hold anything - a graph in one and
+   * a molecule in the other, neither readable. So the shape of the row decides
+   * which way it divides, and nothing a view says overrides it.
+   */
+  it("stacks the panes when the row is taller than it is wide", () => {
+    const { row: host, before, after } = row();
+    shaped(host, 390, 780);
+    const orientations: boolean[] = [];
+    const handle = splitter(host, before, after, { onOrient: (stacked) => orientations.push(stacked) });
+    host.appendChild(handle);
+
+    expect(host.style.flexDirection).toBe("column");
+    expect(handle.style.cursor).toBe("row-resize");
+    expect(handle.getAttribute("aria-orientation")).toBe("horizontal");
+    // Told once, as it is set up, so a pane that has to look different stacked
+    // does not have to wait for the first flip to find out.
+    expect(orientations).toEqual([true]);
+  });
+
+  it("divides side by side when there is width for it", () => {
+    const { row: host, before, after } = row();
+    shaped(host, 1000, 600);
+    const handle = splitter(host, before, after, { onOrient: () => {} });
+    host.appendChild(handle);
+
+    expect(host.style.flexDirection).toBe("row");
+    expect(handle.style.cursor).toBe("col-resize");
+    expect(handle.getAttribute("aria-orientation")).toBe("vertical");
+  });
+
+  it("drags down the row rather than across it once it is stacked", () => {
+    const { row: host, before, after } = row();
+    shaped(host, 400, 1000);
+    const handle = splitter(host, before, after);
+    host.appendChild(handle);
+    draggable(handle, host, 400, 1000);
+
+    // The same numbers as the side-by-side drag, on the other axis: what moves
+    // the divider is where the pointer is along whichever axis is being divided.
+    handle.dispatchEvent(pointer("pointerdown", 200, 500));
+    handle.dispatchEvent(pointer("pointermove", 200, 300));
+    expect(share(before)).toBeCloseTo(30, 5);
+    expect(share(after)).toBeCloseTo(70, 5);
   });
 });

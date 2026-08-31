@@ -124,6 +124,25 @@ export const HEADER =
   `display:flex;align-items:center;gap:12px;padding:9px ${SPACE.xxl};flex-shrink:0;` +
   `background:${T.toolbarBg};border-bottom:1px solid ${T.toolbarBorder};`;
 
+/** How wide the menu is allowed to be when it is a column beside the panes. */
+export const MENU_PANEL_WIDTH = { min: "236px", max: "340px" };
+
+/**
+ * The four things about the panel that a stacked view has to change.
+ *
+ * Custom properties rather than a restyling pass, because the panel is built on
+ * the first open and the arrangement is decided before that: something set on
+ * the wrapper above it lands on the panel whenever the panel appears, and again
+ * whenever the arrangement changes, with nothing having to remember either.
+ * `orientMenuPanel` is what sets them.
+ */
+export const MENU_VAR = {
+  min: "--gufe-menu-min",
+  max: "--gufe-menu-max",
+  ruleX: "--gufe-menu-rule-x",
+  ruleY: "--gufe-menu-rule-y",
+} as const;
+
 /**
  * The chrome menu's own column: the network views' search, filters, list and
  * export controls.
@@ -139,9 +158,14 @@ export const HEADER =
  * in it is ever unreachable. Above that height the list is the part that gives.
  */
 export const MENU_PANEL =
-  `display:flex;flex-direction:column;gap:${SPACE.lg};flex:1;min-width:236px;max-width:340px;` +
-  `box-sizing:border-box;padding:${SPACE.xl};min-height:0;overflow-y:auto;` +
-  `background:${T.panelBg};border-right:1px solid ${T.splitBorder};`;
+  `display:flex;flex-direction:column;gap:${SPACE.lg};flex:1;` +
+  `min-width:var(${MENU_VAR.min},${MENU_PANEL_WIDTH.min});max-width:var(${MENU_VAR.max},${MENU_PANEL_WIDTH.max});` +
+  `box-sizing:border-box;padding:${SPACE.xl};min-height:0;overflow-y:auto;background:${T.panelBg};` +
+  `border:0 solid ${T.splitBorder};` +
+  `border-right-width:var(${MENU_VAR.ruleX},1px);border-bottom-width:var(${MENU_VAR.ruleY},0);`;
+
+/** The most of a stacked view the menu may take, leaving the rest to the panes. */
+export const MENU_PANEL_STACKED_SHARE = "45%";
 
 /**
  * The scrolling list of nodes or edges inside `MENU_PANEL`.

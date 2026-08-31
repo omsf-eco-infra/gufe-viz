@@ -28,6 +28,7 @@ import {
   esc,
   floatingWarning,
   headerStrip,
+  orientMenuPanel,
   SELECT_CSS,
   splitter,
   statChip,
@@ -975,8 +976,12 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     // there to be dragged.
     let redraw = () => {};
 
-    const left = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
-    const right = el("div", `min-width:0;display:flex;flex-direction:column;background:${T.appBg};`);
+    // `min-height` as well as `min-width`, because the split divides the height
+    // instead when the view is taller than it is wide: without it a pane's
+    // contents are its floor along whichever axis it is being divided on, and
+    // the graph pushes the mapping off the bottom.
+    const left = el("div", `min-width:0;min-height:0;display:flex;flex-direction:column;background:${T.netCanvasBg};`);
+    const right = el("div", `min-width:0;min-height:0;display:flex;flex-direction:column;background:${T.appBg};`);
     split.appendChild(left);
     split.appendChild(
       splitter(split, left, right, {
@@ -989,6 +994,7 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
         // has to be drawn again - at the end of the drag rather than during it,
         // because on the far side of this is a force simulation.
         onResize: () => redraw(),
+        onOrient: (stacked) => orientMenuPanel(menu.panel, stacked),
       }),
     );
     split.appendChild(right);
@@ -1632,6 +1638,15 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       });
       group.addEventListener("pointermove", (event: PointerEvent) => {
         if (!dragging) return;
+        // A second finger turns the press into a pinch, and a ligand that
+        // follows one of the two fingers through a zoom is not what either
+        // hand meant. The drag is abandoned rather than paused: the gesture
+        // owns the canvas from here, and the node keeps where it had got to.
+        if (view.gesturing()) {
+          dragging = null;
+          moved = true;
+          return;
+        }
         const { scale } = view.transform();
         const x = (event.clientX - dragging.x) / scale;
         const y = (event.clientY - dragging.y) / scale;

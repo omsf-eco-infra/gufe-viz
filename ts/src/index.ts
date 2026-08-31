@@ -28,6 +28,7 @@ export { GufeLigandNetwork } from "./views/ligand-network.js";
 export { GufeAlchemicalNetwork } from "./views/alchemical-network.js";
 export {
   GufeAtomMapping,
+  inFrameOf,
   liftFor,
   mappingPayloadFor,
   openfeShift,
@@ -47,6 +48,7 @@ export {
   chromeMenu,
   nameWanted,
   onWidth,
+  orientMenuPanel,
   splitter,
   type ChromeMenu,
   type ChromeMenuOptions,
@@ -84,6 +86,7 @@ export {
 } from "./shared/depict-layout.js";
 export {
   boundedZoom,
+  claimGestures,
   DEFAULT_ZOOM_BOUNDS,
   guardWheel,
   resetControl,

@@ -25,17 +25,27 @@
  *   3D          both molecules, side by side, plain
  *   3D-Map      the same, with the mapping marked in the 2D colours
  *   3D Overlay  gufe's own `view_3d`, reproduced - see `renderOpenFE`
- *   Pairs       one above the other, Kabsch-aligned, a line per mapped pair
+ *   Pairs       one above the other, a line per mapped pair
  *   Info        the mapping in numbers - counts, the correspondence, annotations
+ *
+ * **Every mode that shows both molecules superposes them first.** A payload
+ * carries whatever conformer each molecule was built with, and two conformers
+ * built independently face in unrelated directions; drawn together, that reads
+ * as a chemical difference rather than an accident of the file. `inFrameOf`
+ * below is the one place it is undone, in 3D, and `layoutPair` is the same job
+ * in 2D. Both are applied once for the pair rather than per mode, so no two
+ * modes can disagree about which way round the pair sits.
  *
  * 3D Overlay is the exception: it is not the prototype's, it is
  * `gufe.visualization.mapping_visualization.display_mapping_3d`, which is what
  * `LigandAtomMapping.view_3d()` calls and therefore the picture an OpenFE user
  * has already seen in a notebook. It is here so that the same mapping in the
- * browser and in the notebook are recognisably the same picture. It also
- * replaced the prototype's own Overlay mode, which superimposed the two
- * molecules translucently: the middle of this one is that picture, drawn the way
- * OpenFE already draws it, so keeping both said the same thing twice.
+ * browser and in the notebook are recognisably the same picture - the
+ * superposition above is the single deliberate departure, and `renderOpenFE`
+ * says why it is worth one. It also replaced the prototype's own Overlay mode,
+ * which superimposed the two molecules translucently: the middle of this one is
+ * that picture, drawn the way OpenFE already draws it, so keeping both said the
+ * same thing twice.
  *
  * Info is last because it is a reading of the picture rather than a picture, and
  * it is where everything that is not a molecule now lives: the name, the type,
@@ -304,6 +314,57 @@ export function mappingPayloadFor(
   return { ...mapping, registry: entriesFor(registry, [mapping.componentA, mapping.componentB]) };
 }
 
+/**
+ * `moving` put into `fixed`'s frame, superposed on the atoms the mapping relates.
+ *
+ * Every 3D mode here draws the two molecules at once, and all four are making
+ * the same claim: this is what changes between them. That claim is unreadable
+ * when the two are turned differently, whether they sit side by side, shifted
+ * along x, or one above the other - the reader cannot tell a substitution from
+ * a rotation.
+ *
+ * Nothing in a payload guarantees they arrive facing the same way. A
+ * `SmallMoleculeComponent` carries whatever conformer it was built with, and
+ * two molecules embedded independently come out turned arbitrarily with respect
+ * to each other; `examples/ligand_network_large.json` has pairs a hundred and
+ * sixty degrees apart. A docked series - which is what an OpenFE network
+ * usually holds - already shares a frame, and there this is very nearly the
+ * identity, because the transform that best superposes two molecules already on
+ * top of each other is no transform at all.
+ *
+ * The mapped atoms are what it superposes on, which is the only defensible
+ * choice: they are by definition the part of the two molecules that is meant to
+ * correspond, and the unique atoms are the part that is not.
+ *
+ * `pairs` runs from `fixed`'s atom indices to `moving`'s, which is the
+ * payload's own direction: A stays put and B is moved onto it.
+ *
+ * `moving` comes back untouched when the mapping does not pin a rotation down -
+ * fewer than three mapped atoms, or mapped atoms all on one line. See
+ * `Transform.determined`. A molecule left in its own frame is a picture of two
+ * conformers, which is at least true; a molecule turned by an arbitrary
+ * rotation is a picture of nothing.
+ */
+export function inFrameOf(
+  fixed: Molecule,
+  moving: Molecule,
+  pairs: ReadonlyMap<number, number>,
+): Molecule {
+  const P: Vec3[] = [];
+  const Q: Vec3[] = [];
+  for (const [here, there] of pairs) {
+    const anchor = fixed.coords[here];
+    const partner = moving.coords[there];
+    if (anchor && partner) {
+      P.push(anchor as Vec3);
+      Q.push(partner as Vec3);
+    }
+  }
+  const rt = kabsch(P, Q);
+  if (!rt?.determined) return moving;
+  return { ...moving, coords: moving.coords.map((c) => applyRT(c as Vec3, rt.R, rt.t)) };
+}
+
 /** Per-axis extent of a set of coordinates. */
 function extents(coords: readonly Vec3[]): { min: Vec3; max: Vec3; span: Vec3 } {
   const min: Vec3 = [Infinity, Infinity, Infinity];
@@ -421,6 +482,18 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
       host.appendChild(centredMessage(`Could not read a molecule: ${errText(e)}`, true));
       return {};
     }
+
+    // Both molecules into one frame, once, before any mode draws - see
+    // `inFrameOf`. Here rather than inside each mode so that clicking along the
+    // switcher cannot also turn a molecule, and so the four 3D modes cannot
+    // disagree about which way round the pair sits. 2D arrives at the same
+    // place by its own route: `layoutPair` aligns the two depictions in two
+    // dimensions, so the flat picture agrees with the spatial ones.
+    //
+    // Coordinates are all this changes. Symbols, bonds and atom indices are
+    // untouched, so everything downstream that reads the mapping - the marking,
+    // the counts, Info's correspondence - reads exactly what it read before.
+    molB = inFrameOf(molA, molB, pairs);
 
     const flipped = new Map<number, number>();
     for (const [a, b] of pairs) flipped.set(b, a);
@@ -651,6 +724,17 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
      * Every number here is gufe's, in `OPENFE` and `openfeShift`, because the
      * point of the mode is that it matches. `show_atomIDs` is gufe's other
      * option and it is off by default there, so it is absent here.
+     *
+     * One thing is not gufe's: the two molecules are superposed before any of
+     * this, by `inFrameOf`. gufe does not superpose, because it does not need
+     * to - a mapping in a notebook comes from ligands already docked into one
+     * frame, and there the middle of the picture is the overlap it is meant to
+     * be. This element is handed whatever a payload holds, and on conformers
+     * that do not share a frame the un-superposed middle is two molecules
+     * lying across each other at an angle, which is the picture this mode most
+     * exists to show and the one it would then get wrong. On ligands gufe
+     * would be given, the superposition is near enough the identity and the
+     * picture is the notebook's.
      */
     const renderOpenFE = (): void => {
       const box = makeBox(`${nameA} (left), both overlaid (middle), ${nameB} (right)`);
@@ -706,25 +790,14 @@ export class GufeAtomMapping extends GufeElement<LigandAtomMappingViz> {
     const renderLines = (): void => {
       const box = makeBox(`${nameA} to ${nameB}  (${pairs.size} mapped pairs)`);
 
-      // Align B onto A over the mapped atoms first. Unaligned, the lines cross
-      // each other and say nothing about how good the mapping is.
-      const P: Vec3[] = [];
-      const Q: Vec3[] = [];
-      for (const [a, b] of pairs) {
-        const pa = molA.coords[a];
-        const pb = molB.coords[b];
-        if (pa && pb) {
-          P.push(pa as Vec3);
-          Q.push(pb as Vec3);
-        }
-      }
-      const rt = kabsch(P, Q);
-      const aligned = molB.coords.map((c) => (rt ? applyRT(c as Vec3, rt.R, rt.t) : ([...c] as Vec3)));
-
-      const { axis, lift } = liftFor(molA.coords as Vec3[], aligned);
+      // The superposition this mode needs most is already done - `inFrameOf`,
+      // above - so all that is left is to lift B clear of A. Unaligned, these
+      // lines would cross each other and say nothing about how good the
+      // mapping is.
+      const { axis, lift } = liftFor(molA.coords as Vec3[], molB.coords as Vec3[]);
       const lifted: Molecule = {
         ...molB,
-        coords: aligned.map((c) => {
+        coords: molB.coords.map((c) => {
           const out: Vec3 = [c[0], c[1], c[2]];
           out[axis] += lift;
           return out;

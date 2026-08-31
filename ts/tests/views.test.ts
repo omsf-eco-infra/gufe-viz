@@ -7,13 +7,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import "../src/index.js";
-import { parseCounts, parseSDF } from "../src/shared/sdf.js";
+import { buildMolBlock, parseCounts, parseSDF } from "../src/shared/sdf.js";
 import { parsePdbStats } from "../src/shared/pdb.js";
 import { formatIssues, validatePayload } from "../src/schema/validate.js";
 import { buildRegistry, lookupOfType } from "../src/schema/registry.js";
 import { T } from "../src/shared/theme.js";
 import { HIDE_NAME_ATTRIBUTE } from "../src/shared/dom.js";
-import { mappingPayloadFor, openfeShift, pairColour, uniqueAtoms } from "../src/views/atom-mapping.js";
+import { inFrameOf, mappingPayloadFor, openfeShift, pairColour, uniqueAtoms } from "../src/views/atom-mapping.js";
 import { DEPICT_STYLE, markGroups, threeDmolColor } from "../src/shared/depict-style.js";
 import { diffStatus, transformationPayloadFor } from "../src/views/transformation.js";
 import { systemPayloadFor } from "../src/views/chemical-system.js";
@@ -772,6 +772,79 @@ describe("openfeShift", () => {
   });
 });
 
+describe("inFrameOf", () => {
+  // A payload carries whatever conformer each molecule was built with, and two
+  // conformers built independently face in unrelated directions. Drawn
+  // together - which is what every 3D mode of the mapping view does - that
+  // reads as a chemical difference rather than an accident of the file.
+  const TETRA: [number, number, number][] = [
+    [0, 0, 0],
+    [1.5, 0, 0],
+    [1.5, 1.2, 0],
+    [0, 0, 1.1],
+  ];
+  const turned = (coords: [number, number, number][]): [number, number, number][] =>
+    // A quarter turn about z, which is what a molecule embedded on its own can
+    // arrive at relative to its partner - only usually not a round number.
+    coords.map(([x, y, z]) => [-y, x, z]);
+
+  const molecule = (name: string, coords: [number, number, number][]) => ({
+    name,
+    symbols: ["C", "C", "O", "N"],
+    bonds: [[0, 1, 1], [1, 2, 1], [0, 3, 1]] as [number, number, number][],
+    coords,
+  });
+
+  const allPairs = new Map([[0, 0], [1, 1], [2, 2], [3, 3]]);
+
+  it("puts the second molecule into the first one's frame", () => {
+    const fixed = molecule("A", TETRA);
+    const moving = molecule("B", turned(TETRA));
+    const placed = inFrameOf(fixed, moving, allPairs);
+    placed.coords.forEach((point, i) => {
+      point.forEach((value, k) => expect(value).toBeCloseTo(TETRA[i][k], 6));
+    });
+  });
+
+  it("changes nothing but the coordinates", () => {
+    const moving = molecule("B", turned(TETRA));
+    const placed = inFrameOf(molecule("A", TETRA), moving, allPairs);
+    expect(placed.symbols).toEqual(moving.symbols);
+    expect(placed.bonds).toEqual(moving.bonds);
+    expect(placed.name).toBe(moving.name);
+  });
+
+  it("superposes on the mapped atoms and leaves the unique ones where they fall", () => {
+    // The mapped atoms are the part of the two molecules meant to correspond,
+    // so they are what the fit is made on; an atom outside the mapping simply
+    // comes along with the rest of the molecule.
+    const fixed = molecule("A", TETRA);
+    const moving = molecule("B", turned(TETRA));
+    const mapped = new Map([[0, 0], [1, 1], [2, 2]]);
+    const placed = inFrameOf(fixed, moving, mapped);
+    [0, 1, 2].forEach((i) => {
+      placed.coords[i].forEach((value, k) => expect(value).toBeCloseTo(TETRA[i][k], 6));
+    });
+    placed.coords[3].forEach((value, k) => expect(value).toBeCloseTo(TETRA[3][k], 6));
+  });
+
+  it("leaves the molecule alone when too few atoms are mapped to orient it", () => {
+    // Two atoms leave a whole axis of rotation free. A molecule left in its own
+    // frame is a picture of two conformers, which is at least true; one turned
+    // by an arbitrary rotation is a picture of nothing.
+    const moving = molecule("B", turned(TETRA));
+    const placed = inFrameOf(molecule("A", TETRA), moving, new Map([[0, 0], [1, 1]]));
+    expect(placed).toBe(moving);
+  });
+
+  it("leaves the molecule alone when the mapped atoms are on a line", () => {
+    const line: [number, number, number][] = [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]];
+    const moving = molecule("B", turned(line));
+    const placed = inFrameOf(molecule("A", line), moving, allPairs);
+    expect(placed).toBe(moving);
+  });
+});
+
 describe("pairColour", () => {
   // The colour a mapped pair is marked with in 3D Overlay: matplotlib's `hsv`
   // resampled to one entry per pair, which is what gufe's `_add_spheres` asks
@@ -998,6 +1071,109 @@ describe("<gufe-atom-mapping>", () => {
     expect(centre(0).y).toBeCloseTo(molA.coords[first.index_A][1], 6);
     expect(centre(1).x).toBeCloseTo(molB.coords[first.index_B][0] + shift, 6);
     expect(centre(1).z).toBeCloseTo(molB.coords[first.index_B][2], 6);
+  });
+
+  describe("with two conformers that do not share a frame", () => {
+    // The regression this guards: nothing in a payload guarantees the two
+    // molecules face the same way, and every 3D mode draws them together to be
+    // compared. Turned differently, a substitution and a rotation look the
+    // same. The committed examples are all too small to mapped-atom-align, so
+    // the pair is built here instead.
+    const TETRA: [number, number, number][] = [
+      [0, 0, 0],
+      [1.5, 0, 0],
+      [1.5, 1.2, 0],
+      [0, 0, 1.1],
+    ];
+    /** The same molecule, a quarter turn about z and pushed away. */
+    const TURNED: [number, number, number][] = TETRA.map(([x, y, z]) => [-y + 8, x + 3, z]);
+
+    const sdfFor = (name: string, coords: [number, number, number][]): string =>
+      buildMolBlock({
+        name,
+        symbols: ["C", "C", "O", "N"],
+        bonds: [[0, 1, 1], [1, 2, 1], [0, 3, 1]],
+        coords,
+      });
+
+    /** The example, with both molecules replaced and every atom mapped. */
+    const turnedPair = () => {
+      const payload = readExample("ligand_atom_mapping.json") as unknown as {
+        componentA: string;
+        componentA_to_componentB: { index_A: number; index_B: number }[];
+        registry: { "gufe-key": string; sdf: string }[];
+      };
+      payload.componentA_to_componentB = [0, 1, 2, 3].map((i) => ({ index_A: i, index_B: i }));
+      for (const entry of payload.registry) {
+        const isA = entry["gufe-key"] === payload.componentA;
+        entry.sdf = sdfFor(isA ? "A" : "B", isA ? TETRA : TURNED);
+      }
+      return payload;
+    };
+
+    /** The coordinates of the `index`th model a viewer was given. */
+    const modelCoords = (viewer: { calls: string[] }, index: number): [number, number, number][] => {
+      const added = viewer.calls.filter((call) => call.startsWith("addModel("));
+      return parseSDF(JSON.parse(added[index].slice("addModel(".length, -1)) as string).coords;
+    };
+
+    const closeTo = (got: [number, number, number][], want: [number, number, number][]): void => {
+      got.forEach((point, i) => point.forEach((value, k) => expect(value).toBeCloseTo(want[i][k], 4)));
+    };
+
+    it("draws the second molecule in the first one's frame, side by side", async () => {
+      const node = mount("gufe-atom-mapping", turnedPair());
+      await flush();
+      await setMode(node, "3D");
+
+      // One molecule per box, and the second is no longer the payload's own
+      // conformer: it has been turned onto the first.
+      closeTo(modelCoords(engines.viewers.at(-2)!, 0), TETRA);
+      closeTo(modelCoords(engines.viewers.at(-1)!, 0), TETRA);
+    });
+
+    it("draws it in that frame in 3D-Map too", async () => {
+      const node = mount("gufe-atom-mapping", turnedPair());
+      await flush();
+      await setMode(node, "3D-Map");
+
+      closeTo(modelCoords(engines.viewers.at(-1)!, 0), TETRA);
+    });
+
+    it("overlays the two on each other in 3D Overlay", async () => {
+      // gufe does not superpose, because a notebook's mapping comes from
+      // ligands already docked into one frame. Given conformers that are not,
+      // the middle of this picture is the one thing the mode is for and the
+      // one thing it would get wrong.
+      const node = mount("gufe-atom-mapping", turnedPair());
+      await flush();
+      await setMode(node, "3D Overlay");
+
+      // Models 2 and 3 are the unmoved pair in the middle; the first two are
+      // the copies pushed out along x.
+      const viewer = engines.viewers.at(-1)!;
+      closeTo(modelCoords(viewer, 2), TETRA);
+      closeTo(modelCoords(viewer, 3), TETRA);
+    });
+
+    it("lifts one straight off the other in Pairs, so every line is parallel", async () => {
+      const node = mount("gufe-atom-mapping", turnedPair());
+      await flush();
+      await setMode(node, "Pairs");
+
+      const lines = engines.viewers.at(-1)!.shapes.filter((shape) => shape.kind === "cylinder");
+      expect(lines.length).toBe(4);
+      const span = (shape: (typeof lines)[number]) => {
+        const from = shape.spec.start as { x: number; y: number; z: number };
+        const to = shape.spec.end as { x: number; y: number; z: number };
+        return [to.x - from.x, to.y - from.y, to.z - from.z];
+      };
+      // Superposed and then lifted, the two molecules differ by the lift alone,
+      // so every line between a mapped pair is the same vector.
+      for (const line of lines) {
+        span(line).forEach((value, k) => expect(value).toBeCloseTo(span(lines[0])[k], 4));
+      }
+    });
   });
 
   it("draws one line per mapped pair in Pairs, into a single box", async () => {
