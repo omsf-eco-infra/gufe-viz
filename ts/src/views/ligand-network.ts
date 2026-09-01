@@ -228,9 +228,9 @@ function placeNodesAt(nodes: NetNode[], at: readonly [number, number][]): void {
   });
 }
 
-// Dimensions and force constants are the framejs prototype's, kept the same so
-// the two pictures are the same picture. Changing one here without changing it
-// there is how they drift apart.
+// Dimensions came from the framejs prototype and are kept the same, so the two
+// pictures are the same picture. The force constants no longer are: see
+// `NODE_SPACING` for what was wrong with them and why they had to move.
 /** How much of the width the graph gets, before anyone drags the divider. */
 const CANVAS_SHARE = { initial: 0.58, min: 0.25, max: 0.8 };
 
@@ -358,15 +358,38 @@ const DIM = { node: 0.12, edge: 0.06 };
  */
 const FOCUS_SCALE = 1.8;
 
+/**
+ * How much room a node needs around it, centre to centre.
+ *
+ * Both discs, plus air between them, and the number the distances below are
+ * measured against. That they are measured against anything is the point. The
+ * two that decide how a graph packs - how far apart collision holds a pair, and
+ * how far apart a link wants one - were written in unrelated units: a link
+ * asked for 18 to 28 while collision enforced 100, so the link force was a
+ * constant squeeze that every pair resisted only by sitting exactly on the
+ * collision boundary. Two hundred ligands came out with every gap in the graph
+ * the same 100 units, which is a picture with no structure in it, and with the
+ * score that is meant to draw a well-mapped pair closer making no difference at
+ * all, because its whole range was underneath the boundary.
+ */
+const NODE_SPACING = 2 * NODE_RADIUS + 68;
+
 const FORCE = {
-  linkBaseDistance: 18,
-  linkScoreBonus: 10,
-  linkStrength: 0.5,
-  chargeStrength: -2500,
+  /** What a perfectly scored mapping asks for. A poor one asks for the bonus on top. */
+  linkBaseDistance: NODE_SPACING,
+  linkScoreBonus: 90,
+  linkStrength: 0.45,
+  // Repulsion is local rather than the width of the graph. Reaching further
+  // does not move neighbours apart - collision already decides that - it only
+  // inflates the whole layout, and a graph spread over thousands of units is
+  // one that is both too small to read as a whole and too crowded to read up
+  // close.
+  chargeStrength: -900,
   chargeDistanceMin: 20,
-  chargeDistanceMax: 5000,
+  chargeDistanceMax: 900,
   centerStrength: 0.08,
-  collisionPadding: 12,
+  /** Holds a pair exactly `NODE_SPACING` apart, so links settle at their distance rather than against this. */
+  collisionPadding: NODE_SPACING / 2 - NODE_RADIUS,
   collisionIterations: 4,
   drift: 0.04,
   tickMultiplier: 2,
