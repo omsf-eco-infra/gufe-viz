@@ -92,8 +92,18 @@ export interface Theme {
   netNodeFill: string;
   netNodeStroke: string;
   netNodeLabel: string;
+  /**
+   * The ground a node's 2D structure and its name sit on once the zoom draws
+   * them. White in both themes, because RDKit draws a depiction for paper: its
+   * bonds are black and its element letters are a palette picked against white,
+   * and every other depiction in this project is already on `canvas2DBg`. A
+   * structure over a dark canvas is a structure nobody can read.
+   */
+  netDepictBg: string;
   /** A ligand's name under its structure: quieter than the structure itself. */
   netNodeCaption: string;
+  /** The same name where it sits on `netDepictBg`, which needs a dark ink in either theme. */
+  netDepictCaption: string;
   netInitials: string;
   /**
    * A ligand matching the SMARTS pattern: its disc, and the atoms that matched
@@ -182,7 +192,9 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netNodeFill: "#33334d",
     netNodeStroke: "#45455e",
     netNodeLabel: "#f2f3f7",
+    netDepictBg: "#ffffff",
     netNodeCaption: "#b9bccb",
+    netDepictCaption: "#55555f",
     netInitials: "#51cbee",
     netMatchFill: "#4a3c22",
     netMatchStroke: "#e69f00",
@@ -249,7 +261,9 @@ export const THEMES: { dark: Theme; light: Theme } = {
     netNodeFill: "#ffffff",
     netNodeStroke: "#cccccc",
     netNodeLabel: "#333333",
+    netDepictBg: "#ffffff",
     netNodeCaption: "#666666",
+    netDepictCaption: "#666666",
     netInitials: "#4182e4",
     netMatchFill: "#fdf1d8",
     netMatchStroke: "#e69f00",

@@ -245,31 +245,66 @@ describe("<gufe-ligand-network>", () => {
     expect(engines.simulations, "d3's force simulation was never configured").toBe(1);
   });
 
-  it("does not draw node depictions until they are zoomed into", async () => {
-    // This replaces an assertion that every ligand was depicted up front. That
-    // is the thing a nine-hundred-ligand network cannot afford: one RDKit call
-    // and an SVG subtree per node, all before the first frame. The depictions
-    // in `engines.depicted` at rest belong to the detail pane's mapping view,
-    // which draws the two endpoints of the selected edge.
+  /** One wheel gesture on the graph. Negative zooms in, positive out. */
+  const wheeled = (node: HTMLElement, deltaY: number): SVGSVGElement => {
+    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
+    root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
+    root.dispatchEvent(new WheelEvent("wheel", { deltaY, bubbles: true, cancelable: true }));
+    return root;
+  };
+
+  /** Out far enough to reach the `shape` level. */
+  const zoomedOut = (node: HTMLElement): SVGSVGElement => wheeled(node, 600);
+
+  /** Out to the `names` level: under the structure threshold, still naming every node. */
+  const zoomedBack = (node: HTMLElement): SVGSVGElement => wheeled(node, 400);
+
+  it("stops drawing the structures a notch below the zoom that asks for them", async () => {
+    // The structures are the expensive part - one RDKit call and an SVG subtree
+    // per node - so no level below `structures` draws them and none of them is
+    // built until one is on screen at a zoom that wants it. What a network of
+    // several hundred costs before its first frame is `scale.test.ts`.
     const node = mount("gufe-ligand-network", network());
     await flush();
+    const root = zoomedBack(node);
+    await flush();
 
+    expect(root.getAttribute("data-detail")).toBe("names");
     const captions = Array.from(node.querySelectorAll("text.gufe-node-caption"));
     expect(captions.length).toBeGreaterThan(0);
-    // Opening zoom is 1, which is below the depiction threshold and above the
-    // caption one: names yes, structures not yet.
+    // Names yes, and inside the disc, which is where a node with no structure
+    // in it has the room for one.
     expect(captions.every((c) => c.getAttribute("display") === "inline")).toBe(true);
     const depictionGroups = Array.from(node.querySelectorAll("g.gufe-node-depiction"));
     expect(depictionGroups.every((g) => g.getAttribute("display") === "none")).toBe(true);
   });
 
-  /** Wheel the view out far enough to reach the `shape` level. */
-  const zoomedOut = (node: HTMLElement): SVGSVGElement => {
-    const root = node.querySelector<SVGSVGElement>("svg.gufe-graph")!;
-    root.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true }));
-    root.dispatchEvent(new WheelEvent("wheel", { deltaY: 600, bubbles: true, cancelable: true }));
-    return root;
-  };
+  it("stands a depicted node on a white disc the size of the disc it replaces", async () => {
+    // RDKit draws for paper. Without the plate the black bonds sit on the dark
+    // canvas in one theme and on the network's own edges in the other, and the
+    // name under them is unreadable over whatever it happens to cross.
+    const node = mount("gufe-ligand-network", network());
+    await flush();
+
+    const plates = Array.from(node.querySelectorAll<SVGCircleElement>("circle.gufe-node-plate"));
+    expect(plates.length).toBe(node.querySelectorAll("circle.gufe-node-disc").length);
+    // A node with no structure in it has the styled disc instead, and nothing
+    // to stand on white.
+    zoomedBack(node);
+    await flush();
+    expect(plates.every((p) => p.getAttribute("display") === "none")).toBe(true);
+
+    const root = wheeled(node, -200);
+    await flush();
+    expect(root.getAttribute("data-detail")).toBe("structures");
+
+    const shown = plates.filter((p) => p.getAttribute("display") === "inline");
+    expect(shown.length).toBeGreaterThan(0);
+    // The radius the lower zooms draw, so crossing the threshold changes what
+    // is inside a node rather than how big the node is.
+    const disc = node.querySelector<SVGCircleElement>("circle.gufe-node-disc")!;
+    expect(shown.every((p) => p.getAttribute("r") === disc.getAttribute("r"))).toBe(true);
+  });
 
   it("hides the captions when zoomed far enough out", async () => {
     // The shape of the network is what is worth seeing at that distance, and a
@@ -294,7 +329,7 @@ describe("<gufe-ligand-network>", () => {
     await flush();
     const labels = node.querySelector<SVGGElement>("g.gufe-edge-label")!.parentElement as unknown as SVGGElement;
 
-    expect(node.querySelector("svg.gufe-graph")!.getAttribute("data-detail")).toBe("names");
+    expect(zoomedBack(node).getAttribute("data-detail")).toBe("names");
     expect(labels.getAttribute("display")).toBe("inline");
     // The same zoom that turns the names into initials.
     zoomedOut(node);
@@ -313,10 +348,10 @@ describe("<gufe-ligand-network>", () => {
     }
     expect(ZOOM_LEVELS[ZOOM_LEVELS.length - 1].from, "the last level catches every zoom left").toBe(0);
     expect(levelAt(4).id).toBe("structures");
-    expect(levelAt(1.1).id).toBe("structures");
-    expect(levelAt(1).id).toBe("names");
-    expect(levelAt(0.5).id).toBe("names");
-    expect(levelAt(0.49).id).toBe("shape");
+    expect(levelAt(0.55).id).toBe("structures");
+    expect(levelAt(0.54).id).toBe("names");
+    expect(levelAt(0.35).id).toBe("names");
+    expect(levelAt(0.34).id).toBe("shape");
     expect(levelAt(0).id).toBe("shape");
   });
 

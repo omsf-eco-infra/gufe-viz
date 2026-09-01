@@ -215,8 +215,7 @@ export const PANE_LABEL_OVERLAY =
   `position:absolute;top:${SPACE.md};left:${SPACE.md};z-index:10;pointer-events:none;` +
   `max-width:calc(100% - ${SPACE.xxl} - ${SPACE.xxl});white-space:nowrap;overflow:hidden;` +
   `text-overflow:ellipsis;padding:${SPACE.xs} ${SPACE.lg};border-radius:${RADIUS.md};` +
-  `font-size:${FONT.heading};font-weight:${WEIGHT.bold};color:${T.labelFg};background:${T.labelBg};` +
-  "box-shadow:0 2px 8px rgba(0,0,0,0.25);";
+  `font-size:${FONT.heading};font-weight:${WEIGHT.bold};color:${T.labelFg};background:${T.labelBg};`;
 
 /** A bordered box: the standard container for anything that is not a viewer. */
 export const CARD =

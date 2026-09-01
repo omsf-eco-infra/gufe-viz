@@ -244,18 +244,35 @@ const INITIALS_SIZE = 18;
  * The node's name: its size under a node, how far under, the least it shrinks
  * to when it sits inside one instead, and the width it has to fit there.
  *
- * `below` only applies to a depicted node, which has no disc left to clear, so
- * it is measured from the structure's own box rather than from the radius. It
- * is a baseline, so most of the 12 is the font's ascent and the name lands a
- * few pixels under the structure: zoomed in the name belongs to the picture
- * above it, and a wider gap reads as though it belonged to nothing.
+ * `below` only applies to a depicted node, and is a baseline: most of the 12 is
+ * the font's ascent, so the name's own white plate lands just clear of the
+ * disc rather than merged into it. Only just, though - zoomed in the name
+ * belongs to the picture above it, and a wider gap reads as though it belonged
+ * to nothing.
  */
 const CAPTION = {
   fontSize: 11,
-  below: NODE_RADIUS - DEPICT_PADDING + 12,
+  below: NODE_RADIUS + 12,
   minFontSize: 7,
   insideWidth: (NODE_RADIUS - 6) * 2,
 };
+
+/**
+ * The white ground a depicted node stands on.
+ *
+ * A disc of exactly `NODE_RADIUS`, which is the disc the zooms below draw, so
+ * crossing the threshold changes what is inside a node and not how big it is.
+ * It is there because RDKit draws for paper: black bonds, and element letters
+ * from a palette picked against white. Without it a structure over a dark
+ * canvas is a structure nobody can read, and over a light one it is a structure
+ * with the network's own edges running through it.
+ *
+ * The name below the disc gets its own plate rather than a bigger disc, for the
+ * same reason the disc is not simply grown: the ring of white a name needs is
+ * the shape of the name, and a disc wide enough to hold one would swallow the
+ * edges arriving at the node.
+ */
+const PLATE = { captionPadX: 4, captionPadY: 1, captionRadius: 3 };
 const EDGE_MIN_WIDTH = 1.5;
 const EDGE_MAX_WIDTH = 6.5;
 const EDGE_OPACITY = 0.9;
@@ -318,16 +335,23 @@ export interface DetailLevel {
  * called. So names arrive first and structures second.
  *
  * `shape` draws no edge scores. Everything on the canvas is scaled by the zoom,
- * so at half size or less a 10px score is 5px on screen: it is not read, it is
- * just texture over the lines whose shape is the whole reason to be out here.
+ * so out here a 10px score is 4px on screen: it is not read, it is just texture
+ * over the lines whose shape is the whole reason to be this far out.
  *
  * Structures are the expensive part - one RDKit call and an SVG subtree per
  * node - so they are built lazily, only for nodes actually on screen, and only
  * once each.
+ *
+ * `structures` starts below 1, which is the zoom a network small enough to
+ * frame itself opens at: a handful of ligands shows what they are without being
+ * zoomed into first, and a bigger one still frames itself well under this and
+ * opens on its shape. The cost of moving it down is that more nodes are on
+ * screen when structures switch on, and each of those is a depiction - which
+ * is what the cull and the once-each rule above are for.
  */
 export const ZOOM_LEVELS: readonly DetailLevel[] = [
-  { id: "structures", from: 1.1, disc: false, structure: true, name: "below", initials: false, edgeScores: true },
-  { id: "names", from: 0.5, disc: true, structure: false, name: "inside", initials: false, edgeScores: true },
+  { id: "structures", from: 0.55, disc: false, structure: true, name: "below", initials: false, edgeScores: true },
+  { id: "names", from: 0.35, disc: true, structure: false, name: "inside", initials: false, edgeScores: true },
   { id: "shape", from: 0, disc: true, structure: false, name: "none", initials: true, edgeScores: false },
 ];
 
@@ -486,9 +510,28 @@ const label = entryLabel;
 
 const truncate = (text: string, max: number): string => (text.length > max ? `${text.slice(0, max - 1)}...` : text);
 
+/**
+ * An element's fill, from either place SVG lets it be written.
+ *
+ * RDKit writes the one that matters here - the backing rect's - into `style`,
+ * and its own documentation writes it as the presentation attribute. Reading
+ * only the attribute is what left a white square drawn over the node's plate.
+ */
+const fillOf = (element: Element): string => {
+  const attribute = element.getAttribute("fill");
+  const declared = attribute ?? /(?:^|;)\s*fill\s*:\s*([^;]+)/i.exec(element.getAttribute("style") ?? "")?.[1] ?? "";
+  return declared.toLowerCase().replace(/\s+/g, "");
+};
+
+const WHITE = new Set(["#fff", "#ffffff", "white", "rgb(255,255,255)"]);
+const isWhite = (element: Element): boolean => WHITE.has(fillOf(element));
+
 interface DetailParts {
   nodes: NetNode[];
   circles: SVGCircleElement[];
+  /** The white disc under a structure, and the plate under the name below it. */
+  plates: SVGCircleElement[];
+  captionPlates: SVGRectElement[];
   captions: SVGTextElement[];
   initials: SVGTextElement[];
   depictionGroups: SVGGElement[];
@@ -513,9 +556,10 @@ interface DetailParts {
  * several hundred ligands draw at all rather than paying for every structure
  * before the first frame.
  *
- * A node showing a structure loses its disc: the structure is drawn square and
- * overhangs the circle, which reads as a mistake. A node without one keeps the
- * disc, and its name moves inside it, where there is nothing else to show.
+ * A node showing a structure loses the styled disc - its fill and its border
+ * both say things the structure says better - and gains the white one behind
+ * it that `PLATE` describes. A node without a structure keeps the styled disc,
+ * and its name moves inside it, where there is nothing else to show.
  */
 function levelOfDetail(parts: DetailParts): {
   apply(scale: number, tx: number, ty: number): void;
@@ -563,12 +607,14 @@ function levelOfDetail(parts: DetailParts): {
       if (child.nodeType !== 1) continue;
       const tag = child.nodeName.toLowerCase();
       if (tag === "defs" || tag === "metadata" || tag === "title") continue;
-      // RDKit paints an opaque white backing rect; dropping it lets the node's
-      // own fill show through.
-      if (tag === "rect") {
-        const fill = ((child as Element).getAttribute("fill") ?? "").toLowerCase();
-        if (fill === "#ffffff" || fill === "white" || fill === "rgb(255,255,255)") continue;
-      }
+      // RDKit paints an opaque white backing rect, square and wider than the
+      // node it goes in. Dropping it leaves the white to `PLATE`'s disc, which
+      // is round and does not overhang the node it belongs to. The colour is in
+      // `style` on the builds this has met and in `fill` in RDKit's own
+      // documentation, so both are read: a rect that survives this is a white
+      // square with a circle behind it, which is the corner of the node
+      // sticking out and is exactly what the plate exists to avoid.
+      if (tag === "rect" && isWhite(child as Element)) continue;
       target.appendChild(document.importNode(child, true));
       appended++;
     }
@@ -616,6 +662,41 @@ function levelOfDetail(parts: DetailParts): {
   };
 
   /**
+   * Fit the white plate to the name it sits behind, once per node.
+   *
+   * Measured rather than computed: names are truncated to a character count,
+   * not to a width, so the plate under a long one and the plate under a short
+   * one are different sizes. `getBBox` throws where there is no layout and
+   * returns zeros before there has been one; either way the plate stays hidden
+   * and the next `apply` measures again, so the worst case is the name drawn
+   * bare, which is what it was drawn as before.
+   */
+  const platedAt: number[] = [];
+  const plateCaption = (index: number): void => {
+    const plate = parts.captionPlates[index];
+    if (platedAt[index] === CAPTION.below) {
+      plate.setAttribute("display", "inline");
+      return;
+    }
+    let box: { x: number; y: number; width: number; height: number } | null = null;
+    try {
+      box = parts.captions[index].getBBox();
+    } catch {
+      box = null;
+    }
+    if (!box?.width) {
+      plate.setAttribute("display", "none");
+      return;
+    }
+    plate.setAttribute("x", String(box.x - PLATE.captionPadX));
+    plate.setAttribute("y", String(box.y - PLATE.captionPadY));
+    plate.setAttribute("width", String(box.width + PLATE.captionPadX * 2));
+    plate.setAttribute("height", String(box.height + PLATE.captionPadY * 2));
+    plate.setAttribute("display", "inline");
+    platedAt[index] = CAPTION.below;
+  };
+
+  /**
    * Draw one node at a level: disc, structure, initials and name together.
    *
    * A node asked for a structure it has not got yet draws the level below
@@ -624,6 +705,7 @@ function levelOfDetail(parts: DetailParts): {
   const show = (index: number, wanted: DetailLevel): void => {
     const level = wanted.structure && !injected.has(index) ? levelUnder(wanted) : wanted;
     parts.depictionGroups[index].setAttribute("display", level.structure ? "inline" : "none");
+    parts.plates[index].setAttribute("display", level.structure ? "inline" : "none");
     // A match has to be visible at every level, and each level has a different
     // thing to say it with: the disc when there is one, the name when there is
     // one, and the matched atoms themselves once the structure is drawn - which
@@ -637,17 +719,34 @@ function levelOfDetail(parts: DetailParts): {
     parts.initials[index].setAttribute("display", level.initials ? "inline" : "none");
 
     const caption = parts.captions[index];
-    caption.setAttribute("fill", hit ? T.netMatchStroke : T.netNodeCaption);
+    const below = level.name === "below";
+    // Below the node the name is on the white plate, so it takes the ink that
+    // reads against white in either theme rather than the one picked to sit
+    // against the canvas.
+    caption.setAttribute("fill", hit ? T.netMatchStroke : below ? T.netDepictCaption : T.netNodeCaption);
     caption.setAttribute("display", level.name === "none" ? "none" : "inline");
+    if (!below) parts.captionPlates[index].setAttribute("display", "none");
     if (level.name === "none") return;
     const inside = level.name === "inside";
     caption.setAttribute("y", inside ? "0" : String(CAPTION.below));
     caption.setAttribute("dominant-baseline", inside ? "middle" : "auto");
     caption.setAttribute("font-size", String(inside ? insideSize(index, caption) : CAPTION.fontSize));
+    if (below) plateCaption(index);
   };
+
+  /**
+   * The level the last `apply` put in force.
+   *
+   * Read again when a structure arrives, because RDKit answers a frame or two
+   * late and the zoom may have left that level in the meantime. Drawing the
+   * level the request was made at is how a node ended up wearing a structure
+   * and a white disc on a canvas that had already zoomed out to bare shapes.
+   */
+  let current: DetailLevel | null = null;
 
   const apply = (scale: number, tx: number, ty: number): void => {
     const level = levelAt(scale);
+    current = level;
     // On the canvas rather than only in this closure: which level is in force is
     // the first thing anyone asks when the picture looks wrong, and this way it
     // is visible in devtools and assertable in a test.
@@ -671,7 +770,7 @@ function levelOfDetail(parts: DetailParts): {
     parts
       .rdkit()
       .then((RDKit) => {
-        if (!RDKit) return;
+        if (!RDKit || current !== level) return;
         for (const index of visible) {
           inject(RDKit, index);
           show(index, level);
@@ -1436,6 +1535,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
 
     const depictionGroups: SVGGElement[] = [];
     const circles: SVGCircleElement[] = [];
+    const plates: SVGCircleElement[] = [];
+    const captionPlates: SVGRectElement[] = [];
     const nodeHalos: SVGCircleElement[] = [];
     const initials: SVGTextElement[] = [];
     const captions: SVGTextElement[] = [];
@@ -1480,6 +1581,19 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       }) as SVGCircleElement;
       group.appendChild(circle);
       circles.push(circle);
+
+      // Under the structure and over the styled disc, which is painted out at
+      // the only level that shows either. See `PLATE`.
+      const plate = svg("circle", {
+        class: "gufe-node-plate",
+        r: NODE_RADIUS,
+        fill: T.netDepictBg,
+        display: "none",
+        "pointer-events": "none",
+      }) as SVGCircleElement;
+      group.appendChild(plate);
+      plates.push(plate);
+
       const depiction = svg("g", { class: "gufe-node-depiction", "pointer-events": "none" });
       group.appendChild(depiction);
       depictionGroups.push(depiction);
@@ -1509,6 +1623,18 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
       caption.textContent = truncate(label(node), LABEL_MAX_CHARS);
       caption.setAttribute("display", "none");
       captions.push(caption);
+
+      // Sized by `plateCaption` once the name has been laid out, so it is
+      // appended before the name and stays behind it.
+      const captionPlate = svg("rect", {
+        class: "gufe-node-caption-plate",
+        rx: PLATE.captionRadius,
+        fill: T.netDepictBg,
+        display: "none",
+        "pointer-events": "none",
+      }) as SVGRectElement;
+      captionPlates.push(captionPlate);
+      group.appendChild(captionPlate);
       group.appendChild(caption);
 
       nodeLayer.appendChild(group);
@@ -1545,6 +1671,8 @@ export class GufeLigandNetwork extends GufeElement<LigandNetworkViz> {
     const detail = levelOfDetail({
       nodes,
       circles,
+      plates,
+      captionPlates,
       matched: () => marks,
       captions,
       initials,
